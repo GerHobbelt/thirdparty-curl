@@ -1435,6 +1435,27 @@ typedef enum {
   /* FNMATCH_FUNCTION user pointer */
   CINIT(FNMATCH_DATA, OBJECTPOINT, 202),
 
+  /* Set the interface string for c-ares (DNS)
+   * to use as outgoing network interface */
+  CINIT(DNS_INTERFACE, OBJECTPOINT, 203),
+
+  /* Set the local IPv4 address for c-ares (DNS)
+   * to use for outgoing connections.
+   * Host-byte-order.
+   */
+  CINIT(DNS_LOCAL_IP4, LONG, 204),
+
+  /* Set the local IPv6 address for c-ares (DNS)
+   * to use for outgoing connections.
+   * 16-byte unsigned char*
+   */
+  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 205),
+
+  /* Set the DNS servers for c-ares to use.
+   * comma separated list of host[:port] entries.
+   */
+  CINIT(DNS_SERVERS, OBJECTPOINT, 206),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
