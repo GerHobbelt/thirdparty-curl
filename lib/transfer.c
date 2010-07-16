@@ -1228,7 +1228,7 @@ long Curl_sleep_time(curl_off_t rate_bps, curl_off_t cur_rate_bps,
 
 
 /*
- * Transfer()
+ * Curl_do_transfer()
  *
  * This function is what performs the actual transfer. It is capable of doing
  * both ways simultaneously.  The transfer must already have been setup by a
@@ -1239,8 +1239,8 @@ long Curl_sleep_time(curl_off_t rate_bps, curl_off_t cur_rate_bps,
  *
  */
 
-static CURLcode
-Transfer(struct connectdata *conn)
+CURLcode
+Curl_do_transfer(struct connectdata *conn)
 {
   CURLcode result;
   struct SessionHandle *data = conn->data;
@@ -2050,7 +2050,8 @@ static CURLcode Curl_do_perform(struct SessionHandle *data)
             break;
           }
         }
-        res = Transfer(conn); /* now fetch that URL please */
+        res = Curl_do_transfer(conn); /* now fetch that URL please */
+        /*res = Transfer(conn); * now fetch that URL please */
         if((res == CURLE_OK) || (res == CURLE_RECV_ERROR)) {
           bool retry = FALSE;
           CURLcode rc = Curl_retry_request(conn, &newurl);

@@ -33,8 +33,11 @@ typedef enum {
                        a connect */
   IMAP_LOGIN,
   IMAP_STARTTLS,
+  IMAP_LIST,
+  IMAP_SEARCH,
   IMAP_SELECT,
-  IMAP_FETCH,
+  IMAP_FETCH_HEADER,
+  IMAP_FETCH_BODY,
   IMAP_LOGOUT,
   IMAP_LAST  /* never used */
 } imapstate;
@@ -43,7 +46,13 @@ typedef enum {
    struct */
 struct imap_conn {
   struct pingpong pp;
-  char *mailbox;     /* what to FETCH */
+  
+  /* things we get from url */
+  char *mbox;
+  char *uid;
+  char *validity;
+  char *search;
+  
   imapstate state; /* always use imap.c:state() to change state! */
   int cmdid;       /* id number/index */
   const char *idstr; /* pointer to a string for which to wait for as id */

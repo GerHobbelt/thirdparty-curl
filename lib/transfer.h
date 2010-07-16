@@ -61,6 +61,9 @@ Curl_setup_transfer (struct connectdata *data,
                curl_off_t *writecountp /* return number of bytes written */
 );
 
+CURLcode
+Curl_do_transfer(struct connectdata *conn);
+
 long Curl_sleep_time(curl_off_t rate_bps, curl_off_t cur_rate_bps,
                      int pkt_size);
 
