@@ -479,7 +479,15 @@ CURLcode Curl_close(struct SessionHandle *data)
   if(m)
     /* This handle is still part of a multi handle, take care of this first
        and detach this handle from there. */
-    Curl_multi_rmeasy(data->multi, data);
+    curl_multi_remove_handle(data->multi, data);
+
+  /* Destroy the timeout list that is held in the easy handle. It is
+     /normally/ done by curl_multi_remove_handle() but this is "just in
+     case" */
+  if(data->state.timeoutlist) {
+    Curl_llist_destroy(data->state.timeoutlist, NULL);
+    data->state.timeoutlist = NULL;
+  }
 
   data->magic = 0; /* force a clear AFTER the possibly enforced removal from
                       the multi handle, since that function uses the magic
@@ -3166,19 +3174,13 @@ ConnectionStore(struct SessionHandle *data,
 /* after a TCP connection to the proxy has been verified, this function does
    the next magic step.
 
-   Note: this function (and its sub-functions) calls failf()
+   Note: this function's sub-functions call failf()
 
 */
 CURLcode Curl_connected_proxy(struct connectdata *conn)
 {
   CURLcode result = CURLE_OK;
   struct SessionHandle *data = conn->data;
-
-  if(conn->bits.tcpconnect)
-    /* allow this to get called again from the multi interface when TCP is
-       found connected in the state machine, even though it has already been
-       called if the connection happened "instantly" */
-    return CURLE_OK;
 
   switch(data->set.proxytype) {
 #ifndef CURL_DISABLE_PROXY
@@ -4304,18 +4306,23 @@ static CURLcode parse_remote_port(struct SessionHandle *data,
     if(conn->bits.httpproxy) {
       /* we need to create new URL with the new port number */
       char *url;
-      /* FTPS connections have the FTP bit set too, so they match as well */
-      bool isftp = (bool)(0 != (conn->protocol & PROT_FTP));
+      char type[12]="";
+
+      if(conn->bits.type_set)
+        snprintf(type, sizeof(type), ";type=%c",
+                 data->set.prefer_ascii?'A':
+                 (data->set.ftp_list_only?'D':'I'));
 
       /*
-       * This synthesized URL isn't always right--suffixes like ;type=A
-       * are stripped off. It would be better to work directly from the
-       * original URL and simply replace the port part of it.
+       * This synthesized URL isn't always right--suffixes like ;type=A are
+       * stripped off. It would be better to work directly from the original
+       * URL and simply replace the port part of it.
        */
-      url = aprintf("%s://%s%s%s:%hu%s%s", conn->handler->scheme,
+      url = aprintf("%s://%s%s%s:%hu%s%s%s", conn->handler->scheme,
                     conn->bits.ipv6_ip?"[":"", conn->host.name,
                     conn->bits.ipv6_ip?"]":"", conn->remote_port,
-                    isftp?"/":"", data->state.path);
+                    data->state.slash_removed?"/":"", data->state.path,
+                    type);
       if(!url)
         return CURLE_OUT_OF_MEMORY;
 

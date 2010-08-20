@@ -24,7 +24,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.57)
 
 dnl We don't know the version number "statically" so we use a dash here
-AC_INIT([curl], [-], [a suitable curl mailing list => http://curl.haxx.se/mail/])
+AC_INIT([curl], [-], [a suitable curl mailing list: http://curl.haxx.se/mail/])
 
 CURL_OVERRIDE_AUTOCONF
 
@@ -763,6 +763,8 @@ fi
 ac_cv_func_strcasecmp="no"
 
 CURL_CHECK_LIBS_CONNECT
+
+CURL_NETWORK_LIBS=$LIBS
 
 dnl **********************************************************************
 dnl In case that function clock_gettime with monotonic timer is available,
@@ -1984,7 +1986,9 @@ if test X"$OPT_LIBSSH2" != Xno; then
 
        dnl libssh2_version is a post 1.0 addition
        dnl libssh2_init and libssh2_exit were added in 1.2.5
-       AC_CHECK_FUNCS( libssh2_version libssh2_init libssh2_exit)
+       dnl libssh2_scp_send64 was added in 1.2.6
+       AC_CHECK_FUNCS( libssh2_version libssh2_init libssh2_exit \
+                       libssh2_scp_send64 )
 
        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$DIR_SSH2"
        export LD_LIBRARY_PATH
@@ -2457,6 +2461,13 @@ AM_CONDITIONAL(USE_MANUAL, test x"$USE_MANUAL" = x1)
 CURL_CHECK_LIB_ARES
 AM_CONDITIONAL(USE_EMBEDDED_ARES, test x$embedded_ares = xyes)
 
+if test "x$enable_shared" = "xyes"; then
+  build_libhostname=yes
+else
+  build_libhostname=no
+fi
+AM_CONDITIONAL(BUILD_LIBHOSTNAME, test x$build_libhostname = xyes)
+
 CURL_CHECK_OPTION_THREADED_RESOLVER
 
 if test "x$want_thres" = xyes && test "x$want_ares" = xyes; then
@@ -2649,6 +2660,7 @@ LIBCURL_LIBS=$LIBS
 AC_SUBST(LIBCURL_LIBS)
 AC_SUBST(CURL_LIBS)
 AC_SUBST(TEST_SERVER_LIBS)
+AC_SUBST(CURL_NETWORK_LIBS)
 LIBS=$ALL_LIBS  dnl LIBS is a magic variable that's used for every link
 
 AM_CONDITIONAL(CROSSCOMPILING, test x$cross_compiling = xyes)
@@ -2773,6 +2785,7 @@ squeeze LIBS
 squeeze CURL_LIBS
 squeeze LIBCURL_LIBS
 squeeze TEST_SERVER_LIBS
+squeeze CURL_NETWORK_LIBS
 
 squeeze SUPPORT_FEATURES
 squeeze SUPPORT_PROTOCOLS

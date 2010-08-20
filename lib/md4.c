@@ -122,7 +122,7 @@ static void MD4Update(MD4_CTX *context, const unsigned char *input,
   /* Transform as many times as possible.
    */
   if (inputLen >= partLen) {
-    bcopy(input, &context->buffer[bufindex], partLen);
+    memcpy(&context->buffer[bufindex], input, partLen);
     MD4Transform (context->state, context->buffer);
 
     for (i = partLen; i + 63 < inputLen; i += 64)
@@ -134,7 +134,7 @@ static void MD4Update(MD4_CTX *context, const unsigned char *input,
     i = 0;
 
   /* Buffer remaining input */
-  bcopy(&input[i], &context->buffer[bufindex], inputLen-i);
+  memcpy(&context->buffer[bufindex], &input[i], inputLen-i);
 }
 
 /* MD4 padding. */

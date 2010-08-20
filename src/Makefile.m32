@@ -46,7 +46,7 @@ CFLAGS = -g -O2
 LDFLAGS = -s
 RC = windres
 RCFLAGS = --include-dir=../include -O COFF -i
-RM = del /q /f > NUL 2>&1
+RM = del /q /f 2>NUL
 CP = copy
 
 # We may need these someday
@@ -121,7 +121,7 @@ COMPILE = $(CC) $(INCLUDES) $(CFLAGS)
 # Makefile.inc provides the CSOURCES and HHEADERS defines
 include Makefile.inc
 
-curl_OBJECTS := $(patsubst %.c,%.o,$(strip $(CURL_SOURCES)))
+curl_OBJECTS := $(patsubst %.c,%.o,$(strip $(CURL_CFILES)))
 ifdef DYN
 curlx_OBJECTS := $(patsubst %.c,%.o,$(notdir $(strip $(CURLX_ONES))))
 curl_OBJECTS += $(curlx_OBJECTS)
@@ -159,7 +159,6 @@ ifeq "$(wildcard hugehelp.c.cvs)" "hugehelp.c.cvs"
 endif
 	-$(RM) $(curl_OBJECTS) $(RESOURCE)
 
-distrib: clean
+distclean vclean: clean
 	-$(RM) $(curl_PROGRAMS)
-
 

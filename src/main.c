@@ -4925,7 +4925,10 @@ operate(struct Configurable *config, int argc, argv_item_t argv[])
             goto quit_urls;
           }
           infdopen=TRUE;
-          uploadfilesize=fileinfo.st_size;
+
+          /* we ignore file size for char/block devices, sockets, etc. */
+          if(S_ISREG(fileinfo.st_mode))
+            uploadfilesize=fileinfo.st_size;
 
         }
         else if(uploadfile && stdin_upload(uploadfile)) {
@@ -5439,8 +5442,12 @@ operate(struct Configurable *config, int argc, argv_item_t argv[])
             if(CURLE_OPERATION_TIMEDOUT == res)
               /* retry timeout always */
               retry = RETRY_TIMEOUT;
-            else if(CURLE_OK == res) {
-              /* Check for HTTP transient errors */
+            else if((CURLE_OK == res) ||
+                    (config->failonerror &&
+                     (CURLE_HTTP_RETURNED_ERROR == res))) {
+              /* If it returned OK. _or_ failonerror was enabled and it
+                 returned due to such an error, check for HTTP transient
+                 errors to retry on. */
               char *this_url=NULL;
               curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &this_url);
               if(this_url &&
