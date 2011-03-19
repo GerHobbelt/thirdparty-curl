@@ -1368,7 +1368,7 @@ Curl_do_transfer(struct connectdata *conn)
          to work with, skip the timeout */
       timeout_ms = 0;
     else {
-      totmp = Curl_timeleft(data, &k->now, FALSE);
+      totmp = (int)(Curl_timeleft(data, &k->now, FALSE));
       if(totmp < 0)
         return CURLE_OPERATION_TIMEDOUT;
       else if(!totmp)
