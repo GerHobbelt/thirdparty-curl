@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -101,7 +101,7 @@ static CURLcode pop3_do(struct connectdata *conn, bool *done);
 static CURLcode pop3_done(struct connectdata *conn,
                           CURLcode, bool premature);
 static CURLcode pop3_connect(struct connectdata *conn, bool *done);
-static CURLcode pop3_disconnect(struct connectdata *conn);
+static CURLcode pop3_disconnect(struct connectdata *conn, bool dead_connection);
 static CURLcode pop3_multi_statemach(struct connectdata *conn, bool *done);
 static int pop3_getsock(struct connectdata *conn,
                         curl_socket_t *socks,
@@ -128,7 +128,8 @@ const struct Curl_handler Curl_handler_pop3 = {
   ZERO_NULL,                        /* perform_getsock */
   pop3_disconnect,                  /* disconnect */
   PORT_POP3,                        /* defport */
-  PROT_POP3                         /* protocol */
+  CURLPROTO_POP3,                   /* protocol */
+  PROTOPT_CLOSEACTION               /* flags */
 };
 
 
@@ -151,7 +152,8 @@ const struct Curl_handler Curl_handler_pop3s = {
   ZERO_NULL,                        /* perform_getsock */
   pop3_disconnect,                  /* disconnect */
   PORT_POP3S,                       /* defport */
-  PROT_POP3 | PROT_POP3S | PROT_SSL  /* protocol */
+  CURLPROTO_POP3 | CURLPROTO_POP3S, /* protocol */
+  PROTOPT_CLOSEACTION | PROTOPT_SSL /* flags */
 };
 #endif
 
@@ -174,7 +176,8 @@ static const struct Curl_handler Curl_handler_pop3_proxy = {
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
   PORT_POP3,                            /* defport */
-  PROT_HTTP                             /* protocol */
+  CURLPROTO_HTTP,                       /* protocol */
+  PROTOPT_NONE                          /* flags */
 };
 
 
@@ -197,7 +200,8 @@ static const struct Curl_handler Curl_handler_pop3s_proxy = {
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
   PORT_POP3S,                           /* defport */
-  PROT_HTTP                             /* protocol */
+  CURLPROTO_HTTP,                       /* protocol */
+  PROTOPT_NONE                          /* flags */
 };
 #endif
 #endif
@@ -271,6 +275,15 @@ static int pop3_getsock(struct connectdata *conn,
   return Curl_pp_getsock(&conn->proto.pop3c.pp, socks, numsocks);
 }
 
+#ifdef USE_SSL
+static void pop3_to_pop3s(struct connectdata *conn)
+{
+  conn->handler = &Curl_handler_pop3s;
+}
+#else
+#define pop3_to_pop3s(x)
+#endif
+
 /* for STARTTLS responses */
 static CURLcode pop3_state_starttls_resp(struct connectdata *conn,
                                          int pop3code,
@@ -288,7 +301,7 @@ static CURLcode pop3_state_starttls_resp(struct connectdata *conn,
     /* Curl_ssl_connect is BLOCKING */
     result = Curl_ssl_connect(conn, FIRSTSOCKET);
     if(CURLE_OK == result) {
-      conn->protocol |= PROT_POP3S;
+      pop3_to_pop3s(conn);
       result = pop3_state_user(conn);
     }
   }
@@ -423,6 +436,24 @@ static CURLcode pop3_state_list_resp(struct connectdata *conn,
   return result;
 }
 
+/* for LIST response with a given message */
+static CURLcode pop3_state_list_single_resp(struct connectdata *conn,
+                                     int pop3code,
+                                     pop3state instate)
+{
+  CURLcode result = CURLE_OK;
+  struct SessionHandle *data = conn->data;
+  (void)instate; /* no use for this yet */
+
+  if(pop3code != 'O') {
+    failf(data, "Invalid message. %c", pop3code);
+    result = CURLE_REMOTE_FILE_NOT_FOUND;
+  }
+
+  state(conn, POP3_STOP);
+  return result;
+}
+
 /* start the DO phase for RETR */
 static CURLcode pop3_retr(struct connectdata *conn)
 {
@@ -447,7 +478,10 @@ static CURLcode pop3_list(struct connectdata *conn)
   if(result)
     return result;
 
-  state(conn, POP3_LIST);
+  if (strlen(pop3c->mailbox))
+    state(conn, POP3_LIST_SINGLE);
+  else
+    state(conn, POP3_LIST);
   return result;
 }
 
@@ -508,6 +542,10 @@ static CURLcode pop3_statemach_act(struct connectdata *conn)
 
     case POP3_LIST:
       result = pop3_state_list_resp(conn, pop3code, pop3c->state);
+      break;
+
+    case POP3_LIST_SINGLE:
+      result = pop3_state_list_single_resp(conn, pop3code, pop3c->state);
       break;
 
     case POP3_QUIT:
@@ -637,7 +675,7 @@ static CURLcode pop3_connect(struct connectdata *conn,
   }
 #endif /* !CURL_DISABLE_HTTP && !CURL_DISABLE_PROXY */
 
-  if(conn->protocol & PROT_POP3S) {
+  if(conn->handler->protocol & CURLPROTO_POP3S) {
     /* BLOCKING */
     /* POP3S is simply pop3 with SSL for the control channel */
     /* now, perform the SSL initialization for this socket */
@@ -677,6 +715,7 @@ static CURLcode pop3_done(struct connectdata *conn, CURLcode status,
 {
   struct SessionHandle *data = conn->data;
   struct FTP *pop3 = data->state.proto.pop3;
+  struct pop3_conn *pop3c = &conn->proto.pop3c;
   CURLcode result=CURLE_OK;
   (void)premature;
 
@@ -692,6 +731,9 @@ static CURLcode pop3_done(struct connectdata *conn, CURLcode status,
     conn->bits.close = TRUE; /* marked for closure */
     result = status;      /* use the already set error code */
   }
+
+  Curl_safefree(pop3c->mailbox);
+  pop3c->mailbox = NULL;
 
   /* clear these for next connection */
   pop3->transfer = FTPTRANSFER_BODY;
@@ -730,7 +772,7 @@ CURLcode pop3_perform(struct connectdata *conn,
   /* If mailbox is empty, then assume user wants listing for mail IDs,
    * otherwise, attempt to retrieve the mail-id stored in mailbox
    */
-  if (strlen(pop3c->mailbox))
+  if (strlen(pop3c->mailbox) && !conn->data->set.ftp_list_only)
     result = pop3_retr(conn);
   else
     result = pop3_list(conn);
@@ -817,7 +859,7 @@ static CURLcode pop3_quit(struct connectdata *conn)
  * Disconnect from an POP3 server. Cleanup protocol-specific per-connection
  * resources. BLOCKING.
  */
-static CURLcode pop3_disconnect(struct connectdata *conn)
+static CURLcode pop3_disconnect(struct connectdata *conn, bool dead_connection)
 {
   struct pop3_conn *pop3c= &conn->proto.pop3c;
 
@@ -828,7 +870,7 @@ static CURLcode pop3_disconnect(struct connectdata *conn)
 
   /* The POP3 session may or may not have been allocated/setup at this
      point! */
-  if(pop3c->pp.conn)
+  if(!dead_connection && pop3c->pp.conn)
     (void)pop3_quit(conn); /* ignore errors on the LOGOUT */
 
 
@@ -864,14 +906,11 @@ static CURLcode pop3_dophase_done(struct connectdata *conn,
                                   bool connected)
 {
   struct FTP *pop3 = conn->data->state.proto.pop3;
-  struct pop3_conn *pop3c = &conn->proto.pop3c;
   (void)connected;
 
   if(pop3->transfer != FTPTRANSFER_BODY)
     /* no data to transfer */
     Curl_setup_transfer(conn, -1, -1, FALSE, NULL, -1, NULL);
-
-  free(pop3c->mailbox);
 
   return CURLE_OK;
 }

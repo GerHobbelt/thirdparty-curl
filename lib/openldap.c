@@ -61,7 +61,7 @@ static CURLcode ldap_do(struct connectdata *conn, bool *done);
 static CURLcode ldap_done(struct connectdata *conn, CURLcode, bool);
 static CURLcode ldap_connect(struct connectdata *conn, bool *done);
 static CURLcode ldap_connecting(struct connectdata *conn, bool *done);
-static CURLcode ldap_disconnect(struct connectdata *conn);
+static CURLcode ldap_disconnect(struct connectdata *conn, bool dead_connection);
 
 static Curl_recv ldap_recv;
 
@@ -83,7 +83,8 @@ const struct Curl_handler Curl_handler_ldap = {
   ZERO_NULL,                            /* perform_getsock */
   ldap_disconnect,                      /* disconnect */
   PORT_LDAP,                            /* defport */
-  PROT_LDAP                             /* protocol */
+  CURLPROTO_LDAP,                       /* protocol */
+  PROTOPT_NONE                          /* flags */
 };
 
 #ifdef USE_SSL
@@ -105,7 +106,8 @@ const struct Curl_handler Curl_handler_ldaps = {
   ZERO_NULL,                            /* perform_getsock */
   ldap_disconnect,                      /* disconnect */
   PORT_LDAPS,                           /* defport */
-  PROT_LDAP | PROT_SSL                  /* protocol */
+  CURLPROTO_LDAP,                       /* protocol */
+  PROTOPT_SSL                           /* flags */
 };
 #endif
 
@@ -165,6 +167,7 @@ static CURLcode ldap_setup(struct connectdata *conn)
   li = calloc(1, sizeof(ldapconninfo));
   li->proto = proto;
   conn->proto.generic = li;
+  conn->bits.close = FALSE;
   /* TODO:
    * - provide option to choose SASL Binds instead of Simple
    */
@@ -184,10 +187,10 @@ static CURLcode ldap_connect(struct connectdata *conn, bool *done)
 
   strcpy(hosturl, "ldap");
   ptr = hosturl+4;
-  if (conn->protocol & PROT_SSL)
+  if (conn->handler->flags & PROTOPT_SSL)
     *ptr++ = 's';
   snprintf(ptr, sizeof(hosturl)-(ptr-hosturl), "://%s:%d",
-    conn->host.name, conn->port);
+    conn->host.name, conn->remote_port);
 
   rc = ldap_init_fd(conn->sock[FIRSTSOCKET], li->proto, hosturl, &li->ld);
   if (rc) {
@@ -198,8 +201,37 @@ static CURLcode ldap_connect(struct connectdata *conn, bool *done)
 
   ldap_set_option(li->ld, LDAP_OPT_PROTOCOL_VERSION, &proto);
 
+#if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_PROXY)
+  if(conn->bits.tunnel_proxy && conn->bits.httpproxy) {
+    /* for LDAP over HTTP proxy */
+    struct HTTP http_proxy;
+    ldapconninfo *li_save;
+    CURLcode result;
+
+    /* BLOCKING */
+    /* We want "seamless" LDAP operations through HTTP proxy tunnel */
+
+    /* Curl_proxyCONNECT is based on a pointer to a struct HTTP at the member
+     * conn->proto.http; we want LDAP through HTTP and we have to change the
+     * member temporarily for connecting to the HTTP proxy. After
+     * Curl_proxyCONNECT we have to set back the member to the original struct
+     * LDAP pointer
+     */
+    li_save = data->state.proto.generic;
+    memset(&http_proxy, 0, sizeof(http_proxy));
+    data->state.proto.http = &http_proxy;
+    result = Curl_proxyCONNECT(conn, FIRSTSOCKET,
+                               conn->host.name, conn->remote_port);
+
+    data->state.proto.generic = li_save;
+
+    if(CURLE_OK != result)
+      return result;
+  }
+#endif /* !CURL_DISABLE_HTTP && !CURL_DISABLE_PROXY */
+
 #ifdef USE_SSL
-  if (conn->protocol & PROT_SSL) {
+  if (conn->handler->flags & PROTOPT_SSL) {
     CURLcode res;
     if (data->state.used_interface == Curl_if_easy) {
       res = Curl_ssl_connect(conn, FIRSTSOCKET);
@@ -230,7 +262,7 @@ static CURLcode ldap_connecting(struct connectdata *conn, bool *done)
   char *info = NULL;
 
 #ifdef USE_SSL
-  if (conn->protocol & PROT_SSL) {
+  if (conn->handler->flags & PROTOPT_SSL) {
     /* Is the SSL handshake complete yet? */
     if (!li->ssldone) {
       CURLcode res = Curl_ssl_connect_nonblocking(conn, FIRSTSOCKET, &li->ssldone);
@@ -314,9 +346,10 @@ retry:
   return CURLE_OK;
 }
 
-static CURLcode ldap_disconnect(struct connectdata *conn)
+static CURLcode ldap_disconnect(struct connectdata *conn, bool dead_connection)
 {
   ldapconninfo *li = conn->proto.generic;
+  (void) dead_connection;
 
   if (li) {
     if (li->ld) {
@@ -432,7 +465,8 @@ static ssize_t ldap_recv(struct connectdata *conn, int sockindex, char *buf,
       char *info = NULL;
       rc = ldap_parse_result(li->ld, ent, &code, NULL, &info, NULL, NULL, 0);
       if (rc) {
-        failf(data, "LDAP local: search ldap_parse_result %s", ldap_err2string(rc));
+        failf(data, "LDAP local: search ldap_parse_result %s",
+              ldap_err2string(rc));
         *err = CURLE_LDAP_SEARCH_FAILED;
       } else if (code && code != LDAP_SIZELIMIT_EXCEEDED) {
         failf(data, "LDAP remote: search failed %s %s", ldap_err2string(rc),
@@ -455,6 +489,12 @@ static ssize_t ldap_recv(struct connectdata *conn, int sockindex, char *buf,
 
     lr->nument++;
     rc = ldap_get_dn_ber(li->ld, ent, &ber, &bv);
+    if(rc < 0) {
+      /* TODO: verify that this is really how this return code should be
+         handled */
+      *err = CURLE_RECV_ERROR;
+      return -1;
+    }
     Curl_client_write(conn, CLIENTWRITE_BODY, (char *)"DN: ", 4);
     Curl_client_write(conn, CLIENTWRITE_BODY, (char *)bv.bv_val, bv.bv_len);
     Curl_client_write(conn, CLIENTWRITE_BODY, (char *)"\n", 1);
@@ -469,6 +509,8 @@ static ssize_t ldap_recv(struct connectdata *conn, int sockindex, char *buf,
 
       if (bv.bv_len > 7 && !strncmp(bv.bv_val + bv.bv_len - 7, ";binary", 7))
         binary = 1;
+      else
+        binary = 0;
 
       for (i=0; bvals[i].bv_val != NULL; i++) {
         int binval = 0;
@@ -479,14 +521,14 @@ static ssize_t ldap_recv(struct connectdata *conn, int sockindex, char *buf,
 
         if (!binary) {
           /* check for leading or trailing whitespace */
-          if (isspace(bvals[i].bv_val[0]) ||
-              isspace(bvals[i].bv_val[bvals[i].bv_len-1])) {
+          if (ISSPACE(bvals[i].bv_val[0]) ||
+              ISSPACE(bvals[i].bv_val[bvals[i].bv_len-1])) {
             binval = 1;
           } else {
             /* check for unprintable characters */
             unsigned int j;
             for (j=0; j<bvals[i].bv_len; j++)
-              if (!isprint(bvals[i].bv_val[j])) {
+              if (!ISPRINT(bvals[i].bv_val[j])) {
                 binval = 1;
                 break;
               }

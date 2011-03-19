@@ -315,6 +315,13 @@ typedef enum  {
   CURLSOCKTYPE_LAST   /* never use */
 } curlsocktype;
 
+/* The return code from the sockopt_callback can signal information back
+   to libcurl: */
+#define CURL_SOCKOPT_OK 0
+#define CURL_SOCKOPT_ERROR 1 /* causes libcurl to abort and return
+                                CURLE_ABORTED_BY_CALLBACK */
+#define CURL_SOCKOPT_ALREADY_CONNECTED 2
+
 typedef int (*curl_sockopt_callback)(void *clientp,
                                      curl_socket_t curlfd,
                                      curlsocktype purpose);
@@ -585,6 +592,9 @@ typedef enum {
 #define CURLAUTH_GSSNEGOTIATE (1<<2)  /* GSS-Negotiate */
 #define CURLAUTH_NTLM         (1<<3)  /* NTLM */
 #define CURLAUTH_DIGEST_IE    (1<<4)  /* Digest with IE flavour */
+#define CURLAUTH_ONLY         (1<<31) /* used together with a single other
+                                         type to force no auth or just that
+                                         single type */
 #define CURLAUTH_ANY (~CURLAUTH_DIGEST_IE)  /* all fine types set */
 #define CURLAUTH_ANYSAFE (~(CURLAUTH_BASIC|CURLAUTH_DIGEST_IE))
 
@@ -722,6 +732,7 @@ typedef enum {
 #define CURLPROTO_RTMPTE (1<<22)
 #define CURLPROTO_RTMPS  (1<<23)
 #define CURLPROTO_RTMPTS (1<<24)
+#define CURLPROTO_GOPHER (1<<25)
 #define CURLPROTO_ALL    (~0) /* enable everything */
 
 /* long may be 32 or 64 bits, but we should never depend on anything else
@@ -1435,26 +1446,38 @@ typedef enum {
   /* FNMATCH_FUNCTION user pointer */
   CINIT(FNMATCH_DATA, OBJECTPOINT, 202),
 
+  /* send linked-list of name:port:address sets */
+  CINIT(RESOLVE, OBJECTPOINT, 203),
+
+  /* Set a username for authenticated TLS */
+  CINIT(TLSAUTH_USERNAME, OBJECTPOINT, 204),
+
+  /* Set a password for authenticated TLS */
+  CINIT(TLSAUTH_PASSWORD, OBJECTPOINT, 205),
+
+  /* Set authentication type for authenticated TLS */
+  CINIT(TLSAUTH_TYPE, OBJECTPOINT, 206),
+
   /* Set the interface string for c-ares (DNS)
    * to use as outgoing network interface */
-  CINIT(DNS_INTERFACE, OBJECTPOINT, 203),
+  CINIT(DNS_INTERFACE, OBJECTPOINT, 207),
 
   /* Set the local IPv4 address for c-ares (DNS)
    * to use for outgoing connections.
    * Host-byte-order.
    */
-  CINIT(DNS_LOCAL_IP4, LONG, 204),
+  CINIT(DNS_LOCAL_IP4, LONG, 208),
 
   /* Set the local IPv6 address for c-ares (DNS)
    * to use for outgoing connections.
    * 16-byte unsigned char*
    */
-  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 205),
+  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 209),
 
   /* Set the DNS servers for c-ares to use.
    * comma separated list of host[:port] entries.
    */
-  CINIT(DNS_SERVERS, OBJECTPOINT, 206),
+  CINIT(DNS_SERVERS, OBJECTPOINT, 210),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
@@ -1550,6 +1573,12 @@ enum {
   CURL_SSLVERSION_SSLv3,
 
   CURL_SSLVERSION_LAST /* never use, keep last */
+};
+
+enum CURL_TLSAUTH {
+  CURL_TLSAUTH_NONE,
+  CURL_TLSAUTH_SRP,
+  CURL_TLSAUTH_LAST /* never use, keep last */
 };
 
 /* symbols to use with CURLOPT_POSTREDIR.
@@ -2057,6 +2086,7 @@ typedef struct {
 #define CURL_VERSION_SSPI      (1<<11) /* SSPI is supported */
 #define CURL_VERSION_CONV      (1<<12) /* character conversions supported */
 #define CURL_VERSION_CURLDEBUG (1<<13) /* debug memory tracking supported */
+#define CURL_VERSION_TLSAUTH_SRP (1<<14) /* TLS-SRP auth is supported */
 
 /*
  * NAME curl_version_info()

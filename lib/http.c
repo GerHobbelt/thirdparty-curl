@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -98,6 +98,7 @@
 #include "rawstr.h"
 #include "content_encoding.h"
 #include "rtsp.h"
+#include "warnless.h"
 
 #define _MPRINTF_REPLACE /* use our functions only */
 #include <curl/mprintf.h>
@@ -141,7 +142,8 @@ const struct Curl_handler Curl_handler_http = {
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
   PORT_HTTP,                            /* defport */
-  PROT_HTTP,                            /* protocol */
+  CURLPROTO_HTTP,                       /* protocol */
+  PROTOPT_NONE                          /* flags */
 };
 
 #ifdef USE_SSL
@@ -162,7 +164,8 @@ const struct Curl_handler Curl_handler_https = {
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
   PORT_HTTPS,                           /* defport */
-  PROT_HTTP | PROT_HTTPS | PROT_SSL     /* protocol */
+  CURLPROTO_HTTP | CURLPROTO_HTTPS,     /* protocol */
+  PROTOPT_SSL                           /* flags */
 };
 #endif
 
@@ -344,7 +347,7 @@ CURLcode Curl_http_perhapsrewind(struct connectdata *conn)
   curl_off_t bytessent;
   curl_off_t expectsend = -1; /* default is unknown */
 
-  if(!http || !(conn->protocol & PROT_HTTP))
+  if(!http || !(conn->handler->protocol & CURLPROTO_HTTP))
     /* If this is still NULL, we have not reach very far and we can
        safely skip this rewinding stuff, or this is attempted to get used
        when HTTP isn't activated */
@@ -519,7 +522,7 @@ output_auth_headers(struct connectdata *conn,
   struct SessionHandle *data = conn->data;
   const char *auth=NULL;
   CURLcode result = CURLE_OK;
-#ifdef HAVE_GSSAPI
+#ifdef USE_HTTP_NEGOTIATE
   struct negotiatedata *negdata = proxy?
     &data->state.proxyneg:&data->state.negotiate;
 #endif
@@ -529,7 +532,8 @@ output_auth_headers(struct connectdata *conn,
   (void)path;
 #endif
 
-#ifdef HAVE_GSSAPI
+#ifdef USE_HTTP_NEGOTIATE
+  negdata->state = GSS_AUTHNONE;
   if((authstatus->picked == CURLAUTH_GSSNEGOTIATE) &&
      negdata->context && !GSS_ERROR(negdata->status)) {
     auth="GSS-Negotiate";
@@ -726,7 +730,7 @@ CURLcode Curl_http_input_auth(struct connectdata *conn,
    *
    */
 
-#ifdef HAVE_GSSAPI
+#ifdef USE_HTTP_NEGOTIATE
   if(checkprefix("GSS-Negotiate", start) ||
       checkprefix("Negotiate", start)) {
     int neg;
@@ -1024,7 +1028,7 @@ CURLcode Curl_add_buffer_send(Curl_send_buffer *in,
   }
 #endif /* CURL_DOES_CONVERSIONS */
 
-  if(conn->protocol & PROT_HTTPS) {
+  if(conn->handler->protocol & CURLPROTO_HTTPS) {
     /* We never send more than CURL_MAX_WRITE_SIZE bytes in one single chunk
        when we speak HTTPS, as if only a fraction of it is sent now, this data
        needs to fit into the normal read-callback buffer later on and that
@@ -1771,7 +1775,7 @@ CURLcode Curl_http_connect(struct connectdata *conn, bool *done)
   }
 #endif /* CURL_DISABLE_PROXY */
 
-  if(conn->protocol & PROT_HTTPS) {
+  if(conn->handler->protocol & CURLPROTO_HTTPS) {
     /* perform SSL initialization */
     if(data->state.used_interface == Curl_if_multi) {
       result = https_connecting(conn, done);
@@ -1810,7 +1814,7 @@ static int http_getsock_do(struct connectdata *conn,
 static CURLcode https_connecting(struct connectdata *conn, bool *done)
 {
   CURLcode result;
-  DEBUGASSERT((conn) && (conn->protocol & PROT_HTTPS));
+  DEBUGASSERT((conn) && (conn->handler->protocol & CURLPROTO_HTTPS));
 
   /* perform SSL initialization for this socket */
   result = Curl_ssl_connect_nonblocking(conn, FIRSTSOCKET, done);
@@ -1828,7 +1832,7 @@ static int https_getsock(struct connectdata *conn,
                          curl_socket_t *socks,
                          int numsocks)
 {
-  if(conn->protocol & PROT_HTTPS) {
+  if(conn->handler->protocol & CURLPROTO_HTTPS) {
     struct ssl_connect_data *connssl = &conn->ssl[FIRSTSOCKET];
 
     if(!numsocks)
@@ -1848,7 +1852,8 @@ static int https_getsock(struct connectdata *conn,
   return CURLE_OK;
 }
 #else
-#ifdef USE_NSS
+#if defined(USE_NSS) || defined(USE_QSOSSL) || \
+  defined(USE_POLARSSL) || defined(USE_AXTLS) || defined(USE_CYASSL)
 static int https_getsock(struct connectdata *conn,
                          curl_socket_t *socks,
                          int numsocks)
@@ -1858,32 +1863,8 @@ static int https_getsock(struct connectdata *conn,
   (void)numsocks;
   return GETSOCK_BLANK;
 }
-#else
-#ifdef USE_QSOSSL
-static int https_getsock(struct connectdata *conn,
-                         curl_socket_t *socks,
-                         int numsocks)
-{
-  (void)conn;
-  (void)socks;
-  (void)numsocks;
-  return GETSOCK_BLANK;
-}
-#else
-#ifdef USE_POLARSSL
-static int https_getsock(struct connectdata *conn,
-                         curl_socket_t *socks,
-                         int numsocks)
-{
-  (void)conn;
-  (void)socks;
-  (void)numsocks;
-  return GETSOCK_BLANK;
-}
-#endif
-#endif
-#endif
-#endif
+#endif /* USE_AXTLS || USE_POLARSSL || USE_QSOSSL || USE_NSS */
+#endif /* USE_SSLEAY || USE_GNUTLS */
 
 /*
  * Curl_http_done() gets called from Curl_done() after a single HTTP request
@@ -1895,7 +1876,6 @@ CURLcode Curl_http_done(struct connectdata *conn,
 {
   struct SessionHandle *data = conn->data;
   struct HTTP *http =data->state.proto.http;
-  (void)premature; /* not used */
 
   Curl_unencode_cleanup(conn);
 
@@ -2039,9 +2019,17 @@ CURLcode Curl_add_custom_headers(struct connectdata *conn,
 CURLcode Curl_add_timecondition(struct SessionHandle *data,
                                 Curl_send_buffer *req_buffer)
 {
-  struct tm *tm;
+  const struct tm *tm;
   char *buf = data->state.buffer;
   CURLcode result = CURLE_OK;
+  struct tm keeptime;
+
+  result = Curl_gmtime(data->set.timevalue, &keeptime);
+  if(result) {
+    failf(data, "Invalid TIMEVALUE\n");
+    return result;
+  }
+  tm = &keeptime;
 
   /* The If-Modified-Since header family should have their times set in
    * GMT as RFC2616 defines: "All HTTP date/time stamps MUST be
@@ -2049,14 +2037,6 @@ CURLcode Curl_add_timecondition(struct SessionHandle *data,
    * purposes of HTTP, GMT is exactly equal to UTC (Coordinated Universal
    * Time)." (see page 20 of RFC2616).
    */
-
-#ifdef HAVE_GMTIME_R
-  /* thread-safe version */
-  struct tm keeptime;
-  tm = (struct tm *)gmtime_r(&data->set.timevalue, &keeptime);
-#else
-  tm = gmtime(&data->set.timevalue);
-#endif
 
   /* format: "Tue, 15 Nov 1994 12:45:26 GMT" */
   snprintf(buf, BUFSIZE-1,
@@ -2144,8 +2124,8 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
       return CURLE_OUT_OF_MEMORY;
   }
 
-  if( (conn->protocol&(PROT_HTTP|PROT_FTP)) &&
-       data->set.upload) {
+  if( (conn->handler->protocol&(CURLPROTO_HTTP|CURLPROTO_FTP)) &&
+      data->set.upload) {
     httpreq = HTTPREQ_PUT;
   }
 
@@ -2225,7 +2205,7 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
       Curl_compareheader(ptr, "Transfer-Encoding:", "chunked");
   }
   else {
-    if((conn->protocol&PROT_HTTP) &&
+    if((conn->handler->protocol&CURLPROTO_HTTP) &&
         data->set.upload &&
         (data->set.infilesize == -1)) {
       if(conn->bits.authneg)
@@ -2281,9 +2261,11 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
     /* When building Host: headers, we must put the host name within
        [brackets] if the host name is a plain IPv6-address. RFC2732-style. */
 
-    if(((conn->protocol&PROT_HTTPS) && (conn->remote_port == PORT_HTTPS)) ||
-       (!(conn->protocol&PROT_HTTPS) && (conn->remote_port == PORT_HTTP)) )
-      /* if(HTTPS on port 443) OR (non-HTTPS on port 80) then don't include
+    if(((conn->given->protocol&CURLPROTO_HTTPS) &&
+        (conn->remote_port == PORT_HTTPS)) ||
+       ((conn->given->protocol&CURLPROTO_HTTP) &&
+        (conn->remote_port == PORT_HTTP)) )
+      /* if(HTTPS on port 443) OR (HTTP on port 80) then don't include
          the port number in the host string */
       conn->allocptr.host = aprintf("Host: %s%s%s\r\n",
                                     conn->bits.ipv6_ip?"[":"",
@@ -2375,18 +2357,14 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
 #endif /* CURL_DISABLE_PROXY */
 
   if(HTTPREQ_POST_FORM == httpreq) {
-    /* we must build the whole darned post sequence first, so that we have
-       a size of the whole shebang before we start to send it */
-     result = Curl_getFormData(&http->sendit, data->set.httppost,
-                               Curl_checkheaders(data, "Content-Type:"),
-                               &http->postsize);
-     if(CURLE_OK != result) {
-       /* Curl_getFormData() doesn't use failf() */
-       failf(data, "failed creating formpost data");
-       return result;
-     }
+    /* we must build the whole post sequence first, so that we have a size of
+       the whole transfer before we start to send it */
+    result = Curl_getformdata(data, &http->sendit, data->set.httppost,
+                              Curl_checkheaders(data, "Content-Type:"),
+                              &http->postsize);
+    if(result)
+      return result;
   }
-
 
   http->p_accept = Curl_checkheaders(data, "Accept:")?NULL:"Accept: */*\r\n";
 
@@ -2428,27 +2406,25 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
         /* when seekerr == CURL_SEEKFUNC_CANTSEEK (can't seek to offset) */
         else {
           curl_off_t passed=0;
-
           do {
-            size_t readthisamountnow = (size_t)(data->state.resume_from -
-                                                passed);
-            size_t actuallyread;
+            size_t readthisamountnow =
+              (data->state.resume_from - passed > CURL_OFF_T_C(BUFSIZE)) ?
+              BUFSIZE : curlx_sotouz(data->state.resume_from - passed);
 
-            if(readthisamountnow > BUFSIZE)
-              readthisamountnow = BUFSIZE;
-
-            actuallyread = data->set.fread_func(data->state.buffer, 1,
-                                                (size_t)readthisamountnow,
-                                                data->set.in);
+            size_t actuallyread =
+              data->set.fread_func(data->state.buffer, 1, readthisamountnow,
+                                   data->set.in);
 
             passed += actuallyread;
-            if(actuallyread != readthisamountnow) {
+            if((actuallyread == 0) || (actuallyread > readthisamountnow)) {
+              /* this checks for greater-than only to make sure that the
+                 CURL_READFUNC_ABORT return code still aborts */
               failf(data, "Could only read %" FORMAT_OFF_T
                     " bytes from the input",
                     passed);
               return CURLE_READ_ERROR;
             }
-          } while(passed != data->state.resume_from); /* loop until done */
+          } while(passed < data->state.resume_from);
         }
       }
 
@@ -2604,7 +2580,8 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
                                conn->allocptr.cookiehost?
                                conn->allocptr.cookiehost:host,
                                data->state.path,
-                               (bool)(conn->protocol&PROT_HTTPS?TRUE:FALSE));
+                               (bool)(conn->handler->protocol&CURLPROTO_HTTPS?
+                                      TRUE:FALSE));
       Curl_share_unlock(data, CURL_LOCK_DATA_COOKIE);
     }
     if(co) {
@@ -2647,7 +2624,7 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
 #endif
 
   if(data->set.timecondition) {
-      result = Curl_add_timecondition(data, req_buffer);
+    result = Curl_add_timecondition(data, req_buffer);
     if(result)
       return result;
   }
@@ -3064,7 +3041,7 @@ checkprotoprefix(struct SessionHandle *data, struct connectdata *conn,
                  const char *s)
 {
 #ifndef CURL_DISABLE_RTSP
-  if(conn->protocol & PROT_RTSP)
+  if(conn->handler->protocol & CURLPROTO_RTSP)
     return checkrtspprefix(data, s);
 #else
   (void)conn;
@@ -3240,7 +3217,8 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
         k->header = FALSE; /* no more header to parse! */
 
         if((k->size == -1) && !k->chunk && !conn->bits.close &&
-           (conn->httpversion >= 11) && !(conn->protocol & PROT_RTSP)) {
+           (conn->httpversion >= 11) &&
+           !(conn->handler->protocol & CURLPROTO_RTSP)) {
           /* On HTTP 1.1, when connection is not to get closed, but no
              Content-Length nor Content-Encoding chunked have been
              received, according to RFC2616 section 4.4 point 5, we
@@ -3292,13 +3270,6 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
 
       data->req.deductheadercount =
         (100 <= k->httpcode && 199 >= k->httpcode)?data->req.headerbytecount:0;
-
-      if(data->state.resume_from &&
-         (data->set.httpreq==HTTPREQ_GET) &&
-         (k->httpcode == 416)) {
-        /* "Requested Range Not Satisfiable" */
-        *stop_reading = TRUE;
-      }
 
       if(!*stop_reading) {
         /* Curl_http_auth_act() checks what authentication methods
@@ -3408,7 +3379,7 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
 #define HEADER1 k->p /* no conversion needed, just use k->p */
 #endif /* CURL_DOES_CONVERSIONS */
 
-      if(conn->protocol & PROT_HTTP) {
+      if(conn->handler->protocol & CURLPROTO_HTTP) {
         nc = sscanf(HEADER1,
             " HTTP/%d.%d %3d",
             &httpversion_major,
@@ -3436,7 +3407,7 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
           }
         }
       }
-      else if(conn->protocol & PROT_RTSP) {
+      else if(conn->handler->protocol & CURLPROTO_RTSP) {
         nc = sscanf(HEADER1,
                     " RTSP/%d.%d %3d",
                     &rtspversion_major,
@@ -3512,9 +3483,6 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
            * message-body, and thus is always terminated by the first
            * empty line after the header fields. */
           /* FALLTHROUGH */
-        case 416: /* Requested Range Not Satisfiable, it has the
-                     Content-Length: set as the "real" document but no
-                     actual response is sent. */
         case 304:
           /* (quote from RFC2616, section 10.3.5): The 304 response
            * MUST NOT contain a message-body, and thus is always
@@ -3546,10 +3514,7 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
     /* Curl_convert_from_network calls failf if unsuccessful */
 #endif /* CURL_DOES_CONVERSIONS */
 
-    /* Check for Content-Length: header lines to get size. Ignore
-       the header completely if we get a 416 response as then we're
-       resuming a document that we don't get, and this header contains
-       info about the true size of the document we didn't get now. */
+    /* Check for Content-Length: header lines to get size */
     if(!k->ignorecl && !data->set.ignorecl &&
        checkprefix("Content-Length:", k->p)) {
       curl_off_t contentlength = curlx_strtoofft(k->p+15, NULL, 10);
@@ -3633,7 +3598,7 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
       conn->bits.close = TRUE; /* close when done */
     }
     else if(Curl_compareheader(k->p, "Transfer-Encoding:", "chunked") &&
-            !(conn->protocol & PROT_RTSP)) {
+            !(conn->handler->protocol & CURLPROTO_RTSP)) {
       /*
        * [RFC 2616, section 3.6.1] A 'chunked' transfer encoding
        * means that the server will send a series of "chunks". Each
@@ -3647,20 +3612,6 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
       /* init our chunky engine */
       Curl_httpchunk_init(conn);
     }
-
-    else if(checkprefix("Trailer:", k->p) ||
-            checkprefix("Trailers:", k->p)) {
-      /*
-       * This test helps Curl_httpchunk_read() to determine to look
-       * for well formed trailers after the zero chunksize record. In
-       * this case a CRLF is required after the zero chunksize record
-       * when no trailers are sent, or after the last trailer record.
-       *
-       * It seems both Trailer: and Trailers: occur in the wild.
-       */
-      k->trailerhdrpresent = TRUE;
-    }
-
     else if(checkprefix("Content-Encoding:", k->p) &&
             data->set.str[STRING_ENCODING]) {
       /*
@@ -3743,7 +3694,8 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
         return result;
     }
     else if((k->httpcode >= 300 && k->httpcode < 400) &&
-            checkprefix("Location:", k->p)) {
+            checkprefix("Location:", k->p) &&
+            !data->req.location) {
       /* this is the URL that the server advises us to use instead */
       char *location = Curl_copy_header_value(k->p);
       if (!location)
@@ -3752,7 +3704,6 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
         /* ignore empty data */
         free(location);
       else {
-        DEBUGASSERT(!data->req.location);
         data->req.location = location;
 
         if(data->set.http_follow_location) {
@@ -3770,7 +3721,7 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
       }
     }
 #ifndef CURL_DISABLE_RTSP
-    else if(conn->protocol & PROT_RTSP) {
+    else if(conn->handler->protocol & CURLPROTO_RTSP) {
       result = Curl_rtsp_parseheader(conn, k->p);
       if(result)
         return result;

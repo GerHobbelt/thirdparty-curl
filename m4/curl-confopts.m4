@@ -21,7 +21,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 13
+# serial 14
 
 dnl CURL_CHECK_OPTION_THREADED_RESOLVER
 dnl -------------------------------------------------
@@ -472,6 +472,7 @@ AC_DEFUN([CURL_CHECK_LIB_ARES], [
           ares_channel channel;
           ares_cancel(channel); /* added in 1.2.0 */
           ares_process_fd(channel, 0, 0); /* added in 1.4.0 */
+          ares_dup(&channel, channel); /* added in 1.6.0 */
         ]])
       ],[
         AC_MSG_RESULT([yes])

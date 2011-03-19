@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -301,6 +301,7 @@ ssize_t Curl_send_plain(struct connectdata *conn, int num,
     } else {
       failf(conn->data, "Send failure: %s",
             Curl_strerror(conn, err));
+      conn->data->state.os_errno = err;
       *code = CURLE_SEND_ERROR;
     }
   }
@@ -355,6 +356,7 @@ ssize_t Curl_recv_plain(struct connectdata *conn, int num, char *buf,
     } else {
       failf(conn->data, "Recv failure: %s",
             Curl_strerror(conn, err));
+      conn->data->state.os_errno = err;
       *code = CURLE_RECV_ERROR;
     }
   }
@@ -439,7 +441,8 @@ CURLcode Curl_client_write(struct connectdata *conn,
   }
 
   if(type & CLIENTWRITE_BODY) {
-    if((conn->protocol&PROT_FTP) && conn->proto.ftpc.transfertype == 'A') {
+    if((conn->handler->protocol&CURLPROTO_FTP) &&
+       conn->proto.ftpc.transfertype == 'A') {
 #ifdef CURL_DOES_CONVERSIONS
       /* convert from the network encoding */
       size_t rc;

@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -96,7 +96,8 @@ const struct Curl_handler Curl_handler_rtsp = {
   ZERO_NULL,                            /* perform_getsock */
   Curl_rtsp_disconnect,                 /* disconnect */
   PORT_RTSP,                            /* defport */
-  PROT_RTSP,                            /* protocol */
+  CURLPROTO_RTSP,                       /* protocol */
+  PROTOPT_NONE                          /* flags */
 };
 
 CURLcode Curl_rtsp_connect(struct connectdata *conn, bool *done)
@@ -117,7 +118,9 @@ CURLcode Curl_rtsp_connect(struct connectdata *conn, bool *done)
   return httpStatus;
 }
 
-CURLcode Curl_rtsp_disconnect(struct connectdata *conn) {
+CURLcode Curl_rtsp_disconnect(struct connectdata *conn, bool dead_connection)
+{
+  (void) dead_connection;
   Curl_safefree(conn->proto.rtspc.rtp_buf);
   return CURLE_OK;
 }
@@ -709,7 +712,7 @@ CURLcode Curl_rtsp_parseheader(struct connectdata *conn,
     while(*start && ISSPACE(*start))
       start++;
 
-    if(!start) {
+    if(!*start) {
       failf(data, "Got a blank Session ID");
     }
     else if(data->set.str[STRING_RTSP_SESSION_ID]) {
