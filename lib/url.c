@@ -851,33 +851,37 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
     data->set.global_dns_cache = (bool)(0 != use_cache);
   }
   break;
-  
+
 #ifdef USE_ARES
   case CURLOPT_DNS_INTERFACE:
     /*
      * Set what interface or address/hostname to bind the socket to when
      * performing DNS operations.
      */
-    ares_set_local_dev((ares_channel)data->state.resolver, va_arg(param, char *));
+    ares_set_local_dev((ares_channel)data->state.resolver,
+                       va_arg(param, char *));
     break;
   case CURLOPT_DNS_LOCAL_IP4:
     /*
      * Set the IPv4 source address for DNS operations.
      */
-    ares_set_local_ip4((ares_channel)data->state.resolver, va_arg(param, uint32_t));
+    ares_set_local_ip4((ares_channel)data->state.resolver,
+                       va_arg(param, uint32_t));
     break;
   case CURLOPT_DNS_LOCAL_IP6:
     /*
      * Set the IPv6 source address for DNS operations.
      */
-    ares_set_local_ip6((ares_channel)data->state.resolver, va_arg(param, unsigned char*));
+    ares_set_local_ip6((ares_channel)data->state.resolver,
+                       va_arg(param, unsigned char*));
     break;
   case CURLOPT_DNS_SERVERS:
     /*
      * Set the DNS servers for c-ares.
      */
     /* Incomming string format: host[:port][,host[:port]]... */
-    ares_set_servers_csv((ares_channel)data->state.resolver, va_arg(param, const char*));
+    ares_set_servers_csv((ares_channel)data->state.resolver,
+                         va_arg(param, const char*));
     break;
 #else
   case CURLOPT_DNS_INTERFACE:
@@ -887,9 +891,9 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
     /* TODO:  Enable other DNS backends?? */
     /* TODO:  Should we return an error here, or just silently do nothing? */
     result = CURLE_FAILED_INIT;
-    break;    
+    break;
 #endif
-    
+
   case CURLOPT_SSL_CIPHER_LIST:
     /* set a list of cipher we want to use in the SSL connection */
     result = setstropt(&data->set.str[STRING_SSL_CIPHER_LIST],

@@ -220,7 +220,8 @@ static const struct Curl_handler Curl_handler_imaps_proxy = {
  * write text to output file
  */
 /*
-#define imap_log(conn, pp, hdr, msg) _imap_log(conn, pp, hdr, msg, __FILE__, __LINE__, __FUNCTION__)
+#define imap_log(conn, pp, hdr, msg) _imap_log(conn, pp, hdr, msg,\
+                 __FILE__, __LINE__, __FUNCTION__)
 static void _imap_log(struct connectdata* conn,
                       struct pingpong* pp, const char* hdr, const char* msg,
                       const char* file, int ln, const char* method) {
@@ -261,7 +262,7 @@ static CURLcode imapsendf(struct connectdata *conn,
 
   va_start(ap, fmt);
 
-  if (idstr)
+  if(idstr)
     imapc->idstr = idstr; /* this is the thing */
 
   res = Curl_pp_vsendf(&imapc->pp, fmt, ap);
@@ -479,7 +480,7 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
   /* If header doesn't end in a newline, but does end in a \r, then add
    * a newline to make parsing easier.
    */
-  if (ptr[buflen-1] == '\r') {
+  if(ptr[buflen-1] == '\r') {
     ptr[buflen] = '\n';
     buflen++;
     ptr[buflen] = 0;
@@ -522,7 +523,7 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
       /* the conversion from curl_off_t to size_t is always fine here */
       chunk = (size_t)filesize;
 
-    if (chunk) {
+    if(chunk) {
       result = Curl_client_write(conn, CLIENTWRITE_BODY, pp->cache, chunk);
 
       if(result)
@@ -531,19 +532,20 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
       filesize -= chunk;
     }
 
-    if (filesize == 0) {
+    if(filesize == 0) {
       /* Seems there is a closing ")\r\n" on the end of entries...eat this if
        * it exists.
        */
-      if (pp->cache_size >= chunk +3) {
-        if ((pp->cache[chunk] == ')') &&
+      if(pp->cache_size >= chunk +3) {
+        if((pp->cache[chunk] == ')') &&
             (pp->cache[chunk+1] == '\r') &&
             (pp->cache[chunk+2] == '\n'))
           chunk += 3;
       }
     }
 
-    /*printf("after check for \\r\\n), cache-size: %i  chunk: %i  filesize: %i\n",
+    /*printf("after check for \\r\\n), cache-size: %i  chunk: %i"
+             "  filesize: %i\n",
              (int)(pp->cache_size), (int)(chunk), (int)(filesize));*/
 
     /* we've now used parts of or the entire cache */
@@ -556,7 +558,7 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
                chunk, pp->cache_size, pp->cache+chunk);
       hexprintf(pp->cache + chunk, 10, "before header check");*/
 
-      if (pp->cache[chunk] && pp->cache[chunk] != '*') {
+      if(pp->cache[chunk] && pp->cache[chunk] != '*') {
         size_t orig_chunk = chunk;
         if(imap_process_resp_ln(imapc->idstr, pp->cache + chunk,
                                 pp->cache_size - chunk, "OK", &chunk)) {
@@ -578,7 +580,7 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
       }
     }
 
-    if (chunk < pp->cache_size) {
+    if(chunk < pp->cache_size) {
       /* part of, move the trailing data to the start and reduce the size */
       memmove(pp->cache, pp->cache+chunk,
               pp->cache_size - chunk);
@@ -611,8 +613,8 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
     result = CURLE_FTP_WEIRD_SERVER_REPLY; /* TODO: fix this code */
   }
 
-  if (got_eor) {
-  end_of_response:
+  if(got_eor) {
+    end_of_response:
     if(is_body)
       state(conn, IMAP_STOP);
     else {
@@ -648,12 +650,12 @@ static size_t get_until_nstarts(const char* str, size_t max,
   size_t i;
   size_t slen = strlen(starts);
   /* Grab lines until done with all 'starts' elements */
-  for (i = 0; i<max; i++) {
-    if (strncmp((str + i), starts, slen) == 0) {
+  for(i = 0; i<max; i++) {
+    if(strncmp((str + i), starts, slen) == 0) {
       /* grab entire line */
       i += slen;
-      for ( ; i< max; i++) {
-        if (str[i] == '\n') {
+      for(; i< max; i++) {
+        if(str[i] == '\n') {
           break;
         }
       }
@@ -677,12 +679,12 @@ static const char* imap_strcasestr_ln(const char* h, const char* n,
   size_t lnh = strlen(h);
   size_t lnn = strlen(n);
   size_t i;
-  for (i = 0; i<lnh - lnn; i++) {
-    if (strncasecmp(h+i, n, lnn) == 0) {
-      if (consumed) {
+  for(i = 0; i<lnh - lnn; i++) {
+    if(strncasecmp(h+i, n, lnn) == 0) {
+      if(consumed) {
         *consumed = i + lnn;
-        for (; *consumed<lnh; (*consumed)++) {
-          if (h[*consumed] == '\n')
+        for(; *consumed<lnh; (*consumed)++) {
+          if(h[*consumed] == '\n')
             break;
         }
       }
@@ -706,29 +708,29 @@ static int imap_process_resp_ln(const char* idstr, const char* h,
   int rv = 1;
 
   /* If there is no newline, then return 0 w/out consuming anything. */
-  for (i = 0; i<lnh; i++) {
-    if (h[i] == '\n')
+  for(i = 0; i<lnh; i++) {
+    if(h[i] == '\n')
       break;
   }
-  if (i == lnh)
+  if(i == lnh)
     return 0; /* didn't find newline, don't consume anything */
 
-  for (i = 0; i<lnh - lng; i++) {
+  for(i = 0; i<lnh - lng; i++) {
     /* skip any leading whitespace */
-    if (!ISSPACE(h[i]))
+    if(!ISSPACE(h[i]))
       break;
   }
 
   if(strncmp(h+i, idstr, lni) == 0) {
     i += lni;
-    if (!ISSPACE(h[i])) {
+    if(!ISSPACE(h[i])) {
       rv = 0;; /* should be a space after idstr, otherwise not a real match */
       goto out_consume;
     }
 
     /* walk over space */
-    for ( ; i<lnh - lng; i++) {
-      if (!ISSPACE(h[i]))
+    for(; i<lnh - lng; i++) {
+      if(!ISSPACE(h[i]))
         break;
     }
 
@@ -742,10 +744,10 @@ static int imap_process_resp_ln(const char* idstr, const char* h,
     rv = 0; /* didn't match id str */
 
 out_consume:
-  for ( ; i<lnh; i++) {
-    if (h[i] == '\n') {
+  for(; i<lnh; i++) {
+    if(h[i] == '\n') {
       i++;
-      if (consumed)
+      if(consumed)
         *consumed += i;
       break;
     }
@@ -757,8 +759,8 @@ out_consume:
 static void hexprintf(const char* s, size_t ln, const char* desc) {
   size_t i;
   printf("%s: ", desc);
-  for (i = 0; i<ln; i++) {
-    if (i % 16 == 15)
+  for(i = 0; i<ln; i++) {
+    if(i % 16 == 15)
       printf("%02hx\n", (unsigned short)(s[i]));
     else
       printf("%02hx ", (unsigned short)(s[i]));
@@ -789,7 +791,7 @@ static CURLcode imap_state_gen_listing_resp(struct connectdata *conn,
   /* If header doesn't end in a newline, but does end in a \r, then add
    * a newline to make parsing easier.
    */
-  if (ptr[buflen-1] == '\r') {
+  if(ptr[buflen-1] == '\r') {
     ptr[buflen] = '\n';
     buflen++;
     ptr[buflen] = 0;
@@ -841,7 +843,8 @@ static CURLcode imap_state_gen_listing_resp(struct connectdata *conn,
       }
       else {
         if(i != orig_i) {
-          /*printf("found newline, but had bad response, sz: %i  i: %i orig_i: %i\n",
+          /*printf("found newline, but had bad response, sz: %i  i: %i"
+                   " orig_i: %i\n",
                    (int)(pp->cache_size), (int)(i), (int)(orig_i));*/
           /* found newline, but had bad response. TODO: Tell user. */
           got_eor = 1;
@@ -854,7 +857,7 @@ static CURLcode imap_state_gen_listing_resp(struct connectdata *conn,
     }
 
     if(pp->cache_size > i) {
-      if (i) {
+      if(i) {
         /* part of, move the trailing data to the start and reduce the size */
         memmove(pp->cache, pp->cache+i, pp->cache_size - i);
         pp->cache_size -= i;
@@ -893,7 +896,7 @@ static CURLcode imap_state_gen_listing_resp(struct connectdata *conn,
     /* We don't know how to parse this line */
     result = CURLE_FTP_WEIRD_SERVER_REPLY; /* TODO: fix this code */
 
-  if (got_eor && !pp->cache) {
+  if(got_eor && !pp->cache) {
     /* TODO:  Assign rslts to uid and then go fetch it if user
      * prefers, otherwise stop.
      */
@@ -1031,10 +1034,10 @@ static CURLcode imap_state_select_resp(struct connectdata *conn,
   }
   else {
     /* If we have a search defined, run the search..else attempt a fetch */
-    if (imapc->search && imapc->search[0])
+    if(imapc->search && imapc->search[0])
       imap_search(conn, imapc->search);
     else {
-      if (imapc->uid && imapc->uid[0]) {
+      if(imapc->uid && imapc->uid[0]) {
         if(data->set.include_header)
           result = imap_fetch_hdr(conn);
         else
@@ -1077,7 +1080,7 @@ static CURLcode imap_statemach_act(struct connectdata *conn)
   if(imapcode) {
     /* we have now received at least first line of an IMAP server response */
     last_tot = strlen(data->state.buffer) + pp->cache_size;
-    while (true) {
+    while(true) {
       switch(imapc->state) {
       case IMAP_SERVERGREET:
         if(imapcode != 'O') {
@@ -1086,8 +1089,8 @@ static CURLcode imap_statemach_act(struct connectdata *conn)
         }
 
         if(data->set.ftp_ssl && !conn->ssl[FIRSTSOCKET].use) {
-          /* We don't have a SSL/TLS connection yet, but SSL is requested. Switch
-             to TLS connection now */
+          /* We don't have a SSL/TLS connection yet, but SSL is requested.
+             Switch to TLS connection now */
           const char *str;
 
           str = getcmdid(conn);
@@ -1136,24 +1139,25 @@ static CURLcode imap_statemach_act(struct connectdata *conn)
         break;
       }/* switch */
 
-      /*printf("done with switch, state: %i  result: %i cache_size: %i  last_tot: %i\n",
+      /*printf("done with switch, state: %i  result: %i cache_size: %i"
+               "  last_tot: %i\n",
                imapc->state, result,(int)(pp->cache_size), (int)(last_tot));
       printf("state.buffer: %s\n  cache: %s\n",
              data->state.buffer, pp->cache?pp->cache:"NULL");
       fflush(stdout);*/
 
       /* If result is bad..bail out immediately */
-      if (result != CURLE_OK)
+      if(result != CURLE_OK)
         return result;
 
       /* If we have data left to be consumed, run the state machine again */
-      if ((imapc->state == IMAP_FETCH_HEADER) ||
-          (imapc->state == IMAP_FETCH_BODY) ||
-          (imapc->state == IMAP_LIST) ||
-          (imapc->state == IMAP_SEARCH)) {
+      if((imapc->state == IMAP_FETCH_HEADER) ||
+         (imapc->state == IMAP_FETCH_BODY) ||
+         (imapc->state == IMAP_LIST) ||
+         (imapc->state == IMAP_SEARCH)) {
         size_t this_tot = pp->cache_size;
         size_t to_move = 0;
-        while (true) {
+        while(true) {
           if(to_move >= pp->cache_size)
             break;
           if(pp->cache[to_move] == '\n') {
@@ -1163,11 +1167,11 @@ static CURLcode imap_statemach_act(struct connectdata *conn)
           to_move++;
         }
 
-        if ((!to_move)
-            || ((to_move == pp->cache_size) && (pp->cache[to_move-1] != '\n')))
+        if((!to_move)
+           || ((to_move == pp->cache_size) && (pp->cache[to_move-1] != '\n')))
           break;
 
-        if (this_tot == last_tot) {
+        if(this_tot == last_tot) {
           /*printf("no progress, breaking out of loop\n");
             fflush(stdout);*/
           /* appear to be making no progress progress..bail out of loop */
@@ -1175,19 +1179,20 @@ static CURLcode imap_statemach_act(struct connectdata *conn)
         }
 
         /* Merge cache into header */
-        if (to_move > BUFSIZE) {
-          /*printf("ERROR:  to_move: %i > BUFSIZE: %i\n", (int)(to_move), BUFSIZE);*/
+        if(to_move > BUFSIZE) {
+          /*printf("ERROR:  to_move: %i > BUFSIZE: %i\n",
+                   (int)(to_move), BUFSIZE);*/
           to_move = BUFSIZE;
         }
 
         /*printf("to-move: %i\n", (int)(to_move));
           fflush(stdout);*/
 
-        if (to_move > 0) {
+        if(to_move > 0) {
           memcpy(data->state.buffer, pp->cache, to_move);
           data->state.buffer[to_move] = 0;
 
-          if (to_move < pp->cache_size) {
+          if(to_move < pp->cache_size) {
             memmove(pp->cache, pp->cache+to_move, pp->cache_size - to_move);
             pp->cache_size -= to_move;
             pp->cache[pp->cache_size] = 0;
@@ -1422,7 +1427,7 @@ CURLcode imap_perform(struct connectdata *conn,
 
   *dophase_done = FALSE; /* not done yet */
 
-  if (conn->proto.imapc.mbox && conn->proto.imapc.mbox[0]) {
+  if(conn->proto.imapc.mbox && conn->proto.imapc.mbox[0]) {
     /* start the first command in the DO phase */
     result = imap_select(conn);
   }
@@ -1574,7 +1579,7 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
    *   <imap://tester:passwd@minbari.example.org/>
    */
   tmp = strstr(all_ue, "/;");
-  if (tmp) {
+  if(tmp) {
     tmpi = (tmp - all_ue) + 1;
     imapc->mbox = malloc(tmpi);
     memcpy(imapc->mbox, all_ue, tmpi - 1);
@@ -1584,11 +1589,11 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
       hexprintf(imapc->mbox, tmpi - 1, "mbox");*/
 
     /* look for options */
-    while (true) {
-      if (Curl_raw_nequal(tmp + 2, "uid=", 4)) {
+    while(true) {
+      if(Curl_raw_nequal(tmp + 2, "uid=", 4)) {
         tmp += 6; /* move past /;uid= */
         tmp2 = strstr(tmp, "/;");
-        if (tmp2) {
+        if(tmp2) {
           tmpi = (tmp2 - tmp) + 1;
         }
         else {
@@ -1600,15 +1605,15 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
         imapc->uid[tmpi-1] = 0;
 
         tmp += tmpi;
-        if (tmp2)
+        if(tmp2)
           tmp += 2;
         else
           break;
       }
-      if (Curl_raw_nequal(tmp + 2, "UIDVALIDITY=", 4)) {
+      if(Curl_raw_nequal(tmp + 2, "UIDVALIDITY=", 4)) {
         tmp += 14; /* move past /;UIDVALIDITY= */
         tmp2 = strstr(tmp, "/;");
-        if (tmp2) {
+        if(tmp2) {
           tmpi = (tmp2 - tmp) + 1;
         }
         else {
@@ -1620,7 +1625,7 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
         imapc->validity[tmpi-1] = 0;
 
         tmp += tmpi;
-        if (tmp2)
+        if(tmp2)
           tmp += 2;
         else
           break;
@@ -1630,7 +1635,7 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
   else {
     /* maybe a query ? */
     tmp = strstr(all_ue, "?");
-    if (tmp) {
+    if(tmp) {
       tmpi = (tmp - all_ue) + 1;
       imapc->mbox = malloc(tmpi);
       memcpy(imapc->mbox, all_ue, tmpi - 1);
@@ -1648,7 +1653,7 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
       imapc->mbox = all_ue;
       /* If it ends with /, get rid of that */
       ln = strlen(imapc->mbox);
-      if (imapc->mbox[ln-1] == '/') {
+      if(imapc->mbox[ln-1] == '/') {
         imapc->mbox[ln-1] = 0;
       }
       all_ue = NULL; /* don't free this */
@@ -1656,7 +1661,7 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
     }
   }
 
-  if (all_ue)
+  if(all_ue)
     free(all_ue);
 
   return CURLE_OK;
