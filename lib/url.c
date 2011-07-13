@@ -98,6 +98,10 @@ void idn_free (void *ptr);
 int curl_win32_idn_to_ascii(const char *in, char **out);
 #endif  /* USE_LIBIDN */
 
+#ifdef USE_ARES
+#include "ares.h"
+#endif
+
 #include "urldata.h"
 #include "netrc.h"
 
@@ -854,26 +858,26 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
      * Set what interface or address/hostname to bind the socket to when
      * performing DNS operations.
      */
-    ares_set_local_dev(data->state.areschannel, va_arg(param, char *));
+    ares_set_local_dev((ares_channel)data->state.resolver, va_arg(param, char *));
     break;
   case CURLOPT_DNS_LOCAL_IP4:
     /*
      * Set the IPv4 source address for DNS operations.
      */
-    ares_set_local_ip4(data->state.areschannel, va_arg(param, uint32_t));
+    ares_set_local_ip4((ares_channel)data->state.resolver, va_arg(param, uint32_t));
     break;
   case CURLOPT_DNS_LOCAL_IP6:
     /*
      * Set the IPv6 source address for DNS operations.
      */
-    ares_set_local_ip6(data->state.areschannel, va_arg(param, unsigned char*));
+    ares_set_local_ip6((ares_channel)data->state.resolver, va_arg(param, unsigned char*));
     break;
   case CURLOPT_DNS_SERVERS:
     /*
      * Set the DNS servers for c-ares.
      */
     /* Incomming string format: host[:port][,host[:port]]... */
-    ares_set_servers_csv(data->state.areschannel, va_arg(param, const char*));
+    ares_set_servers_csv((ares_channel)data->state.resolver, va_arg(param, const char*));
     break;
 #else
   case CURLOPT_DNS_INTERFACE:
