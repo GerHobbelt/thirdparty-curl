@@ -79,8 +79,6 @@
 #include <curl/curl.h>
 #include "urldata.h"
 #include "sendf.h"
-#include "easyif.h" /* for Curl_convert_... prototypes */
-
 #include "hostip.h"
 #include "progress.h"
 #include "transfer.h"
@@ -141,7 +139,7 @@ static CURLcode sftp_done(struct connectdata *conn,
                           CURLcode, bool premature);
 static CURLcode sftp_doing(struct connectdata *conn,
                            bool *dophase_done);
-static CURLcode sftp_disconnect(struct connectdata *conn, bool dead_connection);
+static CURLcode sftp_disconnect(struct connectdata *conn, bool dead);
 static
 CURLcode sftp_perform(struct connectdata *conn,
                       bool *connected,
@@ -174,6 +172,7 @@ const struct Curl_handler Curl_handler_scp = {
   ssh_getsock,                          /* doing_getsock */
   ssh_perform_getsock,                  /* perform_getsock */
   scp_disconnect,                       /* disconnect */
+  ZERO_NULL,                            /* readwrite */
   PORT_SSH,                             /* defport */
   CURLPROTO_SCP,                        /* protocol */
   PROTOPT_DIRLOCK | PROTOPT_CLOSEACTION /* flags */
@@ -197,6 +196,7 @@ const struct Curl_handler Curl_handler_sftp = {
   ssh_getsock,                          /* doing_getsock */
   ssh_perform_getsock,                  /* perform_getsock */
   sftp_disconnect,                      /* disconnect */
+  ZERO_NULL,                            /* readwrite */
   PORT_SSH,                             /* defport */
   CURLPROTO_SFTP,                       /* protocol */
   PROTOPT_DIRLOCK | PROTOPT_CLOSEACTION /* flags */
@@ -332,6 +332,7 @@ static void state(struct connectdata *conn, sshstate nowstate)
   /* for debug purposes */
   static const char * const names[] = {
     "SSH_STOP",
+    "SSH_INIT",
     "SSH_S_STARTUP",
     "SSH_HOSTKEY",
     "SSH_AUTHLIST",
@@ -506,6 +507,130 @@ static int sshkeycallback(CURL *easy,
 #define libssh2_session_startup(x,y) libssh2_session_handshake(x,y)
 #endif
 
+static CURLcode ssh_knownhost(struct connectdata *conn)
+{
+  CURLcode result = CURLE_OK;
+
+#ifdef HAVE_LIBSSH2_KNOWNHOST_API
+  struct SessionHandle *data = conn->data;
+
+  if(data->set.str[STRING_SSH_KNOWNHOSTS]) {
+    /* we're asked to verify the host against a file */
+    struct ssh_conn *sshc = &conn->proto.sshc;
+    int rc;
+    int keytype;
+    size_t keylen;
+    const char *remotekey = libssh2_session_hostkey(sshc->ssh_session,
+                                                    &keylen, &keytype);
+    int keycheck = LIBSSH2_KNOWNHOST_CHECK_FAILURE;
+    int keybit = 0;
+
+    if(remotekey) {
+      /*
+       * A subject to figure out is what host name we need to pass in here.
+       * What host name does OpenSSH store in its file if an IDN name is
+       * used?
+       */
+      struct libssh2_knownhost *host;
+      enum curl_khmatch keymatch;
+      curl_sshkeycallback func =
+        data->set.ssh_keyfunc?data->set.ssh_keyfunc:sshkeycallback;
+      struct curl_khkey knownkey;
+      struct curl_khkey *knownkeyp = NULL;
+      struct curl_khkey foundkey;
+
+      keybit = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
+        LIBSSH2_KNOWNHOST_KEY_SSHRSA:LIBSSH2_KNOWNHOST_KEY_SSHDSS;
+
+      keycheck = libssh2_knownhost_check(sshc->kh,
+                                         conn->host.name,
+                                         remotekey, keylen,
+                                         LIBSSH2_KNOWNHOST_TYPE_PLAIN|
+                                         LIBSSH2_KNOWNHOST_KEYENC_RAW|
+                                         keybit,
+                                         &host);
+
+      infof(data, "SSH host check: %d, key: %s\n", keycheck,
+            (keycheck <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH)?
+            host->key:"<none>");
+
+      /* setup 'knownkey' */
+      if(keycheck <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH) {
+        knownkey.key = host->key;
+        knownkey.len = 0;
+        knownkey.keytype = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
+          CURLKHTYPE_RSA : CURLKHTYPE_DSS;
+        knownkeyp = &knownkey;
+      }
+
+      /* setup 'foundkey' */
+      foundkey.key = remotekey;
+      foundkey.len = keylen;
+      foundkey.keytype = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
+        CURLKHTYPE_RSA : CURLKHTYPE_DSS;
+
+      /*
+       * if any of the LIBSSH2_KNOWNHOST_CHECK_* defines and the
+       * curl_khmatch enum are ever modified, we need to introduce a
+       * translation table here!
+       */
+      keymatch = (enum curl_khmatch)keycheck;
+
+      /* Ask the callback how to behave */
+      rc = func(data, knownkeyp, /* from the knownhosts file */
+                &foundkey, /* from the remote host */
+                keymatch, data->set.ssh_keyfunc_userp);
+    }
+    else
+      /* no remotekey means failure! */
+      rc = CURLKHSTAT_REJECT;
+
+    switch(rc) {
+    default: /* unknown return codes will equal reject */
+    case CURLKHSTAT_REJECT:
+      state(conn, SSH_SESSION_FREE);
+    case CURLKHSTAT_DEFER:
+      /* DEFER means bail out but keep the SSH_HOSTKEY state */
+      result = sshc->actualcode = CURLE_PEER_FAILED_VERIFICATION;
+      break;
+    case CURLKHSTAT_FINE:
+    case CURLKHSTAT_FINE_ADD_TO_FILE:
+      /* proceed */
+      if(keycheck != LIBSSH2_KNOWNHOST_CHECK_MATCH) {
+        /* the found host+key didn't match but has been told to be fine
+           anyway so we add it in memory */
+        int addrc = libssh2_knownhost_add(sshc->kh,
+                                          conn->host.name, NULL,
+                                          remotekey, keylen,
+                                          LIBSSH2_KNOWNHOST_TYPE_PLAIN|
+                                          LIBSSH2_KNOWNHOST_KEYENC_RAW|
+                                          keybit, NULL);
+        if(addrc)
+          infof(data, "Warning adding the known host %s failed!\n",
+                conn->host.name);
+        else if(rc == CURLKHSTAT_FINE_ADD_TO_FILE) {
+          /* now we write the entire in-memory list of known hosts to the
+             known_hosts file */
+          int wrc =
+            libssh2_knownhost_writefile(sshc->kh,
+                                        data->set.str[STRING_SSH_KNOWNHOSTS],
+                                        LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+          if(wrc) {
+            infof(data, "Warning, writing %s failed!\n",
+                  data->set.str[STRING_SSH_KNOWNHOSTS]);
+          }
+        }
+      }
+      break;
+    }
+  }
+#else /* HAVE_LIBSSH2_KNOWNHOST_API */
+  (void)conn;
+#endif
+  return result;
+}
+
+
 /*
  * ssh_statemach_act() runs the SSH state machine as far as it can without
  * blocking and without reaching the end.  The data the pointer 'block' points
@@ -532,11 +657,19 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
   do {
 
     switch(sshc->state) {
-    case SSH_S_STARTUP:
+    case SSH_INIT:
       sshc->secondCreateDirs = 0;
       sshc->nextstate = SSH_NO_STATE;
       sshc->actualcode = CURLE_OK;
 
+      /* Set libssh2 to non-blocking, since everything internally is
+         non-blocking */
+      libssh2_session_set_blocking(sshc->ssh_session, 0);
+
+      state(conn, SSH_S_STARTUP);
+      /* fall-through */
+
+    case SSH_S_STARTUP:
       rc = libssh2_session_startup(sshc->ssh_session, sock);
       if(rc == LIBSSH2_ERROR_EAGAIN) {
         break;
@@ -547,10 +680,6 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         sshc->actualcode = CURLE_FAILED_INIT;
         break;
       }
-
-      /* Set libssh2 to non-blocking, since everything internally is
-         non-blocking */
-      libssh2_session_set_blocking(sshc->ssh_session, 0);
 
       state(conn, SSH_HOSTKEY);
 
@@ -569,9 +698,8 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
 
       /* The fingerprint points to static storage (!), don't free() it. */
       infof(data, "Fingerprint: ");
-      for (rc = 0; rc < 16; rc++) {
+      for(rc = 0; rc < 16; rc++)
         infof(data, "%02X ", (unsigned char) fingerprint[rc]);
-      }
       infof(data, "\n");
 #endif /* CURL_LIBSSH2_DEBUG */
 
@@ -584,7 +712,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         char buf[33];
         host_public_key_md5 = libssh2_hostkey_hash(sshc->ssh_session,
                                                    LIBSSH2_HOSTKEY_HASH_MD5);
-        for (i = 0; i < 16; i++)
+        for(i = 0; i < 16; i++)
           snprintf(&buf[i*2], 3, "%02x",
                    (unsigned char) host_public_key_md5[i]);
         if(!strequal(buf, data->set.str[STRING_SSH_HOST_PUBLIC_KEY_MD5])) {
@@ -598,118 +726,9 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         }
       }
 
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
-      if(data->set.str[STRING_SSH_KNOWNHOSTS]) {
-        /* we're asked to verify the host against a file */
-        int keytype;
-        size_t keylen;
-        const char *remotekey = libssh2_session_hostkey(sshc->ssh_session,
-                                                        &keylen, &keytype);
-        int keycheck;
-        int keybit;
-
-        if(remotekey) {
-          /*
-           * A subject to figure out is what host name we need to pass in here.
-           * What host name does OpenSSH store in its file if an IDN name is
-           * used?
-           */
-          struct libssh2_knownhost *host;
-          enum curl_khmatch keymatch;
-          curl_sshkeycallback func =
-            data->set.ssh_keyfunc?data->set.ssh_keyfunc:sshkeycallback;
-          struct curl_khkey knownkey;
-          struct curl_khkey *knownkeyp = NULL;
-          struct curl_khkey foundkey;
-
-          keybit = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
-            LIBSSH2_KNOWNHOST_KEY_SSHRSA:LIBSSH2_KNOWNHOST_KEY_SSHDSS;
-
-          keycheck = libssh2_knownhost_check(sshc->kh,
-                                             conn->host.name,
-                                             remotekey, keylen,
-                                             LIBSSH2_KNOWNHOST_TYPE_PLAIN|
-                                             LIBSSH2_KNOWNHOST_KEYENC_RAW|
-                                             keybit,
-                                             &host);
-
-          infof(data, "SSH host check: %d, key: %s\n", keycheck,
-                (keycheck <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH)?
-                host->key:"<none>");
-
-          /* setup 'knownkey' */
-          if(keycheck <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH) {
-            knownkey.key = host->key;
-            knownkey.len = 0;
-            knownkey.keytype = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
-              CURLKHTYPE_RSA : CURLKHTYPE_DSS;
-            knownkeyp = &knownkey;
-          }
-
-          /* setup 'foundkey' */
-          foundkey.key = remotekey;
-          foundkey.len = keylen;
-          foundkey.keytype = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA)?
-            CURLKHTYPE_RSA : CURLKHTYPE_DSS;
-
-          /*
-           * if any of the LIBSSH2_KNOWNHOST_CHECK_* defines and the
-           * curl_khmatch enum are ever modified, we need to introduce a
-           * translation table here!
-           */
-          keymatch = (enum curl_khmatch)keycheck;
-
-          /* Ask the callback how to behave */
-          rc = func(data, knownkeyp, /* from the knownhosts file */
-                    &foundkey, /* from the remote host */
-                    keymatch, data->set.ssh_keyfunc_userp);
-        }
-        else
-          /* no remotekey means failure! */
-          rc = CURLKHSTAT_REJECT;
-
-        switch(rc) {
-        default: /* unknown return codes will equal reject */
-        case CURLKHSTAT_REJECT:
-          state(conn, SSH_SESSION_FREE);
-        case CURLKHSTAT_DEFER:
-          /* DEFER means bail out but keep the SSH_HOSTKEY state */
-          result = sshc->actualcode = CURLE_PEER_FAILED_VERIFICATION;
-          break;
-        case CURLKHSTAT_FINE:
-        case CURLKHSTAT_FINE_ADD_TO_FILE:
-          /* proceed */
-          if(keycheck != LIBSSH2_KNOWNHOST_CHECK_MATCH) {
-            /* the found host+key didn't match but has been told to be fine
-               anyway so we add it in memory */
-            int addrc = libssh2_knownhost_add(sshc->kh,
-                                              conn->host.name, NULL,
-                                              remotekey, keylen,
-                                              LIBSSH2_KNOWNHOST_TYPE_PLAIN|
-                                              LIBSSH2_KNOWNHOST_KEYENC_RAW|
-                                              keybit, NULL);
-            if(addrc)
-              infof(data, "Warning adding the known host %s failed!\n",
-                    conn->host.name);
-            else if(rc == CURLKHSTAT_FINE_ADD_TO_FILE) {
-              /* now we write the entire in-memory list of known hosts to the
-                 known_hosts file */
-              int wrc =
-                libssh2_knownhost_writefile(sshc->kh,
-                                            data->set.str[STRING_SSH_KNOWNHOSTS],
-                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH);
-              if(wrc) {
-                infof(data, "Warning, writing %s failed!\n",
-                      data->set.str[STRING_SSH_KNOWNHOSTS]);
-              }
-            }
-          }
-          break;
-        }
-      }
-#endif /* HAVE_LIBSSH2_KNOWNHOST_API */
-
-      state(conn, SSH_AUTHLIST);
+      result = ssh_knownhost(conn);
+      if(!result)
+        state(conn, SSH_AUTHLIST);
       break;
 
     case SSH_AUTHLIST:
@@ -1053,6 +1072,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         if(!tmp) {
           result = CURLE_OUT_OF_MEMORY;
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           break;
         }
         if(data->set.verbose) {
@@ -1076,6 +1096,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         if(cp == NULL) {
           failf(data, "Syntax error in SFTP command. Supply parameter(s)!");
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = CURLE_QUOTE_ERROR;
           break;
         }
@@ -1091,6 +1112,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
           else
             failf(data, "Syntax error: Bad first parameter");
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = result;
           break;
         }
@@ -1118,6 +1140,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
             Curl_safefree(sshc->quote_path1);
             sshc->quote_path1 = NULL;
             state(conn, SSH_SFTP_CLOSE);
+            sshc->nextstate = SSH_NO_STATE;
             sshc->actualcode = result;
             break;
           }
@@ -1140,6 +1163,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
             Curl_safefree(sshc->quote_path1);
             sshc->quote_path1 = NULL;
             state(conn, SSH_SFTP_CLOSE);
+            sshc->nextstate = SSH_NO_STATE;
             sshc->actualcode = result;
             break;
           }
@@ -1164,6 +1188,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
             Curl_safefree(sshc->quote_path1);
             sshc->quote_path1 = NULL;
             state(conn, SSH_SFTP_CLOSE);
+            sshc->nextstate = SSH_NO_STATE;
             sshc->actualcode = result;
             break;
           }
@@ -1186,6 +1211,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         Curl_safefree(sshc->quote_path2);
         sshc->quote_path2 = NULL;
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1243,6 +1269,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
           failf(data, "Attempt to get SFTP stats failed: %s",
                 sftp_libssh2_strerror(err));
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = CURLE_QUOTE_ERROR;
           break;
         }
@@ -1259,6 +1286,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
           sshc->quote_path2 = NULL;
           failf(data, "Syntax error: chgrp gid not a number");
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = CURLE_QUOTE_ERROR;
           break;
         }
@@ -1275,6 +1303,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
           sshc->quote_path2 = NULL;
           failf(data, "Syntax error: chmod permissions not a number");
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = CURLE_QUOTE_ERROR;
           break;
         }
@@ -1289,6 +1318,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
           sshc->quote_path2 = NULL;
           failf(data, "Syntax error: chown uid not a number");
           state(conn, SSH_SFTP_CLOSE);
+          sshc->nextstate = SSH_NO_STATE;
           sshc->actualcode = CURLE_QUOTE_ERROR;
           break;
         }
@@ -1315,6 +1345,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         failf(data, "Attempt to set SFTP stats failed: %s",
               sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1339,6 +1370,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         failf(data, "symlink command failed: %s",
               sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1358,6 +1390,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         sshc->quote_path1 = NULL;
         failf(data, "mkdir command failed: %s", sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1372,6 +1405,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
                                   LIBSSH2_SFTP_RENAME_OVERWRITE |
                                   LIBSSH2_SFTP_RENAME_ATOMIC |
                                   LIBSSH2_SFTP_RENAME_NATIVE);
+
       if(rc == LIBSSH2_ERROR_EAGAIN) {
         break;
       }
@@ -1383,6 +1417,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         sshc->quote_path2 = NULL;
         failf(data, "rename command failed: %s", sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1401,6 +1436,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         sshc->quote_path1 = NULL;
         failf(data, "rmdir command failed: %s", sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1419,6 +1455,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
         sshc->quote_path1 = NULL;
         failf(data, "rm command failed: %s", sftp_libssh2_strerror(err));
         state(conn, SSH_SFTP_CLOSE);
+        sshc->nextstate = SSH_NO_STATE;
         sshc->actualcode = CURLE_QUOTE_ERROR;
         break;
       }
@@ -1474,7 +1511,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
       if(data->set.ftp_append)
         /* Try to open for append, but create if nonexisting */
         flags = LIBSSH2_FXF_WRITE|LIBSSH2_FXF_CREAT|LIBSSH2_FXF_APPEND;
-      else if (data->state.resume_from > 0)
+      else if(data->state.resume_from > 0)
         /* If we have restart position then open for append */
         flags = LIBSSH2_FXF_WRITE|LIBSSH2_FXF_APPEND;
       else
@@ -1544,7 +1581,7 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
                                     SEEK_SET);
         }
 
-        if(seekerr != CURL_SEEKFUNC_OK){
+        if(seekerr != CURL_SEEKFUNC_OK) {
 
           if(seekerr != CURL_SEEKFUNC_CANTSEEK) {
             failf(data, "Could not seek stream");
@@ -2061,11 +2098,18 @@ static CURLcode ssh_statemach_act(struct connectdata *conn, bool *block)
       }
 
       DEBUGF(infof(data, "SFTP DONE done\n"));
-#if 0 /* PREV */
-      state(conn, SSH_SFTP_SHUTDOWN);
-#endif
-      state(conn, SSH_STOP);
-      result = sshc->actualcode;
+
+      /* Check if nextstate is set and move .nextstate could be POSTQUOTE_INIT
+         After nextstate is executed,the control should come back to
+         SSH_SFTP_CLOSE to pass the correct result back  */
+      if(sshc->nextstate != SSH_NO_STATE) {
+        state(conn, sshc->nextstate);
+        sshc->nextstate = SSH_SFTP_CLOSE;
+      }
+      else {
+        state(conn, SSH_STOP);
+        result = sshc->actualcode;
+      }
       break;
 
     case SSH_SFTP_SHUTDOWN:
@@ -2498,15 +2542,13 @@ static CURLcode ssh_easy_statemach(struct connectdata *conn,
       curl_socket_t sock = conn->sock[FIRSTSOCKET];
       curl_socket_t fd_read = CURL_SOCKET_BAD;
       curl_socket_t fd_write = CURL_SOCKET_BAD;
-      if (LIBSSH2_SESSION_BLOCK_INBOUND & dir) {
+      if(LIBSSH2_SESSION_BLOCK_INBOUND & dir)
         fd_read = sock;
-      }
-      if (LIBSSH2_SESSION_BLOCK_OUTBOUND & dir) {
+      if(LIBSSH2_SESSION_BLOCK_OUTBOUND & dir)
         fd_write = sock;
-      }
       /* wait for the socket to become ready */
       Curl_socket_ready(fd_read, fd_write,
-                        (int)(left>1000?1000:left)); /* ignore result */
+                        left>1000?1000:left); /* ignore result */
     }
 #endif
 
@@ -2571,7 +2613,8 @@ static CURLcode ssh_connect(struct connectdata *conn, bool *done)
   if(conn->handler->protocol & CURLPROTO_SCP) {
     conn->recv[FIRSTSOCKET] = scp_recv;
     conn->send[FIRSTSOCKET] = scp_send;
-  } else {
+  }
+  else {
     conn->recv[FIRSTSOCKET] = sftp_recv;
     conn->send[FIRSTSOCKET] = sftp_send;
   }
@@ -2619,7 +2662,7 @@ static CURLcode ssh_connect(struct connectdata *conn, bool *done)
   infof(data, "SSH socket: %d\n", (int)sock);
 #endif /* CURL_LIBSSH2_DEBUG */
 
-  state(conn, SSH_S_STARTUP);
+  state(conn, SSH_INIT);
 
   if(data->state.used_interface == Curl_if_multi)
     result = ssh_multi_statemach(conn, done);
@@ -2827,7 +2870,7 @@ static ssize_t scp_recv(struct connectdata *conn, int sockindex,
     libssh2_channel_read(conn->proto.sshc.ssh_channel, mem, len);
 
   ssh_block2waitfor(conn, (nread == LIBSSH2_ERROR_EAGAIN)?TRUE:FALSE);
-  if (nread == LIBSSH2_ERROR_EAGAIN) {
+  if(nread == LIBSSH2_ERROR_EAGAIN) {
     *err = CURLE_AGAIN;
     nread = -1;
   }
@@ -2923,11 +2966,12 @@ static CURLcode sftp_done(struct connectdata *conn, CURLcode status,
   struct ssh_conn *sshc = &conn->proto.sshc;
 
   if(status == CURLE_OK) {
-    /* Before we shut down, see if there are any post-quote commands to
-       send: */
+    /* Post quote commands are executed after the SFTP_CLOSE state to avoid
+       errors that could happen due to open file handles during POSTQUOTE
+       operation */
     if(!status && !premature && conn->data->set.postquote) {
-      sshc->nextstate = SSH_SFTP_CLOSE;
-      state(conn, SSH_SFTP_POSTQUOTE_INIT);
+      sshc->nextstate = SSH_SFTP_POSTQUOTE_INIT;
+      state(conn, SSH_SFTP_CLOSE);
     }
     else
       state(conn, SSH_SFTP_CLOSE);
@@ -3017,7 +3061,7 @@ get_pathname(const char **cpp, char **path)
     quot = *cp++;
 
     /* Search for terminating quote, unescape some chars */
-    for (i = j = 0; i <= strlen(cp); i++) {
+    for(i = j = 0; i <= strlen(cp); i++) {
       if(cp[i] == quot) {  /* Found quote */
         i++;
         (*path)[j] = '\0';

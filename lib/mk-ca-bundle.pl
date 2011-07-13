@@ -40,7 +40,7 @@ my $url = 'http://mxr.mozilla.org/mozilla/source/security/nss/lib/ckfw/builtins/
 # If the OpenSSL commandline is not in search path you can configure it here!
 my $openssl = 'openssl';
 
-my $version = '1.14';
+my $version = '1.15';
 
 getopts('bhilnqtuv');
 
@@ -56,8 +56,7 @@ if ($opt_i) {
   print ("=" x 78 . "\n");
 }
 
-$0 =~ s/\\/\//g;
-$0 = substr($0, rindex($0, '/') + 1);
+$0 =~ s@.*(/|\\)@@;
 if ($opt_h) {
   printf("Usage:\t%s [-b] [-i] [-l] [-n] [-q] [-t] [-u] [-v] [<outputfile>]\n", $0);
   print "\t-b\tbackup an existing version of ca-bundle.crt\n";
@@ -72,8 +71,7 @@ if ($opt_h) {
 }
 
 my $crt = $ARGV[0] || 'ca-bundle.crt';
-my $txt = substr($url, rindex($url, '/') + 1);
-$txt =~ s/\?.*//;
+(my $txt = $url) =~ s@(.*/|\?.*)@@g;
 
 my $resp;
 
@@ -81,7 +79,8 @@ unless ($opt_n and -e $txt) {
   print "Downloading '$txt' ...\n" if (!$opt_q);
 
   my $ua  = new LWP::UserAgent(agent => "$0/$version");
-  $resp = $ua->mirror($url, 'certdata.txt');
+  $ua->env_proxy();
+  $resp = $ua->mirror($url, $txt);
 }
 
 if ($resp && $resp->code eq '304') {
@@ -110,7 +109,7 @@ print CRT <<EOT;
 ## This is a bundle of X.509 certificates of public Certificate Authorities
 ## (CA). These were automatically extracted from Mozilla's root certificates
 ## file (certdata.txt).  This file can be found in the mozilla source tree:
-## '/mozilla/security/nss/lib/ckfw/builtins/certdata.txt'
+## $url
 ##
 ## It contains the certificates in ${format}PEM format and therefore
 ## can be directly used with curl / libcurl / php_curl, or with

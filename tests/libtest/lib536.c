@@ -26,6 +26,7 @@
 #include <fcntl.h>
 
 #include "testutil.h"
+#include "warnless.h"
 #include "memdebug.h"
 
 #define MAIN_LOOP_HANG_TIMEOUT     90 * 1000
@@ -58,8 +59,6 @@ static CURLMcode perform(CURLM * multi)
     switch (code) {
       case CURLM_OK:
         break;
-      case CURLM_CALL_MULTI_PERFORM:
-        continue;
       default:
         return code;
     }

@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -294,7 +294,7 @@ void Curl_ssl_delsessionid(struct connectdata *conn, void *ssl_sessionid)
   for(i=0; i< conn->data->set.ssl.numsessions; i++) {
     struct curl_ssl_session *check = &conn->data->state.session[i];
 
-    if (check->sessionid == ssl_sessionid) {
+    if(check->sessionid == ssl_sessionid) {
       kill_session(check);
       break;
     }
@@ -346,7 +346,7 @@ CURLcode Curl_ssl_addsessionid(struct connectdata *conn,
   store->sessionid = ssl_sessionid;
   store->idsize = idsize;
   store->age = data->state.sessionage;    /* set current age */
-  if (store->name)
+  if(store->name)
     /* free it if there's one already present */
     free(store->name);
   store->name = clone_host;               /* clone host name */
@@ -392,6 +392,9 @@ CURLcode Curl_ssl_shutdown(struct connectdata *conn, int sockindex)
 
   conn->ssl[sockindex].use = FALSE; /* get back to ordinary socket usage */
   conn->ssl[sockindex].state = ssl_connection_none;
+
+  conn->recv[sockindex] = Curl_recv_plain;
+  conn->send[sockindex] = Curl_send_plain;
 
   return CURLE_OK;
 }

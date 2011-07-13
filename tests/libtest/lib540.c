@@ -30,6 +30,7 @@
 
 #include "test.h"
 
+#include "warnless.h"
 #include "memdebug.h"
 
 #define PROXY libtest_arg2
@@ -86,9 +87,7 @@ static int loop(CURLM *cm, const char* url, const char* userpwd,
 
   while (U) {
 
-    do {
-      code = curl_multi_perform(cm, &U);
-    } while (code == CURLM_CALL_MULTI_PERFORM);
+    code = curl_multi_perform(cm, &U);
 
     if (U) {
       FD_ZERO(&R);

@@ -7,7 +7,7 @@
  *
  * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
- * Copyright (c) 2004 - 2010 Daniel Stenberg
+ * Copyright (c) 2004 - 2011 Daniel Stenberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,9 +88,9 @@ strlcpy (char *dst, const char *src, size_t dst_sz)
   size_t n;
   char *p;
 
-  for (p = dst, n = 0;
-       n + 1 < dst_sz && *src != '\0';
-       ++p, ++src, ++n)
+  for(p = dst, n = 0;
+      n + 1 < dst_sz && *src != '\0';
+      ++p, ++src, ++n)
     *p = *src;
   *p = '\0';
   if(*src == '\0')
@@ -264,7 +264,7 @@ krb4_auth(void *app_data, struct connectdata *conn)
   if(Curl_GetFTPResponse(&nread, conn, NULL))
     return -1;
 
-  if(data->state.buffer[0] != '2'){
+  if(data->state.buffer[0] != '2') {
     Curl_failf(data, "Server didn't accept auth data");
     return AUTH_ERROR;
   }
@@ -349,7 +349,7 @@ CURLcode Curl_krb_kauth(struct connectdata *conn)
   if(result)
     return result;
 
-  if(conn->data->state.buffer[0] != '3'){
+  if(conn->data->state.buffer[0] != '3') {
     krb4_set_command_prot(conn, save);
     return CURLE_FTP_WEIRD_SERVER_REPLY;
   }

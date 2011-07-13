@@ -1,5 +1,5 @@
-#ifndef __URLDATA_H
-#define __URLDATA_H
+#ifndef HEADER_CURL_URLDATA_H
+#define HEADER_CURL_URLDATA_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -71,12 +71,12 @@
 
 #ifdef USE_SSLEAY
 #ifdef USE_OPENSSL
-#include "openssl/rsa.h"
-#include "openssl/crypto.h"
-#include "openssl/x509.h"
-#include "openssl/pem.h"
-#include "openssl/ssl.h"
-#include "openssl/err.h"
+#include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #ifdef HAVE_OPENSSL_ENGINE_H
 #include <openssl/engine.h>
 #endif
@@ -84,12 +84,12 @@
 #include <openssl/pkcs12.h>
 #endif
 #else /* SSLeay-style includes */
-#include "rsa.h"
-#include "crypto.h"
-#include "x509.h"
-#include "pem.h"
-#include "ssl.h"
-#include "err.h"
+#include <rsa.h>
+#include <crypto.h>
+#include <x509.h>
+#include <pem.h>
+#include <ssl.h>
+#include <err.h>
 #ifdef HAVE_OPENSSL_ENGINE_H
 #include <engine.h>
 #endif
@@ -143,14 +143,6 @@
 /* zlib pollutes the namespace with this definition */
 #undef WIN32
 #endif
-#endif
-
-#ifdef USE_ARES
-#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) && \
-     (defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__))
-#    define CARES_STATICLIB
-#  endif
-#  include <ares.h>
 #endif
 
 #include <curl/curl.h>
@@ -508,8 +500,6 @@ struct Curl_async {
   bool done;  /* set TRUE when the lookup is complete */
   int status; /* if done is TRUE, this is the status from the callback */
   void *os_specific;  /* 'struct thread_data' for Windows */
-  int num_pending; /* number of ares_gethostbyname() requests */
-  Curl_addrinfo *temp_ai; /* intermediary result while fetching c-ares parts */
 };
 #endif
 
@@ -551,7 +541,7 @@ struct SingleRequest {
 
   long headerbytecount;         /* only count received headers */
   long deductheadercount; /* this amount of bytes doesn't count when we check
-                             if anything has been transfered at the end of a
+                             if anything has been transferred at the end of a
                              connection. We use this counter to make only a
                              100 reply (without a following second response
                              code) result in a CURLE_GOT_NOTHING error code */
@@ -582,7 +572,7 @@ struct SingleRequest {
   struct timeval start100;      /* time stamp to wait for the 100 code from */
   enum expect100 exp100;        /* expect 100 continue state */
 
-  int content_encoding;         /* What content encoding. sec 3.5, RFC2616. */
+  int auto_decoding;            /* What content encoding. sec 3.5, RFC2616. */
 
 #define IDENTITY 0              /* No encoding */
 #define DEFLATE 1               /* zlib deflate [RFC 1950 & 1951] */
@@ -694,6 +684,11 @@ struct Curl_handler {
    */
   CURLcode (*disconnect)(struct connectdata *, bool dead_connection);
 
+  /* If used, this function gets called from transfer.c:readwrite_data() to
+     allow the protocol to do extra reads/writes */
+  CURLcode (*readwrite)(struct SessionHandle *data, struct connectdata *conn,
+                        ssize_t *nread, bool *readmore);
+
   long defport;           /* Default port. */
   unsigned int protocol;  /* See CURLPROTO_*  */
   unsigned int flags;     /* Extra particular characteristics, see PROTOPT_* */
@@ -708,7 +703,9 @@ struct Curl_handler {
    the send function might need to be called while uploading, or vice versa.
 */
 #define PROTOPT_DIRLOCK (1<<3)
-#define PROTOPT_BANPROXY (1<<4)    /* not allowed to use proxy */
+#define PROTOPT_NONETWORK (1<<4)   /* protocol doesn't use the network! */
+#define PROTOPT_NEEDSPWD (1<<5)    /* needs a password, and if none is set it
+                                      gets a default */
 
 
 /* return the count of bytes sent, or -1 on error */
@@ -739,6 +736,9 @@ struct connectdata {
      struct only because we can do just about any protocol through a HTTP proxy
      and a HTTP proxy may in fact respond using chunked encoding */
   struct Curl_chunker chunk;
+
+  curl_closesocket_callback fclosesocket; /* function closing the socket(s) */
+  void *closesocket_client;
 
   bool inuse; /* This is a marker for the connection cache logic. If this is
                  TRUE this handle is being used by an easy handle and cannot
@@ -778,9 +778,9 @@ struct connectdata {
 
   /* 'primary_ip' and 'primary_port' get filled with peer's numerical
      ip address and port number whenever an outgoing connection is
-     *attemted* from the primary socket to a remote address. When more
+     *attempted* from the primary socket to a remote address. When more
      than one address is tried for a connection these will hold data
-     for the last attempt. When the connection is actualy established
+     for the last attempt. When the connection is actually established
      these are updated with data which comes directly from the socket. */
 
   char primary_ip[MAX_IPADR_LEN];
@@ -837,18 +837,19 @@ struct connectdata {
                                 well be the same we read from.
                                 CURL_SOCKET_BAD disables */
 
-  /** Dynamicly allocated strings, may need to be freed before this **/
-  /** struct is killed.                                             **/
+  /** Dynamicly allocated strings, MUST be freed before this **/
+  /** struct is killed.                                      **/
   struct dynamically_allocated_data {
-    char *proxyuserpwd; /* free later if not NULL! */
-    char *uagent; /* free later if not NULL! */
-    char *accept_encoding; /* free later if not NULL! */
-    char *userpwd; /* free later if not NULL! */
-    char *rangeline; /* free later if not NULL! */
-    char *ref; /* free later if not NULL! */
-    char *host; /* free later if not NULL */
-    char *cookiehost; /* free later if not NULL */
-    char *rtsp_transport; /* free later if not NULL */
+    char *proxyuserpwd;
+    char *uagent;
+    char *accept_encoding;
+    char *userpwd;
+    char *rangeline;
+    char *ref;
+    char *host;
+    char *cookiehost;
+    char *rtsp_transport;
+    char *te; /* TE: request header */
   } allocptr;
 
   int sec_complete; /* if kerberos is enabled for this connection */
@@ -936,6 +937,16 @@ struct connectdata {
 
   long verifypeer;
   long verifyhost;
+
+  /* When this connection is created, store the conditions for the local end
+     bind. This is stored before the actual bind and before any connection is
+     made and will serve the purpose of being used for comparison reasons so
+     that subsequent bound-requested connections aren't accidentally re-using
+     wrong connections. */
+  char *localdev;
+  unsigned short localport;
+  int localportrange;
+
 };
 
 /* The end of connectdata. */
@@ -986,8 +997,8 @@ struct Progress {
                     force redraw at next call */
   curl_off_t size_dl; /* total expected size */
   curl_off_t size_ul; /* total expected size */
-  curl_off_t downloaded; /* transfered so far */
-  curl_off_t uploaded; /* transfered so far */
+  curl_off_t downloaded; /* transferred so far */
+  curl_off_t uploaded; /* transferred so far */
 
   curl_off_t current_speed; /* uses the currently fastest transfer */
 
@@ -1142,9 +1153,8 @@ struct UrlState {
 
   bool authproblem; /* TRUE if there's some problem authenticating */
 
-#ifdef USE_ARES
-  ares_channel areschannel; /* for name resolves */
-#endif
+  void *resolver; /* resolver state, if it is used in the URL state -
+                     ares_channel f.e. */
 
 #if defined(USE_SSLEAY) && defined(HAVE_OPENSSL_ENGINE_H)
   ENGINE *engine;
@@ -1359,8 +1369,12 @@ struct UserDefined {
   curl_sockopt_callback fsockopt;  /* function for setting socket options */
   void *sockopt_client; /* pointer to pass to the socket options callback */
   curl_opensocket_callback fopensocket; /* function for checking/translating
-                                           the address and opening the socket */
+                                           the address and opening the
+                                           socket */
   void* opensocket_client;
+  curl_closesocket_callback fclosesocket; /* function for closing the
+                                             socket */
+  void* closesocket_client;
 
   void *seek_client;    /* pointer to pass to the seek callback */
   /* the 3 curl_conv_callback functions below are used on non-ASCII hosts */
@@ -1381,7 +1395,8 @@ struct UserDefined {
   long low_speed_limit; /* bytes/second */
   long low_speed_time;  /* number of seconds */
   curl_off_t max_send_speed; /* high speed limit in bytes/second for upload */
-  curl_off_t max_recv_speed; /* high speed limit in bytes/second for download */
+  curl_off_t max_recv_speed; /* high speed limit in bytes/second for
+                                download */
   curl_off_t set_resume_from;  /* continue [ftp] transfer from here */
   struct curl_slist *headers; /* linked list of extra headers */
   struct curl_httppost *httppost;  /* linked list of POST data */
@@ -1445,6 +1460,7 @@ struct UserDefined {
   bool hide_progress;    /* don't use the progress meter */
   bool http_fail_on_error;  /* fail on HTTP error codes >= 300 */
   bool http_follow_location; /* follow HTTP redirects */
+  bool http_transfer_encoding; /* request compressed HTTP transfer-encoding */
   bool http_disable_hostname_check_before_authentication;
   bool include_header;   /* include received protocol headers in data output */
   bool http_set_referer; /* is a custom referer used */
@@ -1494,7 +1510,8 @@ struct UserDefined {
   Curl_RtspReq rtspreq; /* RTSP request type */
   long rtspversion; /* like httpversion, for RTSP */
   bool wildcardmatch; /* enable wildcard matching */
-  curl_chunk_bgn_callback chunk_bgn; /* called before part of transfer starts */
+  curl_chunk_bgn_callback chunk_bgn; /* called before part of transfer
+                                        starts */
   curl_chunk_end_callback chunk_end; /* called after part transferring
                                         stopped */
   curl_fnmatch_callback fnmatch; /* callback to decide which file corresponds
@@ -1553,4 +1570,4 @@ struct SessionHandle {
 
 #define LIBCURL_NAME "libcurl"
 
-#endif
+#endif /* HEADER_CURL_URLDATA_H */

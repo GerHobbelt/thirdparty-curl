@@ -64,8 +64,6 @@
 #include <curl/curl.h>
 #include "urldata.h"
 #include "sendf.h"
-#include "easyif.h" /* for Curl_convert_... prototypes */
-
 #include "if2ip.h"
 #include "hostip.h"
 #include "progress.h"
@@ -85,6 +83,7 @@
 #include "url.h"
 #include "rawstr.h"
 #include "strtoofft.h"
+#include "http_proxy.h"
 
 #define _MPRINTF_REPLACE /* use our functions only */
 #include <curl/mprintf.h>
@@ -100,7 +99,7 @@ static CURLcode imap_do(struct connectdata *conn, bool *done);
 static CURLcode imap_done(struct connectdata *conn,
                           CURLcode, bool premature);
 static CURLcode imap_connect(struct connectdata *conn, bool *done);
-static CURLcode imap_disconnect(struct connectdata *conn, bool dead_connection);
+static CURLcode imap_disconnect(struct connectdata *conn, bool dead);
 static CURLcode imap_multi_statemach(struct connectdata *conn, bool *done);
 static int imap_getsock(struct connectdata *conn,
                         curl_socket_t *socks,
@@ -133,9 +132,10 @@ const struct Curl_handler Curl_handler_imap = {
   imap_getsock,                     /* doing_getsock */
   ZERO_NULL,                        /* perform_getsock */
   imap_disconnect,                  /* disconnect */
+  ZERO_NULL,                        /* readwrite */
   PORT_IMAP,                        /* defport */
   CURLPROTO_IMAP,                   /* protocol */
-  PROTOPT_CLOSEACTION               /* flags */
+  PROTOPT_CLOSEACTION | PROTOPT_NEEDSPWD /* flags */
 };
 
 
@@ -157,9 +157,10 @@ const struct Curl_handler Curl_handler_imaps = {
   imap_getsock,                     /* doing_getsock */
   ZERO_NULL,                        /* perform_getsock */
   imap_disconnect,                  /* disconnect */
+  ZERO_NULL,                        /* readwrite */
   PORT_IMAPS,                       /* defport */
   CURLPROTO_IMAP | CURLPROTO_IMAPS, /* protocol */
-  PROTOPT_CLOSEACTION | PROTOPT_SSL /* flags */
+  PROTOPT_CLOSEACTION | PROTOPT_SSL | PROTOPT_NEEDSPWD /* flags */
 };
 #endif
 
@@ -181,6 +182,7 @@ static const struct Curl_handler Curl_handler_imap_proxy = {
   ZERO_NULL,                            /* doing_getsock */
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
+  ZERO_NULL,                            /* readwrite */
   PORT_IMAP,                            /* defport */
   CURLPROTO_HTTP,                       /* protocol */
   PROTOPT_NONE                          /* flags */
@@ -205,6 +207,7 @@ static const struct Curl_handler Curl_handler_imaps_proxy = {
   ZERO_NULL,                            /* doing_getsock */
   ZERO_NULL,                            /* perform_getsock */
   ZERO_NULL,                            /* disconnect */
+  ZERO_NULL,                            /* readwrite */
   PORT_IMAPS,                           /* defport */
   CURLPROTO_HTTP,                       /* protocol */
   PROTOPT_NONE                          /* flags */
@@ -592,7 +595,7 @@ static CURLcode imap_state_fetch_gen_body_resp(struct connectdata *conn,
 
     data->req.maxdownload = filesize;
     if(!filesize)
-      /* the entire data is already transfered! */
+      /* the entire data is already transferred! */
       Curl_setup_transfer(conn, -1, -1, FALSE, NULL, -1, NULL);
     else {
       /*printf("Starting download, filesize: %i\n", (int)(filesize));*/
@@ -1218,12 +1221,10 @@ static CURLcode imap_multi_statemach(struct connectdata *conn,
   struct imap_conn *imapc = &conn->proto.imapc;
   CURLcode result;
 
-  if((conn->handler->protocol & CURLPROTO_IMAPS) && !imapc->ssldone) {
+  if((conn->handler->flags & PROTOPT_SSL) && !imapc->ssldone)
     result = Curl_ssl_connect_nonblocking(conn, FIRSTSOCKET, &imapc->ssldone);
-  }
-  else {
+  else
     result = Curl_pp_multi_statemach(&imapc->pp);
-  }
 
   *done = (bool)(imapc->state == IMAP_STOP);
 
@@ -1298,7 +1299,7 @@ static CURLcode imap_connect(struct connectdata *conn,
   if(CURLE_OK != result)
     return result;
 
-  /* We always support persistant connections on imap */
+  /* We always support persistent connections on imap */
   conn->bits.close = FALSE;
 
   pp->response_time = RESP_TIMEOUT; /* set default response time-out */
@@ -1306,7 +1307,6 @@ static CURLcode imap_connect(struct connectdata *conn,
   pp->endofresp = imap_endofresp;
   pp->conn = conn;
 
-#if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_PROXY)
   if(conn->bits.tunnel_proxy && conn->bits.httpproxy) {
     /* for IMAP over HTTP proxy */
     struct HTTP http_proxy;
@@ -1333,13 +1333,10 @@ static CURLcode imap_connect(struct connectdata *conn,
     if(CURLE_OK != result)
       return result;
   }
-#endif /* !CURL_DISABLE_HTTP && !CURL_DISABLE_PROXY */
 
-  if((conn->handler->protocol & CURLPROTO_IMAPS) &&
+  if((conn->handler->flags & PROTOPT_SSL) &&
      data->state.used_interface != Curl_if_multi) {
     /* BLOCKING */
-    /* IMAPS is simply imap with SSL for the control channel */
-    /* now, perform the SSL initialization for this socket */
     result = Curl_ssl_connect(conn, FIRSTSOCKET);
     if(result)
       return result;

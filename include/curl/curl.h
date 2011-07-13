@@ -7,7 +7,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2010, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -341,6 +341,9 @@ typedef curl_socket_t
                             curlsocktype purpose,
                             struct curl_sockaddr *address);
 
+typedef int
+(*curl_closesocket_callback)(void *clientp, curl_socket_t item);
+
 typedef enum {
   CURLIOE_OK,            /* I/O operation successful */
   CURLIOE_UNKNOWNCMD,    /* command was unknown to callback */
@@ -401,7 +404,8 @@ typedef enum {
   CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */
   CURLE_FAILED_INIT,             /* 2 */
   CURLE_URL_MALFORMAT,           /* 3 */
-  CURLE_OBSOLETE4,               /* 4 - NOT USED */
+  CURLE_NOT_BUILT_IN,            /* 4 - [was obsoleted in August 2007 for
+                                    7.17.0, reused in April 2011 for 7.21.5] */
   CURLE_COULDNT_RESOLVE_PROXY,   /* 5 */
   CURLE_COULDNT_RESOLVE_HOST,    /* 6 */
   CURLE_COULDNT_CONNECT,         /* 7 */
@@ -451,7 +455,7 @@ typedef enum {
   CURLE_INTERFACE_FAILED,        /* 45 - CURLOPT_INTERFACE failed */
   CURLE_OBSOLETE46,              /* 46 - NOT USED */
   CURLE_TOO_MANY_REDIRECTS ,     /* 47 - catch endless re-direct loops */
-  CURLE_UNKNOWN_TELNET_OPTION,   /* 48 - User specified an unknown option */
+  CURLE_UNKNOWN_OPTION,          /* 48 - User specified an unknown option */
   CURLE_TELNET_OPTION_SYNTAX ,   /* 49 - Malformed telnet option */
   CURLE_OBSOLETE50,              /* 50 - NOT USED */
   CURLE_PEER_FAILED_VERIFICATION, /* 51 - peer's certificate or fingerprint
@@ -466,7 +470,7 @@ typedef enum {
   CURLE_SSL_CERTPROBLEM,         /* 58 - problem with the local certificate */
   CURLE_SSL_CIPHER,              /* 59 - couldn't use specified cipher */
   CURLE_SSL_CACERT,              /* 60 - problem with the CA cert (path?) */
-  CURLE_BAD_CONTENT_ENCODING,    /* 61 - Unrecognized transfer encoding */
+  CURLE_BAD_CONTENT_ENCODING,    /* 61 - Unrecognized/bad encoding */
   CURLE_LDAP_INVALID_URL,        /* 62 - Invalid LDAP URL */
   CURLE_FILESIZE_EXCEEDED,       /* 63 - Maximum file size exceeded */
   CURLE_USE_SSL_FAILED,          /* 64 - Requested FTP SSL level failed */
@@ -506,7 +510,7 @@ typedef enum {
                                     7.19.0) */
   CURLE_FTP_PRET_FAILED,         /* 84 - a PRET command failed */
   CURLE_RTSP_CSEQ_ERROR,         /* 85 - mismatch of RTSP CSeq numbers */
-  CURLE_RTSP_SESSION_ERROR,      /* 86 - mismatch of RTSP Session Identifiers */
+  CURLE_RTSP_SESSION_ERROR,      /* 86 - mismatch of RTSP Session Ids */
   CURLE_FTP_BAD_FILE_LIST,       /* 87 - unable to parse FTP file list */
   CURLE_CHUNK_FAILED,            /* 88 - chunk callback reported error */
 
@@ -516,7 +520,11 @@ typedef enum {
 #ifndef CURL_NO_OLDIES /* define this to test if your app builds with all
                           the obsolete stuff removed! */
 
-/* Backwards compatibility with older names */
+/*  compatibility with older names */
+#define CURLOPT_ENCODING CURLOPT_ACCEPT_ENCODING
+
+/* The following were added in 7.21.5, April 2011 */
+#define CURLE_UNKNOWN_TELNET_OPTION CURLE_UNKNOWN_OPTION
 
 /* The following were added in 7.17.1 */
 /* These are scheduled to disappear by 2009 */
@@ -524,7 +532,7 @@ typedef enum {
 
 /* The following were added in 7.17.0 */
 /* These are scheduled to disappear by 2009 */
-#define CURLE_OBSOLETE CURLE_OBSOLETE50 /* noone should be using this! */
+#define CURLE_OBSOLETE CURLE_OBSOLETE50 /* no one should be using this! */
 #define CURLE_BAD_PASSWORD_ENTERED CURLE_OBSOLETE46
 #define CURLE_BAD_CALLING_ORDER CURLE_OBSOLETE44
 #define CURLE_FTP_USER_PASSWORD_INCORRECT CURLE_OBSOLETE10
@@ -536,7 +544,7 @@ typedef enum {
 #define CURLE_LIBRARY_NOT_FOUND CURLE_OBSOLETE40
 #define CURLE_MALFORMAT_USER CURLE_OBSOLETE24
 #define CURLE_SHARE_IN_USE CURLE_OBSOLETE57
-#define CURLE_URL_MALFORMAT_USER CURLE_OBSOLETE4
+#define CURLE_URL_MALFORMAT_USER CURLE_NOT_BUILT_IN
 
 #define CURLE_FTP_ACCESS_DENIED CURLE_REMOTE_ACCESS_DENIED
 #define CURLE_FTP_COULDNT_SET_BINARY CURLE_FTP_COULDNT_SET_TYPE
@@ -750,7 +758,7 @@ typedef enum {
 #endif
 
 #ifdef CURL_ISOCPP
-#define CINIT(name,type,number) CURLOPT_ ## name = CURLOPTTYPE_ ## type + number
+#define CINIT(na,t,nu) CURLOPT_ ## na = CURLOPTTYPE_ ## t + nu
 #else
 /* The macro "##" is ISO C, we assume pre-ISO C doesn't support it. */
 #define LONG          CURLOPTTYPE_LONG
@@ -919,7 +927,7 @@ typedef enum {
   CINIT(FAILONERROR, LONG, 45),  /* no output on http error codes >= 300 */
   CINIT(UPLOAD, LONG, 46),       /* this is an upload */
   CINIT(POST, LONG, 47),         /* HTTP POST method */
-  CINIT(DIRLISTONLY, LONG, 48),  /* return bare names when listing directories */
+  CINIT(DIRLISTONLY, LONG, 48),  /* bare names when listing directories */
 
   CINIT(APPEND, LONG, 50),       /* Append instead of overwrite on upload! */
 
@@ -986,8 +994,7 @@ typedef enum {
   /* Max amount of cached alive connections */
   CINIT(MAXCONNECTS, LONG, 71),
 
-  /* What policy to use when closing connections when the cache is filled
-     up */
+  /* 72 - DEPRECATED */
   CINIT(CLOSEPOLICY, LONG, 72),
 
   /* 73 = OBSOLETE */
@@ -1099,8 +1106,9 @@ typedef enum {
   CINIT(PROXYTYPE, LONG, 101),
 
   /* Set the Accept-Encoding string. Use this to tell a server you would like
-     the response to be compressed. */
-  CINIT(ENCODING, OBJECTPOINT, 102),
+     the response to be compressed. Before 7.21.6, this was known as
+     CURLOPT_ENCODING */
+  CINIT(ACCEPT_ENCODING, OBJECTPOINT, 102),
 
   /* Set pointer to private data */
   CINIT(PRIVATE, OBJECTPOINT, 103),
@@ -1113,8 +1121,8 @@ typedef enum {
      and password to whatever host the server decides. */
   CINIT(UNRESTRICTED_AUTH, LONG, 105),
 
-  /* Specifically switch on or off the FTP engine's use of the EPRT command ( it
-     also disables the LPRT attempt). By default, those ones will always be
+  /* Specifically switch on or off the FTP engine's use of the EPRT command (
+     it also disables the LPRT attempt). By default, those ones will always be
      attempted before the good old traditional PORT command. */
   CINIT(FTP_USE_EPRT, LONG, 106),
 
@@ -1458,26 +1466,43 @@ typedef enum {
   /* Set authentication type for authenticated TLS */
   CINIT(TLSAUTH_TYPE, OBJECTPOINT, 206),
 
+  /* Set to 1 to enable the "TE:" header in HTTP requests to ask for
+     compressed transfer-encoded responses. Set to 0 to disable the use of TE:
+     in outgoing requests. The current default is 0, but it might change in a
+     future libcurl release.
+
+     libcurl will ask for the compressed methods it knows of, and if that
+     isn't any, it will not ask for transfer-encoding at all even if this
+     option is set to 1.
+
+  */
+  CINIT(TRANSFER_ENCODING, LONG, 207),
+
+  /* Callback function for closing socket (instead of close(2)). The callback
+     should have type curl_closesocket_callback */
+  CINIT(CLOSESOCKETFUNCTION, FUNCTIONPOINT, 208),
+  CINIT(CLOSESOCKETDATA, OBJECTPOINT, 209),
+
   /* Set the interface string for c-ares (DNS)
    * to use as outgoing network interface */
-  CINIT(DNS_INTERFACE, OBJECTPOINT, 207),
+  CINIT(DNS_INTERFACE, OBJECTPOINT, 2010),
 
   /* Set the local IPv4 address for c-ares (DNS)
    * to use for outgoing connections.
    * Host-byte-order.
    */
-  CINIT(DNS_LOCAL_IP4, LONG, 208),
+  CINIT(DNS_LOCAL_IP4, LONG, 2011),
 
   /* Set the local IPv6 address for c-ares (DNS)
    * to use for outgoing connections.
    * 16-byte unsigned char*
    */
-  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 209),
+  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 212),
 
   /* Set the DNS servers for c-ares to use.
    * comma separated list of host[:port] entries.
    */
-  CINIT(DNS_SERVERS, OBJECTPOINT, 210),
+  CINIT(DNS_SERVERS, OBJECTPOINT, 213),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
@@ -1707,7 +1732,8 @@ CURL_EXTERN CURLFORMcode curl_formadd(struct curl_httppost **httppost,
  * Should return the buffer length passed to it as the argument "len" on
  *   success.
  */
-typedef size_t (*curl_formget_callback)(void *arg, const char *buf, size_t len);
+typedef size_t (*curl_formget_callback)(void *arg, const char *buf,
+                                        size_t len);
 
 /*
  * NAME curl_formget()

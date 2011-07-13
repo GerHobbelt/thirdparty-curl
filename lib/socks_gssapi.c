@@ -37,13 +37,13 @@
 #include <stdlib.h>
 #endif
 
+#include "gssapi.h"
 #include "urldata.h"
 #include "sendf.h"
 #include "connect.h"
 #include "timeval.h"
 #include "socks.h"
-
-static gss_ctx_id_t     gss_context = GSS_C_NO_CONTEXT;
+#include "warnless.h"
 
 #define _MPRINTF_REPLACE /* use our functions only */
 #include <curl/mprintf.h>
@@ -51,6 +51,8 @@ static gss_ctx_id_t     gss_context = GSS_C_NO_CONTEXT;
 #include "curl_memory.h"
 /* The last #include file should be: */
 #include "memdebug.h"
+
+static gss_ctx_id_t gss_context = GSS_C_NO_CONTEXT;
 
 /*
  * Helper gssapi error functions.
@@ -131,7 +133,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
   gss_buffer_desc* gss_token = GSS_C_NO_BUFFER;
   gss_name_t       server = GSS_C_NO_NAME;
   gss_name_t       gss_client_name = GSS_C_NO_NAME;
-  u_short          us_length;
+  unsigned short   us_length;
   char             *user=NULL;
   unsigned char socksreq[4]; /* room for gssapi exchange header only */
   char *serviceptr = data->set.str[STRING_SOCKS5_GSSAPI_SERVICE];
@@ -148,7 +150,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
    */
 
   /* prepare service name */
-  if (strchr(serviceptr,'/')) {
+  if(strchr(serviceptr,'/')) {
     service.value = malloc(strlen(serviceptr));
     if(!service.value)
       return CURLE_OUT_OF_MEMORY;
@@ -182,19 +184,13 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
   /* As long as we need to keep sending some context info, and there's no  */
   /* errors, keep sending it...                                            */
   for(;;) {
-    gss_major_status = gss_init_sec_context(&gss_minor_status,
-                                            GSS_C_NO_CREDENTIAL,
-                                            &gss_context, server,
-                                            GSS_C_NULL_OID,
-                                            GSS_C_MUTUAL_FLAG |
-                                            GSS_C_REPLAY_FLAG,
-                                            0,
-                                            NULL,
-                                            gss_token,
-                                            NULL,
-                                            &gss_send_token,
-                                            &gss_ret_flags,
-                                            NULL);
+    gss_major_status = Curl_gss_init_sec_context(&gss_minor_status,
+                                                 &gss_context,
+                                                 server,
+                                                 NULL,
+                                                 gss_token,
+                                                 &gss_send_token,
+                                                 &gss_ret_flags);
 
     if(gss_token != GSS_C_NO_BUFFER)
       gss_release_buffer(&gss_status, &gss_recv_token);
@@ -438,7 +434,8 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
       gss_delete_sec_context(&gss_status, &gss_context, NULL);
       return CURLE_COULDNT_CONNECT;
     }
-  } else {
+  }
+  else {
     code = Curl_write_plain(conn, sock, (char *)gss_w_token.value,
                             gss_w_token.length, &written);
     if((code != CURLE_OK) || ((ssize_t)gss_w_token.length != written)) {

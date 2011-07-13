@@ -47,21 +47,10 @@
 #endif
 #include <string.h>
 
-#ifdef HAVE_GSSGNU
-#  include <gss.h>
-#elif defined HAVE_GSSMIT
-   /* MIT style */
-#  include <gssapi/gssapi.h>
-#  include <gssapi/gssapi_generic.h>
-#  include <gssapi/gssapi_krb5.h>
-#else
-   /* Heimdal-style */
-#  include <gssapi.h>
-#endif
-
 #include "urldata.h"
 #include "curl_base64.h"
 #include "ftp.h"
+#include "gssapi.h"
 #include "sendf.h"
 #include "krb4.h"
 #include "curl_memory.h"
@@ -94,16 +83,16 @@ krb5_check_prot(void *app_data, int level)
 }
 
 static int
-krb5_decode(void *app_data, void *buf, int len, int level,
-            struct connectdata *conn)
+krb5_decode(void *app_data, void *buf, int len,
+            int level UNUSED_PARAM,
+            struct connectdata *conn UNUSED_PARAM)
 {
   gss_ctx_id_t *context = app_data;
   OM_uint32 maj, min;
   gss_buffer_desc enc, dec;
 
-  /* shut gcc up */
-  level = 0;
-  conn = NULL;
+  (void)level;
+  (void)conn;
 
   enc.value = buf;
   enc.length = len;
@@ -133,7 +122,7 @@ krb5_overhead(void *app_data, int level, int len)
 
 static int
 krb5_encode(void *app_data, const void *from, int length, int level, void **to,
-            struct connectdata *conn)
+            struct connectdata *conn UNUSED_PARAM)
 {
   gss_ctx_id_t *context = app_data;
   gss_buffer_desc dec, enc;
@@ -157,7 +146,8 @@ krb5_encode(void *app_data, const void *from, int length, int level, void **to,
   if(maj != GSS_S_COMPLETE)
     return -1;
 
-  /* malloc a new buffer, in case gss_release_buffer doesn't work as expected */
+  /* malloc a new buffer, in case gss_release_buffer doesn't work as
+     expected */
   *to = malloc(enc.length);
   if(!*to)
     return -1;
@@ -222,7 +212,8 @@ krb5_auth(void *app_data, struct connectdata *conn)
     if(maj != GSS_S_COMPLETE) {
       gss_release_name(&min, &gssname);
       if(service == srv_host) {
-        Curl_failf(data, "Error importing service name %s", input_buffer.value);
+        Curl_failf(data, "Error importing service name %s",
+                   input_buffer.value);
         return AUTH_ERROR;
       }
       service = srv_host;
@@ -240,19 +231,13 @@ krb5_auth(void *app_data, struct connectdata *conn)
          taken care by a final gss_release_buffer. */
       gss_release_buffer(&min, &output_buffer);
       ret = AUTH_OK;
-      maj = gss_init_sec_context(&min,
-                                 GSS_C_NO_CREDENTIAL,
-                                 context,
-                                 gssname,
-                                 GSS_C_NO_OID,
-                                 GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
-                                 0,
-                                 &chan,
-                                 gssresp,
-                                 NULL,
-                                 &output_buffer,
-                                 NULL,
-                                 NULL);
+      maj = Curl_gss_init_sec_context(&min,
+                                      context,
+                                      gssname,
+                                      &chan,
+                                      gssresp,
+                                      &output_buffer,
+                                      NULL);
 
       if(gssresp) {
         free(_gssresp.value);
@@ -287,7 +272,7 @@ krb5_auth(void *app_data, struct connectdata *conn)
           break;
         }
 
-        if(data->state.buffer[0] != '2' && data->state.buffer[0] != '3'){
+        if(data->state.buffer[0] != '2' && data->state.buffer[0] != '3') {
           Curl_infof(data, "Server didn't accept auth data\n");
           ret = AUTH_ERROR;
           break;
@@ -327,7 +312,7 @@ static void krb5_end(void *app_data)
 {
     OM_uint32 maj, min;
     gss_ctx_id_t *context = app_data;
-    if (*context != GSS_C_NO_CONTEXT) {
+    if(*context != GSS_C_NO_CONTEXT) {
       maj = gss_delete_sec_context(&min, context, GSS_C_NO_BUFFER);
       DEBUGASSERT(maj == GSS_S_COMPLETE);
     }

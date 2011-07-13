@@ -27,6 +27,7 @@
 #include <fcntl.h>
 
 #include "testutil.h"
+#include "warnless.h"
 #include "memdebug.h"
 
 /* 3x download!
@@ -80,8 +81,7 @@ int test(char *URL)
 
   curl_multi_add_handle(mhandle, handle);
 
-  while(CURLM_CALL_MULTI_PERFORM ==
-        curl_multi_perform(mhandle, &still_running));
+  curl_multi_perform(mhandle, &still_running);
 
   while(still_running) {
     static struct timeval timeout = /* 100 ms */ { 0, 100000L };
@@ -107,8 +107,7 @@ int test(char *URL)
       goto test_cleanup;
     }
     else {
-      while(CURLM_CALL_MULTI_PERFORM ==
-          curl_multi_perform(mhandle, &still_running));
+      curl_multi_perform(mhandle, &still_running);
     }
   }
 
