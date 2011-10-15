@@ -1,3 +1,5 @@
+#ifndef HEADER_CURL_GSSAPI_H
+#define HEADER_CURL_GSSAPI_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -21,6 +23,7 @@
  ***************************************************************************/
 
 #include "setup.h"
+#include "urldata.h"
 
 #ifdef HAVE_GSSAPI
 
@@ -40,6 +43,7 @@
 /* Common method for using gss api */
 
 OM_uint32 Curl_gss_init_sec_context(
+    struct SessionHandle *data,
     OM_uint32 * minor_status,
     gss_ctx_id_t * context,
     gss_name_t target_name,
@@ -49,3 +53,5 @@ OM_uint32 Curl_gss_init_sec_context(
     OM_uint32 * ret_flags);
 
 #endif /* HAVE_GSSAPI */
+
+#endif /* HEADER_CURL_GSSAPI_H */

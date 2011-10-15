@@ -251,6 +251,12 @@
 #  endif
 #endif
 
+#ifdef USE_LWIPSOCK
+#  include <lwip/init.h>
+#  include <lwip/sockets.h>
+#  include <lwip/netdb.h>
+#endif
+
 #ifdef HAVE_EXTRA_STRICMP_H
 #  include <extra/stricmp.h>
 #endif
@@ -279,7 +285,6 @@
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#include <errno.h>
 
 #ifdef __TANDEM /* for nsr-tandem-nsk systems */
 #include <floss.h>
@@ -563,6 +568,7 @@ int netware_init(void);
 #define USE_HTTP_NEGOTIATE
 #endif
 
+/* Single point where USE_NTLM definition might be done */
 #if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_NTLM)
 #if defined(USE_SSLEAY) || defined(USE_WINDOWS_SSPI) || \
    defined(USE_GNUTLS) || defined(USE_NSS)
@@ -595,6 +601,29 @@ int netware_init(void);
 
 #ifndef __SETUP_ONCE_H
 #include "setup_once.h"
+#endif
+
+/*
+ * Definition of our NOP statement Object-like macro
+ */
+
+#ifndef Curl_nop_stmt
+#  define Curl_nop_stmt do { } WHILE_FALSE
+#endif
+
+/*
+ * Ensure that Winsock and lwIP TCP/IP stacks are not mixed.
+ */
+
+#if defined(__LWIP_OPT_H__)
+#  if defined(SOCKET) || \
+     defined(USE_WINSOCK) || \
+     defined(HAVE_ERRNO_H) || \
+     defined(HAVE_WINSOCK_H) || \
+     defined(HAVE_WINSOCK2_H) || \
+     defined(HAVE_WS2TCPIP_H)
+#    error "Winsock and lwIP TCP/IP stack definitions shall not coexist!"
+#  endif
 #endif
 
 #endif /* HEADER_CURL_LIB_SETUP_H */

@@ -23,28 +23,19 @@
 #include "setup.h"
 
 #ifndef CURL_DISABLE_TELNET
-/* -- WIN32 approved -- */
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <ctype.h>
 
-#if defined(WIN32)
-#include <time.h>
-#include <io.h>
-#else
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
@@ -58,8 +49,6 @@
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
-
-#endif  /* WIN32 */
 
 #include "urldata.h"
 #include <curl/curl.h>
@@ -99,7 +88,7 @@
 #define  CURL_SB_LEN(x) (x->subend - x->subpointer)
 
 #ifdef CURL_DISABLE_VERBOSE_STRINGS
-#define printoption(a,b,c,d)  do { } while(0)
+#define printoption(a,b,c,d)  Curl_nop_stmt
 #endif
 
 #ifdef USE_WINSOCK
@@ -774,18 +763,24 @@ static void printsub(struct SessionHandle *data,
 static CURLcode check_telnet_options(struct connectdata *conn)
 {
   struct curl_slist *head;
+  struct curl_slist *beg;
   char option_keyword[128];
   char option_arg[256];
-  char *buf;
   struct SessionHandle *data = conn->data;
   struct TELNET *tn = (struct TELNET *)conn->data->state.proto.telnet;
+  CURLcode result = CURLE_OK;
 
   /* Add the user name as an environment variable if it
      was given on the command line */
   if(conn->bits.user_passwd) {
     snprintf(option_arg, sizeof(option_arg), "USER,%s", conn->user);
-    tn->telnet_vars = curl_slist_append(tn->telnet_vars, option_arg);
-
+    beg = curl_slist_append(tn->telnet_vars, option_arg);
+    if(!beg) {
+      curl_slist_free_all(tn->telnet_vars);
+      tn->telnet_vars = NULL;
+      return CURLE_OUT_OF_MEMORY;
+    }
+    tn->telnet_vars = beg;
     tn->us_preferred[CURL_TELOPT_NEW_ENVIRON] = CURL_YES;
   }
 
@@ -811,24 +806,33 @@ static CURLcode check_telnet_options(struct connectdata *conn)
 
       /* Environment variable */
       if(Curl_raw_equal(option_keyword, "NEW_ENV")) {
-        buf = strdup(option_arg);
-        if(!buf)
-          return CURLE_OUT_OF_MEMORY;
-        tn->telnet_vars = curl_slist_append(tn->telnet_vars, buf);
+        beg = curl_slist_append(tn->telnet_vars, option_arg);
+        if(!beg) {
+          result = CURLE_OUT_OF_MEMORY;
+          break;
+        }
+        tn->telnet_vars = beg;
         tn->us_preferred[CURL_TELOPT_NEW_ENVIRON] = CURL_YES;
         continue;
       }
 
       failf(data, "Unknown telnet option %s", head->data);
-      return CURLE_UNKNOWN_TELNET_OPTION;
+      result = CURLE_UNKNOWN_TELNET_OPTION;
+      break;
     }
     else {
       failf(data, "Syntax error in telnet option: %s", head->data);
-      return CURLE_TELNET_OPTION_SYNTAX;
+      result = CURLE_TELNET_OPTION_SYNTAX;
+      break;
     }
   }
 
-  return CURLE_OK;
+  if(result) {
+    curl_slist_free_all(tn->telnet_vars);
+    tn->telnet_vars = NULL;
+  }
+
+  return result;
 }
 
 /*
@@ -1120,6 +1124,7 @@ static CURLcode telnet_done(struct connectdata *conn,
   (void)premature; /* not used */
 
   curl_slist_free_all(tn->telnet_vars);
+  tn->telnet_vars = NULL;
 
   free(conn->data->state.proto.telnet);
   conn->data->state.proto.telnet = NULL;
@@ -1238,13 +1243,6 @@ static CURLcode telnet_do(struct connectdata *conn, bool *done)
     return CURLE_FAILED_INIT;
   }
 
-  /* The get the Windows file handle for stdin */
-  stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
-
-  /* Create the list of objects to wait for */
-  objs[0] = event_handle;
-  objs[1] = stdin_handle;
-
   /* Tell winsock what events we want to listen to */
   if(event_select_func(sockfd, event_handle, FD_READ|FD_CLOSE) ==
      SOCKET_ERROR) {
@@ -1253,9 +1251,17 @@ static CURLcode telnet_do(struct connectdata *conn, bool *done)
     return CURLE_OK;
   }
 
+  /* The get the Windows file handle for stdin */
+  stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
+
+  /* Create the list of objects to wait for */
+  objs[0] = event_handle;
+  objs[1] = stdin_handle;
+
   /* If stdin_handle is a pipe, use PeekNamedPipe() method to check it,
      else use the old WaitForMultipleObjects() way */
-  if(GetFileType(stdin_handle) == FILE_TYPE_PIPE) {
+  if(GetFileType(stdin_handle) == FILE_TYPE_PIPE ||
+     data->set.is_fread_set) {
     /* Don't wait for stdin_handle, just wait for event_handle */
     obj_count = 1;
     /* Check stdin_handle per 100 milliseconds */
@@ -1273,20 +1279,41 @@ static CURLcode telnet_do(struct connectdata *conn, bool *done)
     case WAIT_TIMEOUT:
     {
       for(;;) {
-        if(!PeekNamedPipe(stdin_handle, NULL, 0, NULL, &readfile_read, NULL)) {
-          keepon = FALSE;
-          code = CURLE_READ_ERROR;
-          break;
+        if(obj_count == 1) {
+          /* read from user-supplied method */
+          code = (int)conn->fread_func(buf, 1, BUFSIZE - 1, conn->fread_in);
+          if(code == CURL_READFUNC_ABORT) {
+            keepon = FALSE;
+            code = CURLE_READ_ERROR;
+            break;
+          }
+
+          if(code == CURL_READFUNC_PAUSE)
+            break;
+
+          if(code == 0)                        /* no bytes */
+            break;
+
+          readfile_read = code; /* fall thru with number of bytes read */
         }
+        else {
+          /* read from stdin */
+          if(!PeekNamedPipe(stdin_handle, NULL, 0, NULL,
+                            &readfile_read, NULL)) {
+            keepon = FALSE;
+            code = CURLE_READ_ERROR;
+            break;
+          }
 
-        if(!readfile_read)
-          break;
+          if(!readfile_read)
+            break;
 
-        if(!ReadFile(stdin_handle, buf, sizeof(data->state.buffer),
-                     &readfile_read, NULL)) {
-          keepon = FALSE;
-          code = CURLE_READ_ERROR;
-          break;
+          if(!ReadFile(stdin_handle, buf, sizeof(data->state.buffer),
+                       &readfile_read, NULL)) {
+            keepon = FALSE;
+            code = CURLE_READ_ERROR;
+            break;
+          }
         }
 
         code = send_telnet_data(conn, buf, readfile_read);
@@ -1375,7 +1402,7 @@ static CURLcode telnet_do(struct connectdata *conn, bool *done)
   }
 
   /* We called WSACreateEvent, so call WSACloseEvent */
-  if(close_event_func(event_handle) == FALSE) {
+  if(!close_event_func(event_handle)) {
     infof(data,"WSACloseEvent failed (%d)", SOCKERRNO);
   }
 

@@ -194,7 +194,10 @@ no file will be written. The file will be written using the Netscape cookie
 file format. If you set the file name to a single dash, "-", the cookies will
 be written to stdout.
 
-.B NOTE
+This command line option will activate the cookie engine that makes curl
+record and use cookies. Another way to activate it is to use the \fI-b,
+--cookie\fP option.
+
 If the cookie jar can't be created or written to, the whole curl operation
 won't fail or even report an error clearly. Using -v will get a warning
 displayed, but that is the only visible feedback you get about this possibly
@@ -319,6 +322,18 @@ This will make curl load data from the given file (including any newlines),
 URL-encode that data and pass it on in the POST. The name part gets an equal
 sign appended, resulting in \fIname=urlencoded-file-content\fP. Note that the
 name is expected to be URL-encoded already.
+.RE
+.IP "--delegation LEVEL"
+Set \fILEVEL\fP to tell the server what it is allowed to delegate when it
+comes to user credentials. Used with GSS/kerberos.
+.RS
+.IP "none"
+Don't allow any delegation.
+.IP "policy"
+Delegates if and only if the OK-AS-DELEGATE flag is set in the Kerberos
+service ticket, which is a matter of realm policy.
+.IP "always"
+Unconditionally allow the server to delegate.
 .RE
 .IP "--digest"
 (HTTP) Enables HTTP Digest authentication. This is a authentication that
@@ -577,7 +592,9 @@ header will be used instead of the internal one. This allows you to make even
 trickier stuff than curl would normally do. You should not replace internally
 set headers without knowing perfectly well what you're doing. Remove an
 internal header by giving a replacement without content on the right side of
-the colon, as in: -H \&"Host:".
+the colon, as in: -H \&"Host:". If you send the custom header with no-value then
+its header must be terminated with a semicolon, such as \-H "X-Custom-Header;"
+to send "X-Custom-Header:".
 
 curl will make sure that each header you add/replace is sent with the proper
 end-of-line marker, you should thus \fBnot\fP add that as a part of the header
@@ -1268,9 +1285,8 @@ the port number is not specified, it is assumed at port 1080. (Added in
 This option overrides any previous use of \fI-x, --proxy\fP, as they are
 mutually exclusive.
 
-Since 7.21.7, this option is superfluous since you can specify a
-socks5-hostnamae proxy with \fI-x, --proxy\fP using a socks5h:// protocol
-prefix.
+Since 7.21.7, this option is superfluous since you can specify a socks5
+hostname proxy with \fI-x, --proxy\fP using a socks5h:// protocol prefix.
 
 If this option is used several times, the last one will be used. (This option
 was previously wrongly documented and used as --socks without the number
@@ -1578,6 +1594,14 @@ Specifies a custom FTP command to use instead of LIST when doing file lists
 with FTP.
 
 If this option is used several times, the last one will be used.
+
+.IP "--xattr"
+When saving output to a file, this option tells curl to store certain file
+metadata in extened file attributes. Currently, the URL is stored in the
+xdg.origin.url attribute and, for HTTP, the content type is stored in
+the mime_type attribute. If the file system does not support extended
+attributes, a warning is issued.
+
 .IP "-y, --speed-time <time>"
 If a download is slower than speed-limit bytes per second during a speed-time
 period, the download gets aborted. If speed-time is used, the default
@@ -1658,22 +1682,39 @@ Default config file, see \fI-K, --config\fP for details.
 The environment variables can be specified in lower case or upper case. The
 lower case version has precedence. http_proxy is an exception as it is only
 available in lower case.
+
+Using an environment variable to set the proxy has the same effect as using
+the \fI--proxy\fP option.
+
 .IP "http_proxy [protocol://]<host>[:port]"
 Sets the proxy server to use for HTTP.
 .IP "HTTPS_PROXY [protocol://]<host>[:port]"
 Sets the proxy server to use for HTTPS.
-.IP "FTP_PROXY [protocol://]<host>[:port]"
-Sets the proxy server to use for FTP.
+.IP "[url-protocol]_PROXY [protocol://]<host>[:port]"
+Sets the proxy server to use for [url-protocol], where the protocol is a
+protocol that curl supports and as specified in a URL. FTP, FTPS, POP3, IMAP,
+SMTP, LDAP etc.
 .IP "ALL_PROXY [protocol://]<host>[:port]"
 Sets the proxy server to use if no protocol-specific proxy is set.
 .IP "NO_PROXY <comma-separated list of hosts>"
 list of host names that shouldn't go through any proxy. If set to a asterisk
 \&'*' only, it matches all hosts.
+.SH "PROXY PROTOCOL PREFIXES"
+Since curl version 7.21.7, the proxy string may be specified with a
+protocol:// prefix to specify alternative proxy protocols.
 
-Since 7.21.7, the proxy string may be specified with a protocol:// prefix to
-specify alternative proxy protocols. Use socks4://, socks4a:// or socks5:// to
-request the specific SOCKS version to be used. No protocol specified, http://
-and all others will be treated as HTTP proxies.
+If no protocol is specified in the proxy string or if the string doesn't match
+a supported one, the proxy will be treated as a HTTP proxy.
+
+The supported proxy protocol prefixes are as follows:
+.IP "socks4://"
+Makes it the equivalent of \fI--socks4\fP
+.IP "socks4a://"
+Makes it the equivalent of \fI--socks4a\fP
+.IP "socks5://"
+Makes it the equivalent of \fI--socks5\fP
+.IP "socks5h://"
+Makes it the equivalent of \fI--socks5-hostname\fP
 .SH EXIT CODES
 There are a bunch of different error codes and their corresponding error
 messages that may appear during bad conditions. At the time of this writing,
@@ -1854,4 +1895,3 @@ ftp://ftp.sunet.se/pub/www/utilities/curl/
 .SH "SEE ALSO"
 .BR ftp (1),
 .BR wget (1)
-

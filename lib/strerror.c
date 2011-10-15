@@ -34,9 +34,6 @@
 #endif
 
 #include <curl/curl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #ifdef USE_LIBIDN
 #include <idna.h>
@@ -386,6 +383,9 @@ curl_share_strerror(CURLSHcode error)
 
   case CURLSHE_NOMEM:
     return "Out of memory";
+
+  case CURLSHE_NOT_BUILT_IN:
+    return "Feature not enabled in this library";
 
   case CURLSHE_LAST:
     break;

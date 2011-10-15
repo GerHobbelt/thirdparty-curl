@@ -62,7 +62,7 @@ while(1) {
         next;
     }
     elsif($file =~ /-W(.*)/) {
-        $wlist = $1;
+        $wlist .= " $1 ";
         $file = shift @ARGV;
         next;
     }
@@ -79,7 +79,7 @@ if(!$file) {
 }
 
 do {
-    if($file ne "$wlist") {
+    if("$wlist" !~ / $file /) {
         my $fullname = $file;
         $fullname = "$dir/$file" if ($fullname !~ '^\.?\.?/');
         scanfile($fullname);
@@ -145,7 +145,7 @@ sub scanfile {
         }
 
         # check for "} else"
-        if($l =~ /^(.*)\} else/) {
+        if($l =~ /^(.*)\} *else/) {
             checkwarn($line, length($1), $file, $l, "else after closing brace on same line");
         }
         # check for "){"

@@ -20,16 +20,9 @@
  *
  ***************************************************************************/
 
-
 #include "setup.h"
 
 #ifdef USE_WINDOWS_SSPI
-
-#include <string.h>
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
 
 #include "urldata.h"
 #include "sendf.h"
@@ -167,7 +160,6 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
   ssize_t actualread;
   ssize_t written;
   int result;
-  long timeout;
   /* Needs GSSAPI authentication */
   SECURITY_STATUS sspi_major_status, sspi_minor_status=0;
   unsigned long sspi_ret_flags=0;
@@ -185,9 +177,6 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
   ULONG qop;
   unsigned char socksreq[4]; /* room for gssapi exchange header only */
   char *service = data->set.str[STRING_SOCKS5_GSSAPI_SERVICE];
-
-  /* get timeout */
-  timeout = Curl_timeleft(data, NULL, TRUE);
 
   /*   GSSAPI request looks like
    * +----+------+-----+----------------+
@@ -344,8 +333,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
      * +----+------+-----+----------------+
      */
 
-    result=Curl_blockread_all(conn, sock, (char *)socksreq, 4,
-                              &actualread, timeout);
+    result=Curl_blockread_all(conn, sock, (char *)socksreq, 4, &actualread);
     if(result != CURLE_OK || actualread != 4) {
       failf(data, "Failed to receive SSPI authentication response.");
       free(service_name);
@@ -390,8 +378,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
       return CURLE_OUT_OF_MEMORY;
     }
     result = Curl_blockread_all(conn, sock, (char *)sspi_recv_token.pvBuffer,
-                                sspi_recv_token.cbBuffer,
-                                &actualread, timeout);
+                                sspi_recv_token.cbBuffer, &actualread);
 
     if(result != CURLE_OK || actualread != us_length) {
       failf(data, "Failed to receive SSPI authentication token.");
@@ -592,8 +579,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
     s_pSecFn->FreeContextBuffer(sspi_send_token.pvBuffer);
   }
 
-  result=Curl_blockread_all(conn, sock, (char *)socksreq, 4,
-                            &actualread, timeout);
+  result=Curl_blockread_all(conn, sock, (char *)socksreq, 4, &actualread);
   if(result != CURLE_OK || actualread != 4) {
     failf(data, "Failed to receive SSPI encryption response.");
     s_pSecFn->DeleteSecurityContext(&sspi_context);
@@ -626,8 +612,7 @@ CURLcode Curl_SOCKS5_gssapi_negotiate(int sockindex,
   }
 
   result=Curl_blockread_all(conn, sock, (char *)sspi_w_token[0].pvBuffer,
-                            sspi_w_token[0].cbBuffer,
-                            &actualread, timeout);
+                            sspi_w_token[0].cbBuffer, &actualread);
 
   if(result != CURLE_OK || actualread != us_length) {
     failf(data, "Failed to receive SSPI encryption type.");

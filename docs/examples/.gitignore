@@ -4,6 +4,7 @@ certinfo
 chkspeed
 cookie_interface
 debug
+externalsocket
 fileupload
 fopen
 ftp-wildcard
@@ -25,6 +26,9 @@ multi-single
 persistant
 post-callback
 postit2
+progressfunc
+resolve
+rtsp
 sendrecv
 sepheaders
 simple

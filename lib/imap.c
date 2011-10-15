@@ -26,11 +26,6 @@
 #include "setup.h"
 
 #ifndef CURL_DISABLE_IMAP
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <ctype.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -244,9 +239,6 @@ static void _imap_log(struct connectdata* conn,
  *
  * Sends the formated string as an IMAP command to a server
  *
- * NOTE: we build the command in a fixed-length buffer, which sets length
- * restrictions on the command!
- *
  * Designed to never block.
  */
 static CURLcode imapsendf(struct connectdata *conn,
@@ -391,7 +383,7 @@ static void imap_to_imaps(struct connectdata *conn)
   conn->handler = &Curl_handler_imaps;
 }
 #else
-#define imap_to_imaps(x)
+#define imap_to_imaps(x) Curl_nop_stmt
 #endif
 
 /* for STARTTLS responses */
@@ -1231,7 +1223,7 @@ static CURLcode imap_multi_statemach(struct connectdata *conn,
   else
     result = Curl_pp_multi_statemach(&imapc->pp);
 
-  *done = (bool)(imapc->state == IMAP_STOP);
+  *done = (imapc->state == IMAP_STOP) ? TRUE : FALSE;
 
   return result;
 }
@@ -1446,7 +1438,7 @@ CURLcode imap_perform(struct connectdata *conn,
     result = imap_easy_statemach(conn);
     *dophase_done = TRUE; /* with the easy interface we are done here */
   }
-  *connected = conn->bits.tcpconnect;
+  *connected = conn->bits.tcpconnect[FIRSTSOCKET];
 
   if(*dophase_done)
     DEBUGF(infof(conn->data, "DO phase is complete\n"));

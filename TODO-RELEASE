@@ -1,15 +1,11 @@
-To be addressed in 7.21.6
+To be addressed in 7.22.1
 =========================
 
-284 - bug 3172608 "No re-authentication when HTTP connecton is closed"
-      http://curl.haxx.se/bug/view.cgi?id=3172608
-      Would be nice if someone could verify the suggested patch
+295 - "RTSP Authentication (#22)" https://github.com/bagder/curl/pull/22
 
-285 - bug 3163118 "Allow programatic use of telnet on Windows"
-      http://curl.haxx.se/bug/view.cgi?id=3163118
-      Would appreciate a Windows developer to give it a look before we apply
-      the suggested patch
+296 - "OOM leak in multi code" (by Dan Fandrich)
 
-287 - bug 3215314 Post quote operation to rename fails in Windows
+300 - "Polling on stray socket on sequential transfers." Andrew S
+      http://curl.haxx.se/mail/lib-2011-07/0053.html
 
-289 -
+308 -
