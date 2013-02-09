@@ -221,6 +221,7 @@ _CURL_WARNING(_curl_easy_getinfo_err_curl_slist,
   ((option) == CURLOPT_URL ||                                                 \
    (option) == CURLOPT_PROXY ||                                               \
    (option) == CURLOPT_INTERFACE ||                                           \
+   (option) == CURLOPT_LOCALADDR ||                                           \
    (option) == CURLOPT_NETRC_FILE ||                                          \
    (option) == CURLOPT_USERPWD ||                                             \
    (option) == CURLOPT_USERNAME ||                                            \

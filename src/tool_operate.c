@@ -1118,6 +1118,8 @@ int operate(struct Configurable *config, int argc, argv_item_t argv[])
         my_setopt_str(curl, CURLOPT_INTERFACE, config->iface);
         my_setopt_str(curl, CURLOPT_KRBLEVEL, config->krblevel);
 
+        my_setopt_str(curl, CURLOPT_LOCALADDR, config->localaddr);
+
         progressbarinit(&progressbar, config);
         if((config->progressmode == CURL_PROGRESS_BAR) &&
            !config->noprogress && !config->mute) {

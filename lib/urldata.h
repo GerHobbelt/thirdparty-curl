@@ -1000,6 +1000,7 @@ struct connectdata {
      that subsequent bound-requested connections aren't accidentally re-using
      wrong connections. */
   char *localdev;
+  char *localaddr; /* Local addr in dot notation */
   unsigned short localport;
   int localportrange;
 
@@ -1375,6 +1376,7 @@ enum dupstring {
   STRING_TLSAUTH_USERNAME,     /* TLS auth <username> */
   STRING_TLSAUTH_PASSWORD,     /* TLS auth <password> */
 #endif
+  STRING_LOCALADDR,            /* Local IP Addr to use. */
 
   /* -- end of strings -- */
   STRING_LAST /* not used, just an end-of-list marker */

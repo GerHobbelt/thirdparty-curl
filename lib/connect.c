@@ -255,6 +255,7 @@ static CURLcode bindlocal(struct connectdata *conn,
   /* how many port numbers to try to bind to, increasing one at a time */
   int portnum = data->set.localportrange;
   const char *dev = data->set.str[STRING_DEVICE];
+  const char *addr = data->set.str[STRING_LOCALADDR];
   int error;
   char myhost[256] = "";
   int done = 0; /* -1 for error, 1 for address found */
@@ -262,6 +263,7 @@ static CURLcode bindlocal(struct connectdata *conn,
   bool is_host = FALSE;
   static const char *if_prefix = "if!";
   static const char *host_prefix = "host!";
+  bool resolv_myhost = false;
 
   /*************************************************************
    * Select device to bind socket to
@@ -284,8 +286,15 @@ static CURLcode bindlocal(struct connectdata *conn,
 
     /* interface */
     if(!is_host && (is_interface || Curl_if_is_interface_name(dev))) {
-      if(Curl_if2ip(af, dev, myhost, sizeof(myhost)) == NULL)
-        return CURLE_INTERFACE_FAILED;
+      if(addr && dev) {
+        strncpy(myhost, addr, sizeof(myhost));
+        myhost[sizeof(myhost)-1] = 0;
+        resolv_myhost = true;
+      }
+      else {
+        if(Curl_if2ip(af, dev, myhost, sizeof(myhost)) == NULL)
+          return CURLE_INTERFACE_FAILED;
+      }
 
       /*
        * We now have the numerical IP address in the 'myhost' buffer
@@ -318,6 +327,12 @@ static CURLcode bindlocal(struct connectdata *conn,
 #endif
     }
     else {
+      strncpy(myhost, dev, sizeof(myhost));
+      myhost[sizeof(myhost)-1] = 0;
+      resolv_myhost = true;
+    }
+
+    if(resolv_myhost) {
       /*
        * This was not an interface, resolve the name as a host name
        * or IP number
@@ -336,7 +351,7 @@ static CURLcode bindlocal(struct connectdata *conn,
         conn->ip_version = CURL_IPRESOLVE_V6;
 #endif
 
-      rc = Curl_resolv(conn, dev, 0, &h);
+      rc = Curl_resolv(conn, myhost, 0, &h);
       if(rc == CURLRESOLV_PENDING)
         (void)Curl_resolver_wait_resolv(conn, &h);
       conn->ip_version = ipver;
@@ -433,7 +448,7 @@ static CURLcode bindlocal(struct connectdata *conn,
   }
 
   data->state.os_errno = error = SOCKERRNO;
-  failf(data, "bind failed with errno %d: %s",
+  failf(data, "bindlocal: bind failed with errno %d: %s",
         error, Curl_strerror(conn, error));
 
   return CURLE_INTERFACE_FAILED;

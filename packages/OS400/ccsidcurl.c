@@ -1058,6 +1058,7 @@ curl_easy_setopt_ccsid(CURL * curl, CURLoption tag, ...)
   case CURLOPT_FTP_ALTERNATIVE_TO_USER:
   case CURLOPT_FTPPORT:
   case CURLOPT_INTERFACE:
+  case CURLOPT_LOCALADDR:
   case CURLOPT_ISSUERCERT:
   case CURLOPT_KEYPASSWD:
   case CURLOPT_KRBLEVEL:

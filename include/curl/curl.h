@@ -1536,6 +1536,9 @@ typedef enum {
   /* set the SMTP auth originator */
   CINIT(MAIL_AUTH, OBJECTPOINT, 217),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CINIT(LOCALADDR, OBJECTPOINT, 218),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

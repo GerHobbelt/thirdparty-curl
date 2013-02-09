@@ -1814,6 +1814,14 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
     result = setstropt(&data->set.str[STRING_DEVICE],
                        va_arg(param, char *));
     break;
+  case CURLOPT_LOCALADDR:
+    /*
+     * Set what local address to bind the socket to when
+     * performing an operation and thus what from-IP your connection will use.
+     */
+    result = setstropt(&data->set.str[STRING_LOCALADDR],
+                       va_arg(param, char *));
+    break;
   case CURLOPT_LOCALPORT:
     /*
      * Set what local port to bind the socket to when performing an operation.
@@ -2475,6 +2483,7 @@ static void conn_free(struct connectdata *conn)
   conn->done_pipe = NULL;
 
   Curl_safefree(conn->localdev);
+  Curl_safefree(conn->localaddr);
   Curl_free_ssl_config(&conn->ssl_config);
 
   free(conn); /* free all the connection oriented data */
@@ -2854,7 +2863,7 @@ ConnectionExists(struct SessionHandle *data,
            already in use so we skip it */
         continue;
 
-      if(needle->localdev || needle->localport) {
+      if(needle->localdev || needle->localport || needle->localaddr) {
         /* If we are bound to a specific local end (IP+port), we must not
            re-use a random other one, although if we didn't ask for a
            particular one we can reuse one that was bound.
@@ -2867,10 +2876,19 @@ ConnectionExists(struct SessionHandle *data,
            missing out a few edge cases shouldn't hurt anyone very much.
         */
         if((check->localport != needle->localport) ||
-           (check->localportrange != needle->localportrange) ||
-           !check->localdev ||
-           !needle->localdev ||
-           strcmp(check->localdev, needle->localdev))
+           (check->localportrange != needle->localportrange))
+          continue;
+
+        if((check->localdev && !needle->localdev) ||
+           (needle->localdev && !needle->localdev) ||
+           (needle->localdev && check->localdev &&
+            (strcmp(check->localdev, needle->localdev) != 0)))
+          continue;
+
+        if((check->localaddr && !needle->localaddr) ||
+           (needle->localaddr && !needle->localaddr) ||
+           (needle->localaddr && check->localaddr &&
+            (strcmp(check->localaddr, needle->localaddr) != 0)))
           continue;
       }
 
@@ -3420,6 +3438,11 @@ static struct connectdata *allocate_conn(struct SessionHandle *data)
     if(!conn->localdev)
       goto error;
   }
+  if(data->set.str[STRING_LOCALADDR]) {
+    conn->localaddr = strdup(data->set.str[STRING_LOCALADDR]);
+    if(!conn->localaddr)
+      goto error;
+  }
   conn->localportrange = data->set.localportrange;
   conn->localport = data->set.localport;
 
@@ -3443,6 +3466,7 @@ static struct connectdata *allocate_conn(struct SessionHandle *data)
 
   Curl_safefree(conn->master_buffer);
   Curl_safefree(conn->localdev);
+  Curl_safefree(conn->localaddr);
   Curl_safefree(conn);
   return NULL;
 }
@@ -4538,6 +4562,7 @@ static void reuse_conn(struct connectdata *old_conn,
   Curl_safefree(old_conn->proxyuser);
   Curl_safefree(old_conn->proxypasswd);
   Curl_safefree(old_conn->localdev);
+  Curl_safefree(old_conn->localaddr);
 
   Curl_llist_destroy(old_conn->send_pipe, NULL);
   Curl_llist_destroy(old_conn->recv_pipe, NULL);
