@@ -265,6 +265,8 @@ _CURL_WARNING(_curl_easy_getinfo_err_curl_slist,
    (option) == CURLOPT_RTSP_SESSION_ID ||                                     \
    (option) == CURLOPT_RTSP_STREAM_URI ||                                     \
    (option) == CURLOPT_RTSP_TRANSPORT ||                                      \
+   (option) == CURLOPT_DNS_INTERFACE ||                                       \
+   (option) == CURLOPT_DNS_SERVERS ||                                         \
    0)
 
 /* evaluates to true if option takes a curl_write_callback argument */

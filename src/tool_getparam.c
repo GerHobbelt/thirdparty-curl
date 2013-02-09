@@ -75,8 +75,11 @@ static const struct LongShort aliases[]= {
   {"*",  "url",                      TRUE},
   {"*a", "random-file",              TRUE},
   {"*b", "egd-file",                 TRUE},
+  {"*B", "dns_ipv6_addr",            TRUE},
   {"*c", "connect-timeout",          TRUE},
+  {"*C", "dns_ipv4_addr",            TRUE},
   {"*d", "ciphers",                  TRUE},
+  {"*D", "dns_interface",                TRUE},
   {"*e", "disable-epsv",             FALSE},
   {"*E", "epsv",                     FALSE},
          /* 'epsv' made like this to make --no-epsv and --epsv to work
@@ -84,6 +87,7 @@ static const struct LongShort aliases[]= {
 #ifdef USE_ENVIRONMENT
   {"*f", "environment",              FALSE},
 #endif
+  {"*F", "dns_servers",              TRUE},
   {"*g", "trace",                    TRUE},
   {"*h", "trace-ascii",              TRUE},
   {"*i", "limit-rate",               TRUE},
@@ -398,13 +402,25 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
       case 'b': /* egd-file */
         GetStr(&config->egd_file, nextarg);
         break;
+      case 'B': /* --dns_ipv6_addr */
+        /* addr in dot notation */
+        GetStr(&config->dns_ipv6_addr, nextarg);
+        break;
       case 'c': /* connect-timeout */
         err = str2unum(&config->connecttimeout, nextarg);
         if(err)
           return err;
         break;
+      case 'C': /* --dns_ipv6_addr */
+        /* addr in dot notation */
+        GetStr(&config->dns_ipv4_addr, nextarg);
+        break;
       case 'd': /* ciphers */
         GetStr(&config->cipher_list, nextarg);
+        break;
+      case 'D': /* --dns_interface */
+        /* interface name */
+        GetStr(&config->dns_interface, nextarg);
         break;
       case 'e': /* --disable-epsv */
         config->disable_epsv = toggle;
@@ -417,6 +433,10 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
         config->writeenv = toggle;
         break;
 #endif
+      case 'F': /* --dns_servers */
+        /* IP addrs of DNS servers */
+        GetStr(&config->dns_servers, nextarg);
+        break;
       case 'g': /* --trace */
         GetStr(&config->trace_dump, nextarg);
         if(config->tracetype && (config->tracetype != TRACE_BIN))
@@ -1699,4 +1719,3 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
 
   return PARAM_OK;
 }
-

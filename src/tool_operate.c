@@ -74,6 +74,7 @@
 #include "tool_writeout.h"
 #include "tool_xattr.h"
 #include "tool_vms.h"
+#include "../lib/inet_pton.h"
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -1130,6 +1131,32 @@ int operate(struct Configurable *config, int argc, argv_item_t argv[])
           my_setopt(curl, CURLOPT_PROGRESSDATA, &progressbar);
         }
 
+        my_setopt_str(curl, CURLOPT_DNS_INTERFACE, config->dns_interface);
+        my_setopt_str(curl, CURLOPT_DNS_SERVERS, config->dns_servers);
+        {
+          uint32_t a4 = 0;
+          if(config->dns_ipv4_addr) {
+            if(Curl_inet_pton(AF_INET, config->dns_ipv4_addr, &a4) != 1) {
+              res = PARAM_BAD_USE;
+              goto quit_curl;
+            }
+            /* API expects host-byte-order, inet_pton returns NBO */
+            a4 = ntohl(a4);
+          }
+          my_setopt(curl, CURLOPT_DNS_LOCAL_IP4, a4);
+        }
+        {
+          unsigned char a6[INET6_ADDRSTRLEN];
+          memset(a6, 0, sizeof(a6));
+          if(config->dns_ipv6_addr) {
+            if(Curl_inet_pton(AF_INET6, config->dns_ipv6_addr, a6) != 1) {
+              res = PARAM_BAD_USE;
+              goto quit_curl;
+            }
+          }
+          my_setopt(curl, CURLOPT_DNS_LOCAL_IP6, a6);
+        }
+
         /* new in libcurl 7.6.2: */
         my_setopt_slist(curl, CURLOPT_TELNETOPTIONS, config->telnet_options);
 
@@ -1779,4 +1806,3 @@ int operate(struct Configurable *config, int argc, argv_item_t argv[])
 
   return res;
 }
-
