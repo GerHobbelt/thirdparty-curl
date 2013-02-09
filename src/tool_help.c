@@ -112,6 +112,7 @@ static const char *const helptext[] = {
   " -i, --include       Include protocol headers in the output (H/F)",
   " -k, --insecure      Allow connections to SSL sites without certs (H)",
   "     --interface INTERFACE  Use network INTERFACE (or address)",
+  "     --localaddr IPADDR  Specify local IP-address to use",
   " -4, --ipv4          Resolve name to IPv4 address",
   " -6, --ipv6          Resolve name to IPv6 address",
   " -j, --junk-session-cookies  Ignore session cookies read from file (H)",

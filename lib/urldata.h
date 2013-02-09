@@ -1085,6 +1085,7 @@ struct connectdata {
      that subsequent bound-requested connections aren't accidentally re-using
      wrong connections. */
   char *localdev;
+  char *localaddr; /* Local addr in dot notation */
   unsigned short localport;
   int localportrange;
 
@@ -1443,6 +1444,7 @@ enum dupstring {
      Each such pointer must be added manually to Curl_dupset() --- */
 
   STRING_COPYPOSTFIELDS,  /* if POST, set the fields' values here */
+  STRING_LOCALADDR,            /* Local IP Addr to use. */
 
   STRING_LAST /* not used, just an end-of-list marker */
 };

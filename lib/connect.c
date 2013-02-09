@@ -256,7 +256,27 @@ static CURLcode bindlocal(struct connectdata *conn,
   /* how many port numbers to try to bind to, increasing one at a time */
   int portnum = data->set.localportrange;
   const char *dev = data->set.str[STRING_DEVICE];
+  const char *addr = data->set.str[STRING_LOCALADDR];
   int error;
+  bool is_interface = FALSE;
+  bool is_host = FALSE;
+  static const char *if_prefix = "if!";
+  static const char *host_prefix = "host!";
+  bool resolv_myhost = false;
+  char myhost[256] = "";
+  int done = 0;
+
+  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
+
+  /* The original code only took 'dev', which could be device name or addr.
+   * If only addr is set, then just pretend it was 'dev' to re-use as much
+   * of the old logic as possible. */
+  if(addr && !dev) {
+    is_host = TRUE;
+    dev = addr;
+    addr = NULL;
+    goto decided_is_host;
+  }
 
   /*************************************************************
    * Select device to bind socket to
@@ -265,16 +285,7 @@ static CURLcode bindlocal(struct connectdata *conn,
     /* no local kind of binding was requested */
     return CURLE_OK;
 
-  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
-
   if(dev && (strlen(dev)<255) ) {
-    char myhost[256] = "";
-    int done = 0; /* -1 for error, 1 for address found */
-    bool is_interface = FALSE;
-    bool is_host = FALSE;
-    static const char *if_prefix = "if!";
-    static const char *host_prefix = "host!";
-
     if(strncmp(if_prefix, dev, strlen(if_prefix)) == 0) {
       dev += strlen(if_prefix);
       is_interface = TRUE;
@@ -284,55 +295,73 @@ static CURLcode bindlocal(struct connectdata *conn,
       is_host = TRUE;
     }
 
+  decided_is_host:
     /* interface */
-    if(!is_host) {
-      switch(Curl_if2ip(af, scope, conn->scope_id, dev,
-                        myhost, sizeof(myhost))) {
-        case IF2IP_NOT_FOUND:
-          if(is_interface) {
-            /* Do not fall back to treating it as a host name */
-            failf(data, "Couldn't bind to interface '%s'", dev);
-            return CURLE_INTERFACE_FAILED;
-          }
-          break;
-        case IF2IP_AF_NOT_SUPPORTED:
-          /* Signal the caller to try another address family if available */
-          return CURLE_UNSUPPORTED_PROTOCOL;
-        case IF2IP_FOUND:
-          is_interface = TRUE;
-          /*
-           * We now have the numerical IP address in the 'myhost' buffer
-           */
-          infof(data, "Local Interface %s is ip %s using address family %i\n",
-                dev, myhost, af);
-          done = 1;
+
+    if((!is_host) && (is_interface || Curl_if_is_interface_name(dev))) {
+      is_interface = TRUE; /* in case we had to call Curl_if_is_interface...*/
+      if(addr && dev) {
+        strncpy(myhost, addr, sizeof(myhost));
+        myhost[sizeof(myhost)-1] = 0;
+        resolv_myhost = TRUE;
+      }
+      else {
+        /* Discover IP addr for interface */
+        switch(Curl_if2ip(af, scope, conn->scope_id, dev,
+                          myhost, sizeof(myhost))) {
+          case IF2IP_NOT_FOUND:
+            if(is_interface) {
+              /* Do not fall back to treating it as a host name */
+              failf(data, "Couldn't bind to interface '%s'", dev);
+              return CURLE_INTERFACE_FAILED;
+            }
+            break;
+          case IF2IP_AF_NOT_SUPPORTED:
+            /* Signal the caller to try another address family if available */
+            return CURLE_UNSUPPORTED_PROTOCOL;
+          case IF2IP_FOUND:
+            is_interface = TRUE;
+            /*
+             * We now have the numerical IP address in the 'myhost' buffer
+             */
+            infof(data,
+                  "Local Interface %s is ip %s using address family %i\n",
+                  dev, myhost, af);
+            done = 1;
+            break;
+        }/* switch */
+      }/* else */
 
 #ifdef SO_BINDTODEVICE
-          /* I am not sure any other OSs than Linux that provide this feature,
-           * and at the least I cannot test. --Ben
-           *
-           * This feature allows one to tightly bind the local socket to a
-           * particular interface.  This will force even requests to other
-           * local interfaces to go out the external interface.
-           *
-           *
-           * Only bind to the interface when specified as interface, not just
-           * as a hostname or ip address.
-           */
-          if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE,
-                        dev, (curl_socklen_t)strlen(dev)+1) != 0) {
-            error = SOCKERRNO;
-            infof(data, "SO_BINDTODEVICE %s failed with errno %d: %s;"
-                  " will do regular bind\n",
-                  dev, error, Curl_strerror(conn, error));
-            /* This is typically "errno 1, error: Operation not permitted" if
-               you're not running as root or another suitable privileged
-               user */
-          }
-#endif
-          break;
+      /* I am not sure any other OSs than Linux that provide this feature,
+       * and at the least I cannot test. --Ben
+       *
+       * This feature allows one to tightly bind the local socket to a
+       * particular interface.  This will force even requests to other
+       * local interfaces to go out the external interface.
+       *
+       *
+       * Only bind to the interface when specified as interface, not just
+       * as a hostname or ip address.
+       */
+      if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE,
+                    dev, (curl_socklen_t)strlen(dev)+1) != 0) {
+        error = SOCKERRNO;
+        infof(data, "SO_BINDTODEVICE %s failed with errno %d: %s;"
+              " will do regular bind\n",
+              dev, error, Curl_strerror(conn, error));
+        /* This is typically "errno 1, error: Operation not permitted" if
+           you're not running as root or another suitable privileged
+           user */
       }
+#endif
     }
+    else {
+      strncpy(myhost, dev, sizeof(myhost));
+      myhost[sizeof(myhost)-1] = 0;
+      resolv_myhost = TRUE;
+    }
+
     if(!is_interface) {
       /*
        * This was not an interface, resolve the name as a host name
@@ -352,7 +381,7 @@ static CURLcode bindlocal(struct connectdata *conn,
         conn->ip_version = CURL_IPRESOLVE_V6;
 #endif
 
-      rc = Curl_resolv(conn, dev, 0, &h);
+      rc = Curl_resolv(conn, myhost, 0, &h);
       if(rc == CURLRESOLV_PENDING)
         (void)Curl_resolver_wait_resolv(conn, &h);
       conn->ip_version = ipver;
@@ -463,8 +492,11 @@ static CURLcode bindlocal(struct connectdata *conn,
   }
 
   data->state.os_errno = error = SOCKERRNO;
-  failf(data, "bind failed with errno %d: %s",
-        error, Curl_strerror(conn, error));
+  failf(data, "bindlocal: bind failed with errno %d: %s, dev: %s  "
+        "is_host: %i is_interface: %i port: %hu addr: %s "
+        "sock->sa_family: %hu myhost: %s resolv-myhost: %i af: %i",
+        error, Curl_strerror(conn, error), dev, is_host, is_interface,
+        port, addr, sock->sa_family, myhost, resolv_myhost, af);
 
   return CURLE_INTERFACE_FAILED;
 }

@@ -1626,6 +1626,9 @@ typedef enum {
   /* Set if we should verify the certificate status. */
   CINIT(SSL_VERIFYSTATUS, LONG, 232),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CINIT(LOCALADDR, OBJECTPOINT, 233),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

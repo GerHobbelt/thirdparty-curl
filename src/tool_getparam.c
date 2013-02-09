@@ -106,6 +106,7 @@ static const struct LongShort aliases[]= {
   {"*u", "crlf",                     FALSE},
   {"*v", "stderr",                   TRUE},
   {"*w", "interface",                TRUE},
+  {"*W", "localaddr",                TRUE},
   {"*x", "krb" ,                     TRUE},
   {"*x", "krb4" ,                    TRUE},
          /* 'krb4' is the previous name */
@@ -692,6 +693,10 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
       case 'w': /* --interface */
         /* interface */
         GetStr(&config->iface, nextarg);
+        break;
+      case 'W': /* --localaddr */
+        /* addr in dot notation */
+        GetStr(&config->localaddr, nextarg);
         break;
       case 'x': /* --krb */
         /* kerberos level string */
