@@ -13,6 +13,7 @@ CURLX_ONES = \
 	../lib/strtoofft.c \
 	../lib/strdup.c \
 	../lib/rawstr.c \
+	../lib/inet_pton.c \
 	../lib/nonblock.c
 
 CURL_CFILES = \
