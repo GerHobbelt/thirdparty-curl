@@ -1539,6 +1539,22 @@ typedef enum {
   /* Set the IP-Address string to use as outgoing IP Addr */
   CINIT(LOCALADDR, OBJECTPOINT, 218),
 
+  /* Set the interface string for c-ares (DNS)
+   * to use as outgoing network interface */
+  CINIT(DNS_INTERFACE, OBJECTPOINT, 2011),
+
+  /* Set the local IPv4 address for c-ares (DNS)
+   * to use for outgoing connections.
+   * Host-byte-order.
+   */
+  CINIT(DNS_LOCAL_IP4, LONG, 2012),
+
+  /* Set the local IPv6 address for c-ares (DNS)
+   * to use for outgoing connections.
+   * 16-byte unsigned char*
+   */
+  CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 2013),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
