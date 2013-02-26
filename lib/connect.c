@@ -301,14 +301,25 @@ static CURLcode bindlocal(struct connectdata *conn,
   static const char *host_prefix = "host!";
   bool resolv_myhost = false;
 
+  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
+
+  /* The original code only took 'dev', which could be device name or addr.
+   * If only addr is set, then just pretend it was 'dev' to re-use as much
+   * of the old logic as possible. */
+  if(addr && !dev) {
+    is_interface = false;
+    is_host = true;
+    dev = addr;
+    addr = NULL;
+    goto decided_is_host;
+  }
+
   /*************************************************************
    * Select device to bind socket to
    *************************************************************/
   if(!dev && !port)
     /* no local kind of binding was requested */
     return CURLE_OK;
-
-  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
 
   if(dev && (strlen(dev)<255) ) {
     if(strncmp(if_prefix, dev, strlen(if_prefix)) == 0) {
@@ -319,6 +330,7 @@ static CURLcode bindlocal(struct connectdata *conn,
       dev += strlen(host_prefix);
       is_host = TRUE;
     }
+  decided_is_host:
 
     /* interface */
     if(!is_host && (is_interface || Curl_if_is_interface_name(dev))) {
@@ -513,8 +525,11 @@ static CURLcode bindlocal(struct connectdata *conn,
   }
 
   data->state.os_errno = error = SOCKERRNO;
-  failf(data, "bindlocal: bind failed with errno %d: %s",
-        error, Curl_strerror(conn, error));
+  failf(data, "bindlocal: bind failed with errno %d: %s, dev: %s  "
+        "is_host: %i is_interface: %i port: %hu addr: %s "
+        "sock->sa_family: %hu myhost: %s resolv-myhost: %i af: %i",
+        error, Curl_strerror(conn, error), dev, is_host, is_interface,
+        port, addr, sock->sa_family, myhost, resolv_myhost, af);
 
   return CURLE_INTERFACE_FAILED;
 }
