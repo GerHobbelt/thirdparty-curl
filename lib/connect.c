@@ -357,13 +357,14 @@ static CURLcode bindlocal(struct connectdata *conn,
             /*
              * We now have the numerical IP address in the 'myhost' buffer
              */
-            infof(data, "Local Interface %s is ip %s using address family %i\n",
+            infof(data,
+                  "Local Interface %s is ip %s using address family %i\n",
                   dev, myhost, af);
             done = 1;
 
 #ifdef SO_BINDTODEVICE
-            /* I am not sure any other OSs than Linux that provide this feature,
-             * and at the least I cannot test. --Ben
+            /* I am not sure any other OSs than Linux that provide this
+             * feature, and at the least I cannot test. --Ben
              *
              * This feature allows one to tightly bind the local socket to a
              * particular interface.  This will force even requests to other
