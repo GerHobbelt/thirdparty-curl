@@ -327,7 +327,7 @@ CURLcode Curl_resolver_is_resolved(struct connectdata *conn,
     res->temp_ai = NULL;
     destroy_async_data(&conn->async);
     if(!conn->async.dns) {
-      failf(data, "Could not resolve %s: %s (%s)",
+      failf(data, "Could not resolve %s(1): %s (%s)",
             conn->bits.proxy?"proxy":"host",
             conn->host.dispname,
             ares_strerror(conn->async.status));
@@ -429,12 +429,13 @@ CURLcode Curl_resolver_wait_resolv(struct connectdata *conn,
     }
     else if(conn->async.done) {
       if(conn->bits.proxy) {
-        failf(data, "Could not resolve proxy: %s (%s)", conn->proxy.dispname,
+        failf(data, "Could not resolve proxy(2): %s (%s)",
+              conn->proxy.dispname,
               ares_strerror(conn->async.status));
         rc = CURLE_COULDNT_RESOLVE_PROXY;
       }
       else {
-        failf(data, "Could not resolve host: %s (%s)", conn->host.dispname,
+        failf(data, "Could not resolve host(3): %s (%s)", conn->host.dispname,
               ares_strerror(conn->async.status));
         rc = CURLE_COULDNT_RESOLVE_HOST;
       }
