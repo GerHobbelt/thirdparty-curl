@@ -1117,8 +1117,13 @@ CURLcode Curl_verifyhost(struct connectdata * conn,
           len = utf8asn1str(&dnsname, CURL_ASN1_IA5_STRING,
                             name.beg, name.end);
           if(len > 0)
-            if(strlen(dnsname) == (size_t) len)
+            if(strlen(dnsname) == (size_t) len) {
               i = Curl_cert_hostcheck((const char *) dnsname, conn->host.name);
+              if(i == 0)
+                infof(data, "\t (x509) cert-hostcheck failed: %d dnsname: %s"
+                      "  host.name: %s\n",
+                      i, dnsname, conn->host.name);
+            }
           if(dnsname)
             free(dnsname);
           if(!i)
@@ -1129,6 +1134,8 @@ CURLcode Curl_verifyhost(struct connectdata * conn,
         case 7: /* IP address. */
           matched = (size_t) (name.end - q) == addrlen &&
                     !memcmp(&addr, q, addrlen);
+          infof(data, "\t (x509) ip-addr match: %d  addrlen: %d\n",
+                matched, addrlen);
           break;
         }
       }
@@ -1143,7 +1150,8 @@ CURLcode Curl_verifyhost(struct connectdata * conn,
   case 0:
     /* an alternative name field existed, but didn't match and then
        we MUST fail */
-    infof(data, "\t subjectAltName does not match %s\n", conn->host.dispname);
+    infof(data, "\t (x509) subjectAltName does not match %s\n",
+          conn->host.dispname);
     return CURLE_PEER_FAILED_VERIFICATION;
   }
 

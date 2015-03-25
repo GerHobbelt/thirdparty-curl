@@ -1209,8 +1209,12 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
                 string and we cannot match it. */
              Curl_cert_hostcheck(altptr, conn->host.name))
             matched = 1;
-          else
+          else {
+            infof(data, "\t OPEN-SSL: subjectAltName does not match,"
+                  " altptr: %s  altlen: %d  host: %s\n",
+                  altptr, altlen, conn->host.name);
             matched = 0;
+          }
           break;
 
         case GEN_IPADD: /* IP address comparison */
@@ -1218,8 +1222,12 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
              our server IP address is */
           if((altlen == addrlen) && !memcmp(altptr, &addr, altlen))
             matched = 1;
-          else
+          else {
+            infof(data, "\t OPEN-SSL: subjectAltName does not match IP,"
+                  " altlen: %d\n",
+                  altlen);
             matched = 0;
+          }
           break;
         }
       }
@@ -1233,7 +1241,8 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
   else if(matched == 0) {
     /* an alternative name field existed, but didn't match and then
        we MUST fail */
-    infof(data, "\t subjectAltName does not match %s\n", conn->host.dispname);
+    infof(data, "\t OPEN-SSL: subjectAltName does not match %s\n",
+          conn->host.dispname);
     failf(data, "SSL: no alternative certificate subject name matches "
           "target host name '%s'", conn->host.dispname);
     result = CURLE_PEER_FAILED_VERIFICATION;
