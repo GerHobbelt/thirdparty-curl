@@ -268,6 +268,9 @@ static CURLcode bindlocal(struct connectdata *conn,
 
   memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
 
+  infof(data, "bind-local, addr: %s  dev: %s\n",
+        addr, dev);
+
   /* The original code only took 'dev', which could be device name or addr.
    * If only addr is set, then just pretend it was 'dev' to re-use as much
    * of the old logic as possible. */
@@ -312,7 +315,8 @@ static CURLcode bindlocal(struct connectdata *conn,
           case IF2IP_NOT_FOUND:
             if(is_interface) {
               /* Do not fall back to treating it as a host name */
-              failf(data, "Couldn't bind to interface '%s'", dev);
+              failf(data, "Couldn't bind to interface '%s', addr: '%s'",
+                    dev, addr);
               return CURLE_INTERFACE_FAILED;
             }
             break;
@@ -362,10 +366,10 @@ static CURLcode bindlocal(struct connectdata *conn,
       resolv_myhost = TRUE;
     }
 
-    if(!is_interface) {
+    if(resolv_myhost || !is_interface) {
       /*
-       * This was not an interface, resolve the name as a host name
-       * or IP number
+       * addr was specified, or this was not an interface.
+       * Resolve the name as a host name or IP number
        *
        * Temporarily force name resolution to use only the address type
        * of the connection. The resolve functions should really be changed
@@ -438,7 +442,9 @@ static CURLcode bindlocal(struct connectdata *conn,
     }
 
     if(done < 1) {
-      failf(data, "Couldn't bind to '%s'", dev);
+      failf(data, "Couldn't bind to '%s', addr '%s', done: %d"
+            "  is-host: %d  is-interface: %d",
+            dev, addr, done, is_host, is_interface);
       return CURLE_INTERFACE_FAILED;
     }
   }
