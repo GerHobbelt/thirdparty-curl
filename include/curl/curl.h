@@ -1700,6 +1700,9 @@ typedef enum {
   /* Set TCP Fast Open */
   CINIT(TCP_FASTOPEN, LONG, 244),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CINIT(LOCALADDR, OBJECTPOINT, 245),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

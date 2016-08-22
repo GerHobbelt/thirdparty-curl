@@ -63,6 +63,7 @@ struct OperationConfig {
   char *headerfile;
   char *ftpport;
   char *iface;
+  char *localaddr; /* local IP address */
   int localport;
   int localportrange;
   unsigned short porttouse;

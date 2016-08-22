@@ -240,6 +240,7 @@ _CURL_WARNING(_curl_easy_getinfo_err_curl_slist,
    (option) == CURLOPT_ISSUERCERT ||                                          \
    (option) == CURLOPT_KEYPASSWD ||                                           \
    (option) == CURLOPT_KRBLEVEL ||                                            \
+   (option) == CURLOPT_LOCALADDR ||                                           \
    (option) == CURLOPT_LOGIN_OPTIONS ||                                       \
    (option) == CURLOPT_MAIL_AUTH ||                                           \
    (option) == CURLOPT_MAIL_FROM ||                                           \
