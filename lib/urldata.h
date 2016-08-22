@@ -1131,6 +1131,7 @@ struct connectdata {
      that subsequent bound-requested connections aren't accidentally re-using
      wrong connections. */
   char *localdev;
+  char *localaddr; /* Local addr in dot notation */
   int localportrange;
   int cselect_bits; /* bitmask of socket events */
   int waitfor;      /* current READ/WRITE bits to wait for */
@@ -1615,6 +1616,7 @@ enum dupstring {
   /* -- below this are pointers to binary data that cannot be strdup'ed. --- */
 
   STRING_COPYPOSTFIELDS,  /* if POST, set the fields' values here */
+  STRING_LOCALADDR,            /* Local IP Addr to use. */
 
   STRING_AWS_SIGV4, /* Parameters for V4 signature */
 

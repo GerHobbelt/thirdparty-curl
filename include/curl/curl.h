@@ -2143,6 +2143,9 @@ typedef enum {
   /* set the SSH host key callback custom pointer */
   CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 317),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CURLOPT(CURLOPT_LOCALADDR, CURLOPTTYPE_STRINGPOINT, 318),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
