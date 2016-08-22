@@ -2203,6 +2203,9 @@ typedef enum {
   /* Can leak things, gonna exit() soon */
   CURLOPT(CURLOPT_QUICK_EXIT, CURLOPTTYPE_LONG, 322),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CURLOPT(CURLOPT_LOCALADDR, CURLOPTTYPE_STRINGPOINT, 323),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

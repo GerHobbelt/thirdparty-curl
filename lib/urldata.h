@@ -1089,6 +1089,7 @@ struct connectdata {
      wrong connections. */
   char *localdev;
   unsigned short localportrange;
+  char *localaddr; /* Local addr in dot notation */
   int cselect_bits; /* bitmask of socket events */
   int waitfor;      /* current READ/WRITE bits to wait for */
 #if defined(HAVE_GSSAPI) || defined(USE_WINDOWS_SSPI)
@@ -1588,6 +1589,7 @@ enum dupstring {
   /* -- below this are pointers to binary data that cannot be strdup'ed. --- */
 
   STRING_COPYPOSTFIELDS,  /* if POST, set the fields' values here */
+  STRING_LOCALADDR,            /* Local IP Addr to use. */
 
   STRING_AWS_SIGV4, /* Parameters for V4 signature */
 

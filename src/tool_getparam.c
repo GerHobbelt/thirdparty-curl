@@ -117,6 +117,7 @@ static const struct LongShort aliases[]= {
   {"*v", "stderr",                   ARG_FILENAME},
   {"*V", "aws-sigv4",                ARG_STRING},
   {"*w", "interface",                ARG_STRING},
+  {"*W", "localaddr",                ARG_STRING},
   {"*x", "krb",                      ARG_STRING},
   {"*x", "krb4",                     ARG_STRING},
          /* 'krb4' is the previous name */
@@ -1039,6 +1040,10 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'w': /* --interface */
         /* interface */
         GetStr(&config->iface, nextarg);
+        break;
+      case 'W': /* --localaddr */
+        /* addr in dot notation */
+        GetStr(&config->localaddr, nextarg);
         break;
       case 'x': /* --krb */
         /* kerberos level string */
