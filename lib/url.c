@@ -708,6 +708,7 @@ static void conn_free(struct connectdata *conn)
   Curl_llist_destroy(&conn->recv_pipe, NULL);
 
   Curl_safefree(conn->localdev);
+  Curl_safefree(conn->localaddr);
   Curl_free_primary_ssl_config(&conn->ssl_config);
   Curl_free_primary_ssl_config(&conn->proxy_ssl_config);
 
@@ -1269,7 +1270,7 @@ ConnectionExists(struct Curl_easy *data,
            if they belong to the same multi handle */
         continue;
 
-      if(needle->localdev || needle->localport) {
+      if(needle->localdev || needle->localport || needle->localaddr) {
         /* If we are bound to a specific local end (IP+port), we must not
            re-use a random other one, although if we didn't ask for a
            particular one we can reuse one that was bound.
@@ -1284,7 +1285,10 @@ ConnectionExists(struct Curl_easy *data,
         if((check->localport != needle->localport) ||
            (check->localportrange != needle->localportrange) ||
            (needle->localdev &&
-            (!check->localdev || strcmp(check->localdev, needle->localdev))))
+            (!check->localdev || strcmp(check->localdev, needle->localdev))) ||
+           (needle->localaddr &&
+            (!check->localaddr ||
+             strcmp(check->localaddr, needle->localaddr))))
           continue;
       }
 
@@ -1913,6 +1917,11 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
     if(!conn->localdev)
       goto error;
   }
+  if(data->set.str[STRING_LOCALADDR]) {
+    conn->localaddr = strdup(data->set.str[STRING_LOCALADDR]);
+    if(!conn->localaddr)
+      goto error;
+  }
   conn->localportrange = data->set.localportrange;
   conn->localport = data->set.localport;
 
@@ -1932,6 +1941,7 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
 #ifdef USE_SSL
   free(conn->ssl_extra);
 #endif
+  free(conn->localaddr);
   free(conn);
   return NULL;
 }
@@ -3994,6 +4004,7 @@ static void reuse_conn(struct connectdata *old_conn,
   Curl_safefree(old_conn->http_proxy.passwd);
   Curl_safefree(old_conn->socks_proxy.passwd);
   Curl_safefree(old_conn->localdev);
+  Curl_safefree(old_conn->localaddr);
 
   Curl_llist_destroy(&old_conn->send_pipe, NULL);
   Curl_llist_destroy(&old_conn->recv_pipe, NULL);
