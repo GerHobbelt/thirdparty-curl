@@ -1949,6 +1949,9 @@ typedef enum {
   /* allow RCPT TO command to fail for some recipients */
   CURLOPT(CURLOPT_MAIL_RCPT_ALLLOWFAILS, CURLOPTTYPE_LONG, 290),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CURLOPT(CURLOPT_LOCALADDR, CURLOPTTYPE_STRINGPOINT, 291),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

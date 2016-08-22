@@ -1721,6 +1721,14 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     result = Curl_setstropt(&data->set.str[STRING_DEVICE],
                             va_arg(param, char *));
     break;
+  case CURLOPT_LOCALADDR:
+    /*
+     * Set what local address to bind the socket to when
+     * performing an operation and thus what from-IP your connection will use.
+     */
+    result = Curl_setstropt(&data->set.str[STRING_LOCALADDR],
+                            va_arg(param, char *));
+    break;
   case CURLOPT_LOCALPORT:
     /*
      * Set what local port to bind the socket to when performing an operation.
