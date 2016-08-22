@@ -1841,6 +1841,9 @@ typedef enum {
   /* User data to pass to the resolver start callback. */
   CINIT(RESOLVER_START_DATA, OBJECTPOINT, 273),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CINIT(LOCALADDR, OBJECTPOINT, 274),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
