@@ -415,6 +415,7 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
   /* how many port numbers to try to bind to, increasing one at a time */
   int portnum = data->set.localportrange;
   const char *dev = data->set.str[STRING_DEVICE];
+  const char *addr = data->set.str[STRING_LOCALADDR];
   int error;
 #ifdef IP_BIND_ADDRESS_NO_PORT
   int on = 1;
@@ -423,6 +424,29 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
   (void)scope;
 #endif
 
+  bool is_interface = FALSE;
+  bool is_host = FALSE;
+  static const char *if_prefix = "if!";
+  static const char *host_prefix = "host!";
+  bool resolv_myhost = false;
+  char myhost[256] = "";
+  int done = 0;
+
+  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
+
+  infof(data, "bind-local, addr: %s  dev: %s",
+        addr, dev);
+
+  /* The original code only took 'dev', which could be device name or addr.
+   * If only addr is set, then just pretend it was 'dev' to re-use as much
+   * of the old logic as possible. */
+  if(addr && !dev) {
+    is_host = TRUE;
+    dev = addr;
+    addr = NULL;
+    goto decided_is_host;
+  }
+
   /*************************************************************
    * Select device to bind socket to
    *************************************************************/
@@ -430,16 +454,7 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
     /* no local kind of binding was requested */
     return CURLE_OK;
 
-  memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
-
   if(dev && (strlen(dev)<255) ) {
-    char myhost[256] = "";
-    int done = 0; /* -1 for error, 1 for address found */
-    bool is_interface = FALSE;
-    bool is_host = FALSE;
-    static const char *if_prefix = "if!";
-    static const char *host_prefix = "host!";
-
     if(strncmp(if_prefix, dev, strlen(if_prefix)) == 0) {
       dev += strlen(if_prefix);
       is_interface = TRUE;
@@ -449,8 +464,42 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
       is_host = TRUE;
     }
 
+decided_is_host:
     /* interface */
-    if(!is_host) {
+    if((!is_host) && (is_interface || Curl_if_is_interface_name(dev))) {
+      is_interface = TRUE; /* in case we had to call Curl_if_is_interface...*/
+      if(addr && dev) {
+        strncpy(myhost, addr, sizeof(myhost));
+        myhost[sizeof(myhost)-1] = 0;
+        resolv_myhost = TRUE;
+      }
+      else {
+        /* Discover IP addr for interface */
+        switch(Curl_if2ip(af,
+#ifdef ENABLE_IPV6
+                          scope, conn->scope_id,
+#endif
+                          dev, myhost, sizeof(myhost))) {
+          case IF2IP_NOT_FOUND:
+            /* Do not fall back to treating it as a host name */
+            failf(data, "Couldn't bind to interface '%s', addr: '%s'",
+                  dev, addr);
+            return CURLE_INTERFACE_FAILED;
+          case IF2IP_AF_NOT_SUPPORTED:
+            /* Signal the caller to try another address family if available */
+            return CURLE_UNSUPPORTED_PROTOCOL;
+          case IF2IP_FOUND:
+            /*
+             * We now have the numerical IP address in the 'myhost' buffer
+             */
+            infof(data,
+                  "Local Interface %s is ip %s using address family %i\n",
+                  dev, myhost, af);
+            done = 1;
+            break;
+        }/* switch */
+      }/* else */
+
 #ifdef SO_BINDTODEVICE
       /*
        * This binds the local socket to a particular interface. This will
@@ -473,37 +522,17 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
         return CURLE_OK;
       }
 #endif
-
-      switch(Curl_if2ip(af,
-#ifdef ENABLE_IPV6
-                        scope, conn->scope_id,
-#endif
-                        dev, myhost, sizeof(myhost))) {
-        case IF2IP_NOT_FOUND:
-          if(is_interface) {
-            /* Do not fall back to treating it as a host name */
-            failf(data, "Couldn't bind to interface '%s'", dev);
-            return CURLE_INTERFACE_FAILED;
-          }
-          break;
-        case IF2IP_AF_NOT_SUPPORTED:
-          /* Signal the caller to try another address family if available */
-          return CURLE_UNSUPPORTED_PROTOCOL;
-        case IF2IP_FOUND:
-          is_interface = TRUE;
-          /*
-           * We now have the numerical IP address in the 'myhost' buffer
-           */
-          infof(data, "Local Interface %s is ip %s using address family %i",
-                dev, myhost, af);
-          done = 1;
-          break;
-      }
     }
-    if(!is_interface) {
+    else {
+      strncpy(myhost, dev, sizeof(myhost));
+      myhost[sizeof(myhost)-1] = 0;
+      resolv_myhost = TRUE;
+    }
+
+    if(resolv_myhost || !is_interface) {
       /*
-       * This was not an interface, resolve the name as a host name
-       * or IP number
+       * addr was specified, or this was not an interface.
+       * Resolve the name as a host name or IP number
        *
        * Temporarily force name resolution to use only the address type
        * of the connection. The resolve functions should really be changed
@@ -519,7 +548,7 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
         conn->ip_version = CURL_IPRESOLVE_V6;
 #endif
 
-      rc = Curl_resolv(data, dev, 80, FALSE, &h);
+      rc = Curl_resolv(data, myhost, 80, FALSE, &h);
       if(rc == CURLRESOLV_PENDING)
         (void)Curl_resolver_wait_resolv(data, &h);
       conn->ip_version = ipver;
@@ -590,7 +619,9 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
          the error buffer, so the user receives this error message instead of a
          generic resolve error. */
       data->state.errorbuf = FALSE;
-      failf(data, "Couldn't bind to '%s'", dev);
+      failf(data, "Couldn't bind to '%s', addr '%s', done: %d"
+            "  is-host: %d  is-interface: %d",
+            dev, addr, done, is_host, is_interface);
       return CURLE_INTERFACE_FAILED;
     }
   }
@@ -650,8 +681,12 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
   {
     char buffer[STRERROR_LEN];
     data->state.os_errno = error = SOCKERRNO;
-    failf(data, "bind failed with errno %d: %s",
-          error, Curl_strerror(error, buffer, sizeof(buffer)));
+    failf(data, "bindlocal: bind failed with errno %d: %s, dev: %s  "
+          "is_host: %i is_interface: %i port: %hu addr: %s "
+          "sock->sa_family: %hu myhost: %s resolv-myhost: %i af: %i",
+          error, Curl_strerror(error, buffer, sizeof(buffer)), dev,
+          is_host, is_interface, port, addr, sock->sa_family, myhost,
+          resolv_myhost, af);
   }
 
   return CURLE_INTERFACE_FAILED;

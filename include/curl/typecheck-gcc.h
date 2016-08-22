@@ -285,6 +285,7 @@ CURLWARNING(_curl_easy_getinfo_err_curl_off_t,
    (option) == CURLOPT_ISSUERCERT ||                                          \
    (option) == CURLOPT_KEYPASSWD ||                                           \
    (option) == CURLOPT_KRBLEVEL ||                                            \
+   (option) == CURLOPT_LOCALADDR ||                                           \
    (option) == CURLOPT_LOGIN_OPTIONS ||                                       \
    (option) == CURLOPT_MAIL_AUTH ||                                           \
    (option) == CURLOPT_MAIL_FROM ||                                           \

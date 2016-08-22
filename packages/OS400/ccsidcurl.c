@@ -1104,6 +1104,7 @@ curl_easy_setopt_ccsid(CURL *easy, CURLoption tag, ...)
   case CURLOPT_HAPROXY_CLIENT_IP:
   case CURLOPT_HSTS:
   case CURLOPT_INTERFACE:
+  case CURLOPT_LOCALADDR:
   case CURLOPT_ISSUERCERT:
   case CURLOPT_KEYPASSWD:
   case CURLOPT_KRBLEVEL:

@@ -1075,6 +1075,7 @@ struct connectdata {
      wrong connections. */
   char *localdev;
   unsigned short localportrange;
+  char *localaddr; /* Local addr in dot notation */
   int waitfor;      /* current READ/WRITE bits to wait for */
 #if defined(HAVE_GSSAPI) || defined(USE_WINDOWS_SSPI)
   int socks5_gssapi_enctype;
@@ -1623,6 +1624,7 @@ enum dupstring {
   /* -- below this are pointers to binary data that cannot be strdup'ed. --- */
 
   STRING_COPYPOSTFIELDS,  /* if POST, set the fields' values here */
+  STRING_LOCALADDR,            /* Local IP Addr to use. */
 
   STRING_LAST /* not used, just an end-of-list marker */
 };

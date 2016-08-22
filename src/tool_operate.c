@@ -1880,6 +1880,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt_str(curl, CURLOPT_KRBLEVEL, config->krblevel);
         progressbarinit(&per->progressbar, config);
 
+        my_setopt_str(curl, CURLOPT_LOCALADDR, config->localaddr);
+
         if((global->progressmode == CURL_PROGRESS_BAR) &&
            !global->noprogress && !global->silent) {
           /* we want the alternative style, then we have to implement it

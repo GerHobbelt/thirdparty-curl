@@ -598,6 +598,7 @@ static void conn_free(struct Curl_easy *data, struct connectdata *conn)
   Curl_safefree(conn->hostname_resolve);
   Curl_safefree(conn->secondaryhostname);
   Curl_safefree(conn->localdev);
+  Curl_safefree(conn->localaddr);
   Curl_ssl_conn_config_cleanup(conn);
 
 #ifdef USE_UNIX_SOCKETS
@@ -1119,7 +1120,7 @@ ConnectionExists(struct Curl_easy *data,
       continue; /* can't be used atm */
     }
 
-    if(needle->localdev || needle->localport) {
+    if(needle->localdev || needle->localport || needle->localaddr) {
       /* If we are bound to a specific local end (IP+port), we must not
          reuse a random other one, although if we didn't ask for a
          particular one we can reuse one that was bound.
@@ -1133,6 +1134,9 @@ ConnectionExists(struct Curl_easy *data,
       */
       if((check->localport != needle->localport) ||
          (check->localportrange != needle->localportrange) ||
+         (needle->localaddr &&
+          (!check->localaddr ||
+           strcmp(check->localaddr, needle->localaddr))) ||
          (needle->localdev &&
           (!check->localdev || strcmp(check->localdev, needle->localdev))))
         continue;
@@ -1425,6 +1429,11 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
       goto error;
   }
 #ifndef CURL_DISABLE_BINDLOCAL
+  if(data->set.str[STRING_LOCALADDR]) {
+    conn->localaddr = strdup(data->set.str[STRING_LOCALADDR]);
+    if(!conn->localaddr)
+      goto error;
+  }
   conn->localportrange = data->set.localportrange;
   conn->localport = data->set.localport;
 #endif
@@ -1440,6 +1449,7 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
 error:
 
   free(conn->localdev);
+  free(conn->localaddr);
   free(conn);
   return NULL;
 }

@@ -187,6 +187,7 @@ typedef enum {
   C_LIMIT_RATE,
   C_LIST_ONLY,
   C_LOCAL_PORT,
+  C_LOCALADDR,
   C_LOCATION,
   C_LOCATION_TRUSTED,
   C_LOGIN_OPTIONS,
@@ -453,6 +454,7 @@ static const struct LongShort aliases[]= {
   {"include",                    ARG_BOOL, 'i', C_INCLUDE},
   {"insecure",                   ARG_BOOL, 'k', C_INSECURE},
   {"interface",                  ARG_STRG, ' ', C_INTERFACE},
+  {"localaddr",                  ARG_STRG, ' ', C_LOCALADDR},
   {"ipfs-gateway",               ARG_STRG, ' ', C_IPFS_GATEWAY},
   {"ipv4",                       ARG_NONE, '4', C_IPV4},
   {"ipv6",                       ARG_NONE, '6', C_IPV6},
@@ -1537,6 +1539,10 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
     case C_INTERFACE: /* --interface */
       /* interface */
       err = getstr(&config->iface, nextarg, DENY_BLANK);
+      break;
+    case C_LOCALADDR: /* --localaddr */
+      /* addr in dot notation */
+      getstr(&config->localaddr, nextarg, DENY_BLANK);
       break;
     case C_KRB: /* --krb */
       /* kerberos level string */

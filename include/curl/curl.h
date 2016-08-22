@@ -2206,6 +2206,9 @@ typedef enum {
   /* millisecond version */
   CURLOPT(CURLOPT_SERVER_RESPONSE_TIMEOUT_MS, CURLOPTTYPE_LONG, 324),
 
+  /* Set the IP-Address string to use as outgoing IP Addr */
+  CURLOPT(CURLOPT_LOCALADDR, CURLOPTTYPE_STRINGPOINT, 325),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
