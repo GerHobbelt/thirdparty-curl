@@ -542,3 +542,34 @@ static CURLcode file_do(struct connectdata *conn, bool *done)
 }
 
 #endif
+
+FILE *
+_wfopen_hack(const char *file, const char *mode)
+{
+	wchar_t wfile[260];
+	wchar_t wmode[32];
+
+	MultiByteToWideChar(CP_UTF8, 0, file, -1, wfile, 260);
+	MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode, 32);
+
+	return _wfopen(wfile, mode);
+}
+
+int
+_wopen_hack(const char *file, int oflags, ...)
+{
+	wchar_t wfile[260];
+	int mode = 0;
+
+	if (oflags & _O_CREAT)
+	{
+		va_list ap;
+		va_start(ap, oflags);
+		mode = (int)va_arg(ap, int);
+		va_end(ap);
+	}
+
+	MultiByteToWideChar(CP_UTF8, 0, file, -1, wfile, 260);
+
+	return _wopen(wfile, oflags, mode);
+}
