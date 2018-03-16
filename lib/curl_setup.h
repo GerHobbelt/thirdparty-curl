@@ -361,6 +361,12 @@
 #  define stat(fname,stp)            _stati64(fname, stp)
 #  define struct_stat                struct _stati64
 #  define LSEEK_ERROR                (__int64)-1
+
+#define fopen _wfopen_hack
+#define open _wopen_hack
+
+FILE *_wfopen_hack(const char *file, const char *mode);
+int _wopen_hack(const char *file, int oflags, ...);
 #endif
 
 /*
