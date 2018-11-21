@@ -2334,7 +2334,7 @@ set_ssl_version_min_max(SSL_CTX *ctx, struct connectdata *conn)
      So we skip this, and stay with the OS default
   */
   if(curl_ssl_version_min != CURL_SSLVERSION_DEFAULT) {
-    if(!SSL_CTX_set_min_proto_version(ctx, ossl_ssl_version_min)) {
+    if(!SSL_CTX_set_min_proto_version(ctx, (uint16_t)ossl_ssl_version_min)) {
       return CURLE_SSL_CONNECT_ERROR;
     }
   }
@@ -2369,7 +2369,7 @@ set_ssl_version_min_max(SSL_CTX *ctx, struct connectdata *conn)
       break;
   }
 
-  if(!SSL_CTX_set_max_proto_version(ctx, ossl_ssl_version_max)) {
+  if(!SSL_CTX_set_max_proto_version(ctx, (uint16_t)ossl_ssl_version_max)) {
     return CURLE_SSL_CONNECT_ERROR;
   }
 
