@@ -1124,7 +1124,7 @@ int cert_stuff(struct Curl_easy *data,
       EVP_PKEY_free(pktmp);
     }
 
-#if !defined(OPENSSL_NO_RSA) && !defined(OPENSSL_IS_BORINGSSL) && \
+#if !defined(OPENSSL_NO_RSA) && \
     !defined(OPENSSL_NO_DEPRECATED_3_0)
     {
       /* If RSA is used, don't check the private key if its flags indicate
@@ -1138,8 +1138,13 @@ int cert_stuff(struct Curl_easy *data,
 #endif
       if(pktype == EVP_PKEY_RSA) {
         RSA *rsa = EVP_PKEY_get1_RSA(priv_key);
+#if defined(OPENSSL_IS_BORINGSSL)
+        if(RSA_is_opaque(rsa))
+          check_privkey = FALSE;
+#else
         if(RSA_flags(rsa) & RSA_METHOD_FLAG_NO_CHECK)
           check_privkey = FALSE;
+#endif
         RSA_free(rsa); /* Decrement reference count */
       }
     }
@@ -1719,13 +1724,8 @@ CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
   altnames = X509_get_ext_d2i(server_cert, NID_subject_alt_name, NULL, NULL);
 
   if(altnames) {
-#ifdef OPENSSL_IS_BORINGSSL
     size_t numalts;
     size_t i;
-#else
-    int numalts;
-    int i;
-#endif
     bool dnsmatched = FALSE;
     bool ipmatched = FALSE;
 
@@ -3583,7 +3583,7 @@ static CURLcode get_cert_chain(struct Curl_easy *data,
     return CURLE_OUT_OF_MEMORY;
   }
 
-  numcerts = sk_X509_num(sk);
+  numcerts = (int)sk_X509_num(sk);
 
   result = Curl_ssl_init_certinfo(data, (int)numcerts);
   if(result) {
