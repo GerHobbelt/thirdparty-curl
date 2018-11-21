@@ -246,6 +246,10 @@ struct ssl_backend_data {
 #endif
 };
 
+#ifdef CURL_CA_EXTERNAL_FALLBACK
+void curl_ca_external_fallback(X509_STORE *sslstore);
+#endif
+
 /*
  * Number of bytes to read from the random number seed file. This must be
  * a finite value (because some entropy "files" like /dev/urandom have
@@ -3078,11 +3082,15 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
   }
 #endif
 
-#ifdef CURL_CA_FALLBACK
+#if defined(CURL_CA_FALLBACK)
   if(verifypeer && !ssl_cafile && !ssl_capath && !imported_native_ca) {
     /* verifying the peer without any CA certificates won't
        work so use openssl's built in default as fallback */
+#ifdef CURL_CA_EXTERNAL_FALLBACK
+    curl_ca_external_fallback(SSL_CTX_get_cert_store(backend->ctx));
+#else
     SSL_CTX_set_default_verify_paths(backend->ctx);
+#endif
   }
 #endif
 
