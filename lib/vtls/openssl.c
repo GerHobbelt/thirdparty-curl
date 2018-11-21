@@ -2776,7 +2776,7 @@ ossl_set_ssl_version_min_max(struct Curl_cfilter *cf, SSL_CTX *ctx)
      So we skip this, and stay with the library default
   */
   if(curl_ssl_version_min != CURL_SSLVERSION_DEFAULT) {
-    if(!SSL_CTX_set_min_proto_version(ctx, ossl_ssl_version_min)) {
+    if(!SSL_CTX_set_min_proto_version(ctx, (uint16_t)ossl_ssl_version_min)) {
       return CURLE_SSL_CONNECT_ERROR;
     }
   }
@@ -2811,7 +2811,7 @@ ossl_set_ssl_version_min_max(struct Curl_cfilter *cf, SSL_CTX *ctx)
     break;
   }
 
-  if(!SSL_CTX_set_max_proto_version(ctx, ossl_ssl_version_max)) {
+  if(!SSL_CTX_set_max_proto_version(ctx, (uint16_t)ossl_ssl_version_max)) {
     return CURLE_SSL_CONNECT_ERROR;
   }
 
