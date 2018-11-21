@@ -369,7 +369,7 @@
 #  ifndef WINVER
 #    define WINVER VS2012_DEF_TARGET
 #  endif
-#  if (_WIN32_WINNT < VS2012_MIN_TARGET) || (WINVER < VS2012_MIN_TARGET)
+#  if ((_WIN32_WINNT < VS2012_MIN_TARGET) || (WINVER < VS2012_MIN_TARGET)) && !defined(CURL_IGNORE_WINDOWS_TARGET)
 #    if defined(_USING_V110_SDK71_)
 #      error VS2012 does not support Windows build targets prior to Windows XP
 #    else
