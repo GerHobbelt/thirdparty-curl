@@ -2829,7 +2829,7 @@ ossl_set_ssl_version_min_max(struct Curl_cfilter *cf, SSL_CTX *ctx)
     break;
   }
 
-  if(!SSL_CTX_set_max_proto_version(ctx, ossl_ssl_version_max)) {
+  if(!SSL_CTX_set_max_proto_version(ctx, (uint16_t)ossl_ssl_version_max)) {
     return CURLE_SSL_CONNECT_ERROR;
   }
 
