@@ -433,7 +433,9 @@
 
 /* Define to use Unix sockets. */
 #ifndef UNDER_CE
+#if !defined(USE_UNIX_SOCKETS)
 #define USE_UNIX_SOCKETS
+#endif
 #endif
 
 /* ---------------------------------------------------------------- */
