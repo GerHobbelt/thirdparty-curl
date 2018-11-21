@@ -290,6 +290,10 @@ struct ssl_backend_data {
 #endif
 };
 
+#ifdef CURL_CA_EXTERNAL_FALLBACK
+void curl_ca_external_fallback(X509_STORE *sslstore);
+#endif
+
 #if defined(HAVE_SSL_X509_STORE_SHARE)
 struct multi_ssl_backend_data {
   char *CAfile;         /* CAfile path used to generate X509 store */
@@ -3291,7 +3295,11 @@ static CURLcode populate_x509_store(struct Curl_cfilter *cf,
      !ca_info_blob && !ssl_cafile && !ssl_capath && !imported_native_ca) {
     /* verifying the peer without any CA certificates won't
        work so use openssl's built-in default as fallback */
+#ifdef CURL_CA_EXTERNAL_FALLBACK
+    curl_ca_external_fallback(store);
+#else
     X509_STORE_set_default_paths(store);
+#endif
   }
 #endif
 
