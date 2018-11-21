@@ -1609,7 +1609,7 @@ fail:
       EVP_PKEY_free(pktmp);
     }
 
-#if !defined(OPENSSL_NO_RSA) && !defined(OPENSSL_IS_BORINGSSL) &&       \
+#if !defined(OPENSSL_NO_RSA) &&       \
   !defined(OPENSSL_NO_DEPRECATED_3_0)
     {
       /* If RSA is used, don't check the private key if its flags indicate
@@ -1623,8 +1623,13 @@ fail:
 #endif
       if(pktype == EVP_PKEY_RSA) {
         RSA *rsa = EVP_PKEY_get1_RSA(priv_key);
+#if defined(OPENSSL_IS_BORINGSSL)
+        if(RSA_is_opaque(rsa))
+          check_privkey = FALSE;
+#else
         if(RSA_flags(rsa) & RSA_METHOD_FLAG_NO_CHECK)
           check_privkey = FALSE;
+#endif
         RSA_free(rsa); /* Decrement reference count */
       }
     }
