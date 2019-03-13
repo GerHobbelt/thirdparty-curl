@@ -610,7 +610,8 @@ typedef enum {
 #define CURLE_FTP_WEIRD_SERVER_REPLY CURLE_WEIRD_SERVER_REPLY
 
 /* The following were added in 7.62.0 */
-#define CURLE_SSL_CACERT CURLE_PEER_FAILED_VERIFICATION
+//#define CURLE_SSL_CACERT CURLE_PEER_FAILED_VERIFICATION
+#define CURLE_SSL_CACERT CURL_LAST /* fix old build without having to change submodule */
 
 /* The following were added in 7.21.5, April 2011 */
 #define CURLE_UNKNOWN_TELNET_OPTION CURLE_UNKNOWN_OPTION
