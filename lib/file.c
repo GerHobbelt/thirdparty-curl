@@ -552,7 +552,7 @@ _wfopen_hack(const char *file, const char *mode)
 	MultiByteToWideChar(CP_UTF8, 0, file, -1, wfile, 260);
 	MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode, 32);
 
-	return _wfopen(wfile, mode);
+	return _wfopen(wfile, wmode);
 }
 
 int
