@@ -874,7 +874,8 @@ CURLcode Curl_set_dns_servers(struct Curl_easy *data,
   case ARES_ENODATA:
   case ARES_EBADSTR:
   default:
-    DEBUGF(infof(data, "bad servers set"));
+    failf(data, "CARES error setting servers, servers: %s err: %d (%s)",
+          servers, ares_result, ares_strerror(ares_result));
     result = CURLE_BAD_FUNCTION_ARGUMENT;
     break;
   }
