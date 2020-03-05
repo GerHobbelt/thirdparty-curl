@@ -32,6 +32,8 @@
 
 unsigned int Curl_ipv6_scope(const struct sockaddr *sa);
 
+bool Curl_if_is_interface_name(const char *interf);
+
 typedef enum {
   IF2IP_NOT_FOUND = 0, /* Interface not found */
   IF2IP_AF_NOT_SUPPORTED = 1, /* Int. exists but has no address for this af */
