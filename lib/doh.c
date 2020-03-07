@@ -62,7 +62,7 @@ static const char * const errors[]={
 
 static const char *doh_strerror(DOHcode code)
 {
-  if((code >= DOH_OK) && (code <= DOH_DNS_BAD_ID))
+  if((((int)code) >= DOH_OK) && (code <= DOH_DNS_BAD_ID))
     return errors[code];
   return "bad error code";
 }
