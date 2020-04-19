@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -28,6 +28,7 @@
 #include "strcase.h"
 #include "vauth/vauth.h"
 #include "http_digest.h"
+
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
 #include "curl_memory.h"
@@ -74,8 +75,8 @@ CURLcode Curl_output_digest(struct connectdata *conn,
 {
   CURLcode result;
   struct Curl_easy *data = conn->data;
-  unsigned char *path;
-  char *tmp;
+  unsigned char *path = NULL;
+  char *tmp = NULL;
   char *response;
   size_t len;
   bool have_chlg;
@@ -95,8 +96,8 @@ CURLcode Curl_output_digest(struct connectdata *conn,
   if(proxy) {
     digest = &data->state.proxydigest;
     allocuserpwd = &conn->allocptr.proxyuserpwd;
-    userp = conn->proxyuser;
-    passwdp = conn->proxypasswd;
+    userp = conn->http_proxy.user;
+    passwdp = conn->http_proxy.passwd;
     authp = &data->state.authproxy;
   }
   else {
@@ -140,12 +141,14 @@ CURLcode Curl_output_digest(struct connectdata *conn,
      http://www.fngtps.com/2006/09/http-authentication
   */
 
-  if(authp->iestyle && ((tmp = strchr((char *)uripath, '?')) != NULL)) {
-    size_t urilen = tmp - (char *)uripath;
-
-    path = (unsigned char *) aprintf("%.*s", urilen, uripath);
+  if(authp->iestyle) {
+    tmp = strchr((char *)uripath, '?');
+    if(tmp) {
+      size_t urilen = tmp - (char *)uripath;
+      path = (unsigned char *) aprintf("%.*s", urilen, uripath);
+    }
   }
-  else
+  if(!tmp)
     path = (unsigned char *) strdup((char *) uripath);
 
   if(!path)
@@ -169,7 +172,7 @@ CURLcode Curl_output_digest(struct connectdata *conn,
   return CURLE_OK;
 }
 
-void Curl_digest_cleanup(struct Curl_easy *data)
+void Curl_http_auth_cleanup_digest(struct Curl_easy *data)
 {
   Curl_auth_digest_cleanup(&data->state.digest);
   Curl_auth_digest_cleanup(&data->state.proxydigest);

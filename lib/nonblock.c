@@ -48,7 +48,8 @@ int curlx_nonblock(curl_socket_t sockfd,    /* operate on this */
                    int nonblock   /* TRUE or FALSE */)
 {
 #if defined(USE_BLOCKING_SOCKETS)
-
+  (void)sockfd;
+  (void)nonblock;
   return 0; /* returns success */
 
 #elif defined(HAVE_FCNTL_O_NONBLOCK)
@@ -58,8 +59,7 @@ int curlx_nonblock(curl_socket_t sockfd,    /* operate on this */
   flags = sfcntl(sockfd, F_GETFL, 0);
   if(nonblock)
     return sfcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-  else
-    return sfcntl(sockfd, F_SETFL, flags & (~O_NONBLOCK));
+  return sfcntl(sockfd, F_SETFL, flags & (~O_NONBLOCK));
 
 #elif defined(HAVE_IOCTL_FIONBIO)
 

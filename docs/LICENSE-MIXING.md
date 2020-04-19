@@ -45,7 +45,7 @@ not have the announcement clause that collides with GPL.
 
 ## WolfSSL
 
- (May be used for SSL/TLS support) Uses the GPL license or a propietary
+ (May be used for SSL/TLS support) Uses the GPL license or a proprietary
  license. If this is a problem for you, consider using another TLS library.
 
 ## NSS
@@ -56,10 +56,6 @@ not have the announcement clause that collides with GPL.
  LGPL terms. These licenses grant you different permissions and impose
  different obligations. You should select the license that best meets your
  needs.
-
-## axTLS
-
- (May be used for SSL/TLS support) Uses a Modified BSD-style license.
 
 ## mbedTLS
 

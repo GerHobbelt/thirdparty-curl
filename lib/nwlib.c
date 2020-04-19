@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -184,19 +184,18 @@ int GetOrSetUpData(int id, libdata_t **appData,
      */
     NXLock(gLibLock);
 
-    if(!(app_data = (libdata_t *) get_app_data(id))) {
-      app_data = malloc(sizeof(libdata_t));
+    app_data = (libdata_t *) get_app_data(id);
+    if(!app_data) {
+      app_data = calloc(1, sizeof(libdata_t));
 
       if(app_data) {
-        memset(app_data, 0, sizeof(libdata_t));
-
         app_data->tenbytes = malloc(10);
         app_data->lock     = NXMutexAlloc(0, 0, &liblock);
 
         if(!app_data->tenbytes || !app_data->lock) {
           if(app_data->lock)
             NXMutexFree(app_data->lock);
-
+          free(app_data->tenbytes);
           free(app_data);
           app_data = (libdata_t *) NULL;
           err      = ENOMEM;
@@ -214,6 +213,9 @@ int GetOrSetUpData(int id, libdata_t **appData,
           err = set_app_data(gLibId, app_data);
 
           if(err) {
+            if(app_data->lock)
+              NXMutexFree(app_data->lock);
+            free(app_data->tenbytes);
             free(app_data);
             app_data = (libdata_t *) NULL;
             err      = ENOMEM;
@@ -259,7 +261,8 @@ int GetOrSetUpData(int id, libdata_t **appData,
           err         = ENOMEM;
         }
 
-        if((err = NXKeySetValue(key, thread_data))) {
+        err = NXKeySetValue(key, thread_data);
+        if(err) {
           free(thread_data->twentybytes);
           free(thread_data);
           thread_data = (libthreaddata_t *) NULL;
@@ -303,14 +306,14 @@ void DisposeThreadData(void *data)
 /* For native CLib-based NLM seems we can do a bit more simple. */
 #include <nwthread.h>
 
-int main (void)
+int main(void)
 {
   /* initialize any globals here... */
 
   /* do this if any global initializing was done
   SynchronizeStart();
   */
-  ExitThread (TSR_THREAD, 0);
+  ExitThread(TSR_THREAD, 0);
   return 0;
 }
 

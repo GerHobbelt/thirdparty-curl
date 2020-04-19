@@ -20,7 +20,7 @@ when, for example, one of the files is generated.
 
 checksrc does not check and verify the code against the entire style guide,
 but the script is instead an effort to detect the most common mistakes and
-syntax mistakes that contributers make before they get accustomed to our code
+syntax mistakes that contributors make before they get accustomed to our code
 style. Heck, many of us regulars do the mistakes too and this script helps us
 keep the code in shape.
 
@@ -30,10 +30,20 @@ Lists how to use the script and it lists all existing warnings it has and
 problems it detects. At the time of this writing, the existing checksrc
 warnings are:
 
+- `ASSIGNWITHINCONDITION`: Assignment within a conditional expression. The
+  code style mandates the assignment to be done outside of it.
+
+- `ASTERISKNOSPACE`: A pointer was declared like `char* name` instead of the more
+   appropriate `char *name` style. The asterisk should sit next to the name.
+
+- `ASTERISKSPACE`: A pointer was declared like `char * name` instead of the
+   more appropriate `char *name` style. The asterisk should sit right next to
+   the name without a space in between.
+
 - `BADCOMMAND`: There's a bad !checksrc! instruction in the code. See the
    **Ignore certain warnings** section below for details.
 
-- `BANNEDFUNC`: A banned function was used. The funtions sprintf, vsprintf,
+- `BANNEDFUNC`: A banned function was used. The functions sprintf, vsprintf,
    strcat, strncat, gets are **never** allowed in curl source code.
 
 - `BRACEELSE`: '} else' on the same line. The else is supposed to be on the
@@ -49,16 +59,31 @@ warnings are:
 
 - `FOPENMODE`: `fopen()` needs a macro for the mode string, use it
 
-- `INDENTATION`: detected a wrong start column for code. Note that this warning
-   only checks some specific places and will certainly miss many bad
+- `INDENTATION`: detected a wrong start column for code. Note that this
+   warning only checks some specific places and will certainly miss many bad
    indentations.
 
 - `LONGLINE`: A line is longer than 79 columns.
+
+- `MULTISPACE`: Multiple spaces were found where only one should be used.
+
+- `NOSPACEEQUALS`: An equals sign was found without preceding space. We prefer
+  `a = 2` and *not* `a=2`.
+
+- `OPENCOMMENT`: File ended with a comment (`/*`) still "open".
 
 - `PARENBRACE`: `){` was used without sufficient space in between.
 
 - `RETURNNOSPACE`: `return` was used without space between the keyword and the
    following value.
+
+- `SEMINOSPACE`: There was no space (or newline) following a semicolon.
+
+- `SIZEOFNOPAREN`: Found use of sizeof without parentheses. We prefer
+  `sizeof(int)` style.
+
+- `SNPRINTF` - Found use of `snprintf()`. Since we use an internal replacement
+   with a different return code etc, we prefer `msnprintf()`.
 
 - `SPACEAFTERPAREN`: there was a space after open parenthesis, `( text`.
 
@@ -69,7 +94,7 @@ warnings are:
 - `SPACEBEFOREPAREN`: there was a space before an open parenthesis, `if (`,
    where one was not expected
 
-- `SPACESEMILCOLON`: there was a space before semicolon, ` ;`.
+- `SPACESEMICOLON`: there was a space before semicolon, ` ;`.
 
 - `TABS`: TAB characters are not allowed!
 
@@ -77,6 +102,19 @@ warnings are:
 
 - `UNUSEDIGNORE`: a checksrc inlined warning ignore was asked for but not used,
    that's an ignore that should be removed or changed to get used.
+
+### Extended warnings
+
+Some warnings are quite computationally expensive to perform, so they are
+turned off by default. To enable these warnings, place a `.checksrc` file in
+the directory where they should be activated with commands to enable the
+warnings you are interested in. The format of the file is to enable one
+warning per line like so: `enable <EXTENDEDWARNING>`
+
+Currently there is one extended warning which can be enabled:
+
+- `COPYRIGHTYEAR`: the current changeset hasn't updated the copyright year in
+   the source file
 
 ## Ignore certain warnings
 
