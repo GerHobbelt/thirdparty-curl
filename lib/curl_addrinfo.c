@@ -50,7 +50,7 @@
 #  define in_addr_t unsigned long
 #endif
 
-#if defined(WIN32) && defined(USE_UNIX_SOCKETS)
+#if (defined(WIN32) || defined(WIN64)) && defined(USE_UNIX_SOCKETS)
 #include <afunix.h>
 #endif
 

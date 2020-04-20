@@ -22,7 +22,7 @@
 
 #include "timeval.h"
 
-#if defined(WIN32) && !defined(MSDOS)
+#if (defined(WIN32) || defined(WIN64)) && !defined(MSDOS)
 
 /* set in win32_init() */
 extern LARGE_INTEGER Curl_freq;

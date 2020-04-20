@@ -24,7 +24,7 @@
 
 #include "curl_setup.h"
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 
 extern LARGE_INTEGER Curl_freq;
 extern bool Curl_isVistaOrGreater;

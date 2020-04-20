@@ -49,7 +49,7 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
-#if defined(WIN32) || defined(_WIN32_WCE)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32_WCE)
 #define PRESERVE_WINDOWS_ERROR_CODE
 #endif
 
@@ -634,7 +634,7 @@ get_winsock_error (int err, char *buf, size_t len)
 }
 #endif   /* USE_WINSOCK */
 
-#if defined(WIN32) || defined(_WIN32_WCE)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32_WCE)
 /* This is a helper function for Curl_strerror that converts Windows API error
  * codes (GetLastError) to error messages.
  * Returns NULL if no error message was found for error code.
@@ -721,8 +721,8 @@ const char *Curl_strerror(int err, char *buf, size_t buflen)
   max = buflen - 1;
   *buf = '\0';
 
-#if defined(WIN32) || defined(_WIN32_WCE)
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32_WCE)
+#if defined(WIN32) || defined(WIN64)
   /* 'sys_nerr' is the maximum errno number, it is not widely portable */
   if(err >= 0 && err < sys_nerr)
     strncpy(buf, strerror(err), max);
@@ -811,7 +811,7 @@ const char *Curl_strerror(int err, char *buf, size_t buflen)
  * Curl_winapi_strerror:
  * Variant of Curl_strerror if the error code is definitely Windows API.
  */
-#if defined(WIN32) || defined(_WIN32_WCE)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32_WCE)
 const char *Curl_winapi_strerror(DWORD err, char *buf, size_t buflen)
 {
 #ifdef PRESERVE_WINDOWS_ERROR_CODE

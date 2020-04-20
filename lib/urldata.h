@@ -1350,7 +1350,7 @@ struct UrlState {
   int httpversion;       /* the lowest HTTP version*10 reported by any server
                             involved in this request */
 
-#if !defined(WIN32) && !defined(MSDOS) && !defined(__EMX__) && \
+#if !(defined(WIN32) || defined(WIN64)) && !defined(MSDOS) && !defined(__EMX__) && \
     !defined(__SYMBIAN32__)
 /* do FTP line-end conversions on most platforms */
 #define CURL_DO_LINEEND_CONV

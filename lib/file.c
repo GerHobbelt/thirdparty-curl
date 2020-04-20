@@ -67,7 +67,7 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
-#if defined(WIN32) || defined(MSDOS) || defined(__EMX__) || \
+#if defined(WIN32) || defined(WIN64) || defined(MSDOS) || defined(__EMX__) || \
   defined(__SYMBIAN32__)
 #define DOS_FILESYSTEM 1
 #endif

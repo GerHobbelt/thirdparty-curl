@@ -24,7 +24,7 @@
 #include "socketpair.h"
 
 #ifndef HAVE_SOCKETPAIR
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 /*
  * This is a socketpair() implementation for Windows.
  */
@@ -46,7 +46,7 @@
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif /* !INADDR_LOOPBACK */
-#endif /* !WIN32 */
+#endif /* !WIN32 / !WIN64 */
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"

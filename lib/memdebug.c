@@ -237,7 +237,7 @@ char *curl_dbg_strdup(const char *str, int line, const char *source)
   return mem;
 }
 
-#if defined(WIN32) && defined(UNICODE)
+#if (defined(WIN32) || defined(WIN64)) && defined(UNICODE)
 wchar_t *curl_dbg_wcsdup(const wchar_t *str, int line, const char *source)
 {
   wchar_t *mem;

@@ -22,7 +22,7 @@
 
 #include "curl_setup.h"
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 
 #include <curl/curl.h>
 #include "system_win32.h"

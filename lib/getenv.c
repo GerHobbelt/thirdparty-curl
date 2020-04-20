@@ -34,7 +34,7 @@ char *GetEnv(const char *variable)
   (void)variable;
   return NULL;
 #else
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   char env[4096];
   char *temp = getenv(variable);
   env[0] = '\0';

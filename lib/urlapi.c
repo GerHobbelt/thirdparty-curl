@@ -237,7 +237,7 @@ static void strcpy_url(char *output, const char *url, bool relative)
 bool Curl_is_absolute_url(const char *url, char *buf, size_t buflen)
 {
   size_t i;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   if(STARTS_WITH_DRIVE_PREFIX(url))
     return FALSE;
 #endif
@@ -748,7 +748,7 @@ static CURLUcode seturl(const char *url, CURLU *u, unsigned int flags)
       path = ptr;
     }
 
-#if !defined(MSDOS) && !defined(WIN32) && !defined(__CYGWIN__)
+#if !defined(MSDOS) && !(defined(WIN32) || defined(WIN64)) && !defined(__CYGWIN__)
     /* Don't allow Windows drive letters when not in Windows.
      * This catches both "file:/c:" and "file:c:" */
     if(('/' == path[0] && STARTS_WITH_URL_DRIVE_PREFIX(&path[1])) ||

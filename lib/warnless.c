@@ -441,7 +441,7 @@ curl_socket_t curlx_sitosk(int i)
 
 #endif /* USE_WINSOCK */
 
-#if defined(WIN32) || defined(_WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(WIN64)
 
 ssize_t curlx_read(int fd, void *buf, size_t count)
 {
