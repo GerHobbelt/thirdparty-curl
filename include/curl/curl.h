@@ -2077,6 +2077,14 @@ typedef enum {
   /* Provider for V4 signature */
   CURLOPT(CURLOPT_AWS_SIGV4, CURLOPTTYPE_STRINGPOINT, 305),
 
+  /* The CAfile in memory as PEM used to validate the proxy certificate
+     this option is used only if PROXY_SSL_VERIFYPEER is true */
+  CURLOPT(CURLOPT_CAINFO_PEM, CURLOPTTYPE_STRINGPOINT, 306),
+
+  /* The CAfile in memory as PEM used to validate the proxy certificate
+     this option is used only if PROXY_SSL_VERIFYPEER is true */
+  CURLOPT(CURLOPT_PROXY_CAINFO_PEM, CURLOPTTYPE_STRINGPOINT, 307),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
