@@ -2444,69 +2444,6 @@ static int ossl_new_session_cb(SSL *ssl, SSL_SESSION *ssl_sessionid)
   return res;
 }
 
-#ifdef _WIN32
-/* Local version of CERT_CONTEXT, to prevent from bringing in a specific
-   version of the Windows SDK */
-typedef struct _CERT_CONTEXT
-{
-    unsigned int dwCertEncodingType;
-    unsigned char *pbCertEncoded;
-    unsigned int cbCertEncoded;
-    void* pCertInfo;
-    void* hCertStore;
-} CERT_CONTEXT, *PCERT_CONTEXT;typedef const CERT_CONTEXT *PCCERT_CONTEXT;
-
-/* Load crypt32.dll manually to prevent bringing it in unless used */
-HMODULE Local_Crypt32()
-{
-    static HMODULE ret = NULL;
-    if (!ret)
-    {
-        ret = LoadLibraryA("Crypt32.dll");
-    }
-    return ret;
-}
-
-/* Bounce these APIs to our loaded version of crypt32.dll */
-void* Local_CertOpenSystemStoreA(void* hprov, char* szSubsystemProtocol)
-{
-    if (Local_Crypt32())
-    {
-        static FARPROC ret = NULL;
-        if (!ret)
-        {
-            ret = GetProcAddress(Local_Crypt32(), "CertOpenSystemStoreA");
-        }
-        if (ret)
-        {
-            typedef void* (WINAPI * PFN_Func)(void*, char*);
-            return ((PFN_Func) ret)(hprov, szSubsystemProtocol);
-        }
-    }
-    return NULL;
-}
-
-void* Local_CertEnumCertificatesInStore(void* hCertStore, void* pPrevCertContext)
-{
-    if (Local_Crypt32())
-    {
-        static FARPROC ret = NULL;
-        if (!ret)
-        {
-            ret = GetProcAddress(Local_Crypt32(), "CertEnumCertificatesInStore");
-        }
-        if (ret)
-        {
-            typedef void* (WINAPI * PFN_Func)(void*, void*);
-            return ((PFN_Func) ret)(hCertStore, pPrevCertContext);
-        }
-    }
-    return NULL;
-}
-
-#define PKCS_7_ASN_ENCODING         0x00010000
-#endif
-
 static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
 {
   CURLcode result = CURLE_OK;
@@ -3096,16 +3033,16 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   if (!ssl_cafile && !ssl_capath)
   {
     /* Open the default Windows cert store */
-    void* hStore = Local_CertOpenSystemStoreA(NULL, "ROOT");
+    void* hStore = CertOpenSystemStoreA(NULL, "ROOT");
     if (hStore)
     {
       /* And then open the OpenSSL store */
-      X509_STORE * store = SSL_CTX_get_cert_store(BACKEND->ctx);
+      X509_STORE * store = SSL_CTX_get_cert_store(backend->ctx);
       CERT_CONTEXT * pCertCtx = NULL;
       /* Loop through all the certs in the Windows cert store */
-      for ( pCertCtx = Local_CertEnumCertificatesInStore(hStore, NULL);
+      for ( pCertCtx = CertEnumCertificatesInStore(hStore, NULL);
           pCertCtx != NULL;
-          pCertCtx = Local_CertEnumCertificatesInStore(hStore, pCertCtx) )
+          pCertCtx = CertEnumCertificatesInStore(hStore, pCertCtx) )
       {
         if (!((pCertCtx->dwCertEncodingType & PKCS_7_ASN_ENCODING) == PKCS_7_ASN_ENCODING))
         {
