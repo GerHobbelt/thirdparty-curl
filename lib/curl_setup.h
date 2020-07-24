@@ -321,12 +321,6 @@
 /*
  * Large file (>2Gb) support using WIN32 functions.
  */
- 
-#define fopen _wfopen_hack
-#define open _wopen_hack
-
-FILE *_wfopen_hack(const char *file, const char *mode);
-int _wopen_hack(const char *file, int oflags, ...);
 
 #ifdef USE_WIN32_LARGE_FILES
 #  include <io.h>
