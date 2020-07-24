@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -20,6 +20,9 @@
  *
  ***************************************************************************/
 #include "tool_setup.h"
+#if defined(HAVE_STRCASECMP) && defined(HAVE_STRINGS_H)
+#include <strings.h>
+#endif
 
 #include "tool_panykey.h"
 #include "tool_help.h"
@@ -37,13 +40,14 @@
  ---------------------------------------------------------
 
   cd $srcroot/docs/cmdline-opts
-  ./gen.pl listhelp
+  ./gen.pl listhelp *.d
  */
 
 struct helptxt {
   const char *opt;
   const char *desc;
 };
+
 
 static const struct helptxt helptext[] = {
   {"    --abstract-unix-socket <path>",
@@ -65,7 +69,7 @@ static const struct helptxt helptext[] = {
   {"    --cert-status",
    "Verify the status of the server certificate"},
   {"    --cert-type <type>",
-   "Certificate file type (DER/PEM/ENG)"},
+   "Certificate type (DER/PEM/ENG)"},
   {"    --ciphers <list of ciphers>",
    "SSL ciphers to use"},
   {"    --compressed",
@@ -80,7 +84,7 @@ static const struct helptxt helptext[] = {
    "Connect to host"},
   {"-C, --continue-at <offset>",
    "Resumed transfer offset"},
-  {"-b, --cookie <data>",
+  {"-b, --cookie <data|filename>",
    "Send cookies from string/file"},
   {"-c, --cookie-jar <filename>",
    "Write cookies to <filename> after operation"},
@@ -128,6 +132,10 @@ static const struct helptxt helptext[] = {
    "EGD socket path for random data"},
   {"    --engine <name>",
    "Crypto engine to use"},
+  {"    --etag-compare <file>",
+   "Pass an ETag from a file as a custom header"},
+  {"    --etag-save <file>",
+   "Parse ETag from a request and save it to a file"},
   {"    --expect100-timeout <seconds>",
    "How long to wait for 100-continue"},
   {"-f, --fail",
@@ -167,7 +175,7 @@ static const struct helptxt helptext[] = {
   {"-g, --globoff",
    "Disable URL sequences and ranges using {} and []"},
   {"    --happy-eyeballs-timeout-ms <milliseconds>",
-   "How long to wait in milliseconds for IPv6 before trying IPv4"},
+   "Time for IPv6 before trying IPv4"},
   {"    --haproxy-protocol",
    "Send HAProxy PROXY protocol v1 header"},
   {"-I, --head",
@@ -188,6 +196,8 @@ static const struct helptxt helptext[] = {
    "Use HTTP 2"},
   {"    --http2-prior-knowledge",
    "Use HTTP 2 without HTTP/1.1 Upgrade"},
+  {"    --http3",
+   "Use HTTP v3"},
   {"    --ignore-content-length",
    "Ignore the size of the remote resource"},
   {"-i, --include",
@@ -230,6 +240,8 @@ static const struct helptxt helptext[] = {
    "Mail from this address"},
   {"    --mail-rcpt <address>",
    "Mail to this address"},
+  {"    --mail-rcpt-allowfails",
+   "Allow RCPT TO command to fail for some recipients"},
   {"-M, --manual",
    "Display the full manual"},
   {"    --max-filesize <bytes>",
@@ -258,6 +270,8 @@ static const struct helptxt helptext[] = {
    "Disable TCP keepalive on the connection"},
   {"    --no-npn",
    "Disable the NPN TLS extension"},
+  {"    --no-progress-meter",
+   "Do not show the progress meter"},
   {"    --no-sessionid",
    "Disable SSL session-ID reusing"},
   {"    --noproxy <no-proxy-list>",
@@ -270,6 +284,12 @@ static const struct helptxt helptext[] = {
    "OAuth 2 Bearer Token"},
   {"-o, --output <file>",
    "Write to file instead of stdout"},
+  {"-Z, --parallel",
+   "Perform transfers in parallel"},
+  {"    --parallel-immediate",
+   "Do not wait for multiplexing (with --parallel)"},
+  {"    --parallel-max",
+   "Maximum concurrency for parallel transfers"},
   {"    --pass <phrase>",
    "Pass phrase for the private key"},
   {"    --path-as-is",
@@ -372,16 +392,20 @@ static const struct helptxt helptext[] = {
    "Specify request command to use"},
   {"    --request-target",
    "Specify the target for this request"},
-  {"    --resolve <host:port:address[,address]...>",
+  {"    --resolve <host:port:addr[,addr]...>",
    "Resolve the host+port to this address"},
   {"    --retry <num>",
    "Retry request if transient problems occur"},
+  {"    --retry-all-errors",
+   "Retry all errors (use with --retry)"},
   {"    --retry-connrefused",
    "Retry on connection refused (use with --retry)"},
   {"    --retry-delay <seconds>",
    "Wait time between retries"},
   {"    --retry-max-time <seconds>",
    "Retry only within this period"},
+  {"    --sasl-authzid <identity>",
+   "Identity for SASL PLAIN authentication"},
   {"    --sasl-ir",
    "Enable initial response in SASL authentication"},
   {"    --service-name <name>",
@@ -418,6 +442,8 @@ static const struct helptxt helptext[] = {
    "Disable cert revocation checks (Schannel)"},
   {"    --ssl-reqd",
    "Require SSL/TLS"},
+  {"    --ssl-revoke-best-effort",
+   "Ignore missing/offline cert CRL dist points"},
   {"-2, --sslv2",
    "Use SSLv2"},
   {"-3, --sslv3",
@@ -442,7 +468,7 @@ static const struct helptxt helptext[] = {
    "Transfer based on a time condition"},
   {"    --tls-max <VERSION>",
    "Set maximum allowed TLS version"},
-  {"    --tls13-ciphers <list of TLS 1.3 ciphersuites>",
+  {"    --tls13-ciphers <ciphersuite list>",
    "TLS 1.3 cipher suites to use"},
   {"    --tlsauthtype <type>",
    "TLS authentication type"},
@@ -511,6 +537,7 @@ static const struct feat feats[] = {
   {"IDN",            CURL_VERSION_IDN},
   {"IPv6",           CURL_VERSION_IPV6},
   {"Largefile",      CURL_VERSION_LARGEFILE},
+  {"Unicode",        CURL_VERSION_UNICODE},
   {"SSPI",           CURL_VERSION_SSPI},
   {"GSS-API",        CURL_VERSION_GSSAPI},
   {"Kerberos",       CURL_VERSION_KERBEROS5},
@@ -520,9 +547,11 @@ static const struct feat feats[] = {
   {"SSL",            CURL_VERSION_SSL},
   {"libz",           CURL_VERSION_LIBZ},
   {"brotli",         CURL_VERSION_BROTLI},
+  {"zstd",           CURL_VERSION_ZSTD},
   {"CharConv",       CURL_VERSION_CONV},
   {"TLS-SRP",        CURL_VERSION_TLSAUTH_SRP},
   {"HTTP2",          CURL_VERSION_HTTP2},
+  {"HTTP3",          CURL_VERSION_HTTP3},
   {"UnixSockets",    CURL_VERSION_UNIX_SOCKETS},
   {"HTTPS-proxy",    CURL_VERSION_HTTPS_PROXY},
   {"MultiSSL",       CURL_VERSION_MULTI_SSL},
@@ -593,10 +622,15 @@ void tool_version_info(void)
       printf(" %s", featp[i]);
     puts(""); /* newline */
   }
+  if(strcmp(CURL_VERSION, curlinfo->version)) {
+    printf("WARNING: curl and libcurl versions do not match. "
+           "Functionality may be affected.\n");
+  }
 }
 
-void tool_list_engines(CURL *curl)
+void tool_list_engines(void)
 {
+  CURL *curl = curl_easy_init();
   struct curl_slist *engines = NULL;
 
   /* Get the list of engines */
@@ -613,4 +647,5 @@ void tool_list_engines(CURL *curl)
 
   /* Cleanup the list of engines */
   curl_slist_free_all(engines);
+  curl_easy_cleanup(curl);
 }

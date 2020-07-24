@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -40,12 +40,12 @@
 #define F_CONTENTRANGE  (1 << 3)        /* Server sends content-range hdr. */
 #define F_IGNOREBODY    (1 << 4)        /* Body should be ignored. */
 
-typedef struct {
+struct testparams {
   unsigned int flags; /* ORed flags as above. */
   CURLcode result; /* Code that should be returned by curl_easy_perform(). */
-}  testparams;
+};
 
-static const testparams params[] = {
+static const struct testparams params[] = {
   { 0,                                                             CURLE_OK },
   {                                 F_CONTENTRANGE,                CURLE_OK },
   {                        F_FAIL,                                 CURLE_OK },
@@ -82,13 +82,13 @@ static size_t writedata(char *data, size_t size, size_t nmemb, void *userdata)
   return size * nmemb;
 }
 
-static int onetest(CURL *curl, const char *url, const testparams *p)
+static int onetest(CURL *curl, const char *url, const struct testparams *p)
 {
   CURLcode res;
   unsigned int replyselector;
   char urlbuf[256];
 
-  replyselector = p->flags & F_CONTENTRANGE? 1: 0;
+  replyselector = (p->flags & F_CONTENTRANGE)? 1: 0;
   if(p->flags & F_HTTP416)
     replyselector += 2;
   msnprintf(urlbuf, sizeof(urlbuf), "%s%04u", url, replyselector);
@@ -96,7 +96,7 @@ static int onetest(CURL *curl, const char *url, const testparams *p)
   test_setopt(curl, CURLOPT_RESUME_FROM, (p->flags & F_RESUME)? 3: 0);
   test_setopt(curl, CURLOPT_RANGE, !(p->flags & F_RESUME)?
                                    "3-1000000": (char *) NULL);
-  test_setopt(curl, CURLOPT_FAILONERROR, p->flags & F_FAIL? 1: 0);
+  test_setopt(curl, CURLOPT_FAILONERROR, (p->flags & F_FAIL)? 1: 0);
   hasbody = 0;
   res = curl_easy_perform(curl);
   if(res != p->result) {

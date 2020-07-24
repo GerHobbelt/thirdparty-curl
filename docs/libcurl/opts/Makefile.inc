@@ -1,3 +1,24 @@
+#***************************************************************************
+#                                  _   _ ____  _
+#  Project                     ___| | | |  _ \| |
+#                             / __| | | | |_) | |
+#                            | (__| |_| |  _ <| |___
+#                             \___|\___/|_| \_\_____|
+#
+# Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+#
+# This software is licensed as described in the file COPYING, which
+# you should have received as part of this distribution. The terms
+# are also available at https://curl.haxx.se/docs/copyright.html.
+#
+# You may opt to use, copy, modify, merge, publish, distribute and/or sell
+# copies of the Software, and permit persons to whom the Software is
+# furnished to do so, under the terms of the COPYING file.
+#
+# This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+# KIND, either express or implied.
+#
+###########################################################################
 # Shared between Makefile.am and CMakeLists.txt
 
 man_MANS =                                      \
@@ -14,6 +35,7 @@ man_MANS =                                      \
   CURLINFO_CONTENT_LENGTH_UPLOAD_T.3            \
   CURLINFO_CONTENT_TYPE.3                       \
   CURLINFO_COOKIELIST.3                         \
+  CURLINFO_EFFECTIVE_METHOD.3                   \
   CURLINFO_EFFECTIVE_URL.3                      \
   CURLINFO_FILETIME.3                           \
   CURLINFO_FILETIME_T.3                         \
@@ -43,6 +65,7 @@ man_MANS =                                      \
   CURLINFO_REDIRECT_URL.3                       \
   CURLINFO_REQUEST_SIZE.3                       \
   CURLINFO_RESPONSE_CODE.3                      \
+  CURLINFO_RETRY_AFTER.3                        \
   CURLINFO_RTSP_CLIENT_CSEQ.3                   \
   CURLINFO_RTSP_CSEQ_RECV.3                     \
   CURLINFO_RTSP_SERVER_CSEQ.3                   \
@@ -67,6 +90,7 @@ man_MANS =                                      \
   CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE.3          \
   CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE.3        \
   CURLMOPT_MAXCONNECTS.3                        \
+  CURLMOPT_MAX_CONCURRENT_STREAMS.3             \
   CURLMOPT_MAX_HOST_CONNECTIONS.3               \
   CURLMOPT_MAX_PIPELINE_LENGTH.3                \
   CURLMOPT_MAX_TOTAL_CONNECTIONS.3              \
@@ -96,7 +120,6 @@ man_MANS =                                      \
   CURLOPT_CHUNK_END_FUNCTION.3                  \
   CURLOPT_CLOSESOCKETDATA.3                     \
   CURLOPT_CLOSESOCKETFUNCTION.3                 \
-  CURLOPT_UPKEEP_INTERVAL_MS.3             \
   CURLOPT_CONNECTTIMEOUT.3                      \
   CURLOPT_CONNECTTIMEOUT_MS.3                   \
   CURLOPT_CONNECT_ONLY.3                        \
@@ -112,8 +135,8 @@ man_MANS =                                      \
   CURLOPT_COPYPOSTFIELDS.3                      \
   CURLOPT_CRLF.3                                \
   CURLOPT_CRLFILE.3                             \
-  CURLOPT_CUSTOMREQUEST.3                       \
   CURLOPT_CURLU.3                               \
+  CURLOPT_CUSTOMREQUEST.3                       \
   CURLOPT_DEBUGDATA.3                           \
   CURLOPT_DEBUGFUNCTION.3                       \
   CURLOPT_DEFAULT_PROTOCOL.3                    \
@@ -167,8 +190,6 @@ man_MANS =                                      \
   CURLOPT_HTTP_TRANSFER_DECODING.3              \
   CURLOPT_HTTP_VERSION.3                        \
   CURLOPT_IGNORE_CONTENT_LENGTH.3               \
-  CURLOPT_TRAILERDATA.3                         \
-  CURLOPT_TRAILERFUNCTION.3                     \
   CURLOPT_INFILESIZE.3                          \
   CURLOPT_INFILESIZE_LARGE.3                    \
   CURLOPT_INTERFACE.3                           \
@@ -178,6 +199,7 @@ man_MANS =                                      \
   CURLOPT_IOCTLFUNCTION.3                       \
   CURLOPT_IPRESOLVE.3                           \
   CURLOPT_ISSUERCERT.3                          \
+  CURLOPT_ISSUERCERT_BLOB.3                     \
   CURLOPT_KEEP_SENDING_ON_ERROR.3               \
   CURLOPT_KEYPASSWD.3                           \
   CURLOPT_KRBLEVEL.3                            \
@@ -189,6 +211,8 @@ man_MANS =                                      \
   CURLOPT_MAIL_AUTH.3                           \
   CURLOPT_MAIL_FROM.3                           \
   CURLOPT_MAIL_RCPT.3                           \
+  CURLOPT_MAIL_RCPT_ALLLOWFAILS.3               \
+  CURLOPT_MAXAGE_CONN.3                         \
   CURLOPT_MAXCONNECTS.3                         \
   CURLOPT_MAXFILESIZE.3                         \
   CURLOPT_MAXFILESIZE_LARGE.3                   \
@@ -235,11 +259,15 @@ man_MANS =                                      \
   CURLOPT_PROXY_CAPATH.3                        \
   CURLOPT_PROXY_CRLFILE.3                       \
   CURLOPT_PROXY_KEYPASSWD.3                     \
+  CURLOPT_PROXY_ISSUERCERT.3                    \
+  CURLOPT_PROXY_ISSUERCERT_BLOB.3               \
   CURLOPT_PROXY_PINNEDPUBLICKEY.3               \
   CURLOPT_PROXY_SERVICE_NAME.3                  \
   CURLOPT_PROXY_SSLCERT.3                       \
+  CURLOPT_PROXY_SSLCERT_BLOB.3                  \
   CURLOPT_PROXY_SSLCERTTYPE.3                   \
   CURLOPT_PROXY_SSLKEY.3                        \
+  CURLOPT_PROXY_SSLKEY_BLOB.3                   \
   CURLOPT_PROXY_SSLKEYTYPE.3                    \
   CURLOPT_PROXY_SSLVERSION.3                    \
   CURLOPT_PROXY_SSL_CIPHER_LIST.3               \
@@ -271,6 +299,7 @@ man_MANS =                                      \
   CURLOPT_RTSP_SESSION_ID.3                     \
   CURLOPT_RTSP_STREAM_URI.3                     \
   CURLOPT_RTSP_TRANSPORT.3                      \
+  CURLOPT_SASL_AUTHZID.3                        \
   CURLOPT_SASL_IR.3                             \
   CURLOPT_SEEKDATA.3                            \
   CURLOPT_SEEKFUNCTION.3                        \
@@ -290,10 +319,12 @@ man_MANS =                                      \
   CURLOPT_SSH_PRIVATE_KEYFILE.3                 \
   CURLOPT_SSH_PUBLIC_KEYFILE.3                  \
   CURLOPT_SSLCERT.3                             \
+  CURLOPT_SSLCERT_BLOB.3                        \
   CURLOPT_SSLCERTTYPE.3                         \
   CURLOPT_SSLENGINE.3                           \
   CURLOPT_SSLENGINE_DEFAULT.3                   \
   CURLOPT_SSLKEY.3                              \
+  CURLOPT_SSLKEY_BLOB.3                         \
   CURLOPT_SSLKEYTYPE.3                          \
   CURLOPT_SSLVERSION.3                          \
   CURLOPT_SSL_CIPHER_LIST.3                     \
@@ -329,10 +360,13 @@ man_MANS =                                      \
   CURLOPT_TLSAUTH_PASSWORD.3                    \
   CURLOPT_TLSAUTH_TYPE.3                        \
   CURLOPT_TLSAUTH_USERNAME.3                    \
+  CURLOPT_TRAILERDATA.3                         \
+  CURLOPT_TRAILERFUNCTION.3                     \
   CURLOPT_TRANSFERTEXT.3                        \
   CURLOPT_TRANSFER_ENCODING.3                   \
   CURLOPT_UNIX_SOCKET_PATH.3                    \
   CURLOPT_UNRESTRICTED_AUTH.3                   \
+  CURLOPT_UPKEEP_INTERVAL_MS.3                  \
   CURLOPT_UPLOAD.3                              \
   CURLOPT_UPLOAD_BUFFERSIZE.3                   \
   CURLOPT_URL.3                                 \

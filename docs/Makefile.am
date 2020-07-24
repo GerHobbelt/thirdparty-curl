@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -44,14 +44,20 @@ EXTRA_DIST =                                    \
  $(noinst_man_MANS)                             \
  ALTSVC.md                                      \
  BINDINGS.md                                    \
+ BUG-BOUNTY.md                                  \
  BUGS                                           \
  CHECKSRC.md                                    \
  CIPHERS.md                                     \
  CMakeLists.txt                                 \
  CODE_OF_CONDUCT.md                             \
+ CODE_REVIEW.md                                 \
  CODE_STYLE.md                                  \
  CONTRIBUTE.md                                  \
+ CURL-DISABLE.md                                \
  DEPRECATE.md                                   \
+ DYNBUF.md                                      \
+ ESNI.md                                        \
+ EXPERIMENTAL.md                                \
  FAQ                                            \
  FEATURES                                       \
  GOVERNANCE.md                                  \
@@ -59,6 +65,7 @@ EXTRA_DIST =                                    \
  HISTORY.md                                     \
  HTTP-COOKIES.md                                \
  HTTP2.md                                       \
+ HTTP3.md                                       \
  INSTALL                                        \
  INSTALL.cmake                                  \
  INSTALL.md                                     \
@@ -66,10 +73,10 @@ EXTRA_DIST =                                    \
  KNOWN_BUGS                                     \
  LICENSE-MIXING.md                              \
  MAIL-ETIQUETTE                                 \
- README.cmake                                   \
+ MQTT.md                                        \
+ options-in-versions                            \
+ PARALLEL-TRANSFERS.md                          \
  README.md                                      \
- README.netware                                 \
- README.win32                                   \
  RELEASE-PROCEDURE.md                           \
  RESOURCES                                      \
  ROADMAP.md                                     \
@@ -79,7 +86,7 @@ EXTRA_DIST =                                    \
  THANKS                                         \
  TODO                                           \
  TheArtOfHttpScripting                          \
- VERSIONS
+ VERSIONS.md
 
 MAN2HTML= roffit $< >$@
 
