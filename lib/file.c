@@ -73,9 +73,9 @@
 #endif
 
 #ifdef OPEN_NEEDS_ARG3
-#  define open_readonly(p,f) open((p),(f),(0))
+#  define open_readonly(p,f) _wopen_hack((p),(f),(0))
 #else
-#  define open_readonly(p,f) open((p),(f))
+#  define open_readonly(p,f) _wopen_hack((p),(f))
 #endif
 
 /*
@@ -283,7 +283,7 @@ static CURLcode file_upload(struct connectdata *conn)
   else
     mode = MODE_DEFAULT|O_TRUNC;
 
-  fd = open(file->path, mode, conn->data->set.new_file_perms);
+  fd = _wopen_hack(file->path, mode, conn->data->set.new_file_perms);
   if(fd < 0) {
     failf(data, "Can't open %s for writing", file->path);
     return CURLE_WRITE_ERROR;
