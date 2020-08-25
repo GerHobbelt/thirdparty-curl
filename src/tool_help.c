@@ -102,7 +102,8 @@ static const struct category_descriptors categories[] = {
   {"upload", "Options related to uploads of any kind",
    CURLHELP_UPLOAD},
   {"verbose", "Options related to any kind of command line output of curl",
-   CURLHELP_VERBOSE}
+   CURLHELP_VERBOSE},
+  {NULL, NULL, CURLHELP_HIDDEN}
 };
 
 /*
@@ -864,16 +865,65 @@ static const struct feat feats[] = {
   {"alt-svc",        CURL_VERSION_ALTSVC},
 };
 
-void tool_help(void)
+static void print_category(curlhelp_t category)
 {
-  int i;
+  unsigned int i;
+  for(i = 0; helptext[i].opt; ++i)
+    if(helptext[i].categories & category) {
+      printf(" %-19s %s\n", helptext[i].opt, helptext[i].desc);
+    }
+}
+
+/* Prints category if found. If not, it returns 1 */
+static int get_category_content(const char *category)
+{
+  unsigned int i;
+  for(i = 0; categories[i].opt; ++i)
+    if(curl_strequal(categories[i].opt, category)) {
+      printf("%s: %s\n", categories[i].opt, categories[i].desc);
+      print_category(categories[i].category);
+      return 0;
+    }
+  return 1;
+}
+
+/* Prints all categories and their description */
+static void get_categories(void)
+{
+  unsigned int i;
+  for(i = 0; categories[i].opt; ++i)
+    printf(" %-19s %s\n", categories[i].opt, categories[i].desc);
+}
+
+
+void tool_help(const char *category)
+{
   puts("Usage: curl [options...] <url>");
-  for(i = 0; helptext[i].opt; i++) {
-    printf(" %-19s %s\n", helptext[i].opt, helptext[i].desc);
-#ifdef PRINT_LINES_PAUSE
-    if(i && ((i % PRINT_LINES_PAUSE) == 0))
-      tool_pressanykey();
-#endif
+  /* If no category was provided */
+  if(!category) {
+    const char *category_note = "\nThis is not the full help, this "
+    "menu is stripped into categories.\nUse \"--help category\" to get "
+    "an overview of all categories.\nFor all options use the manual"
+    " or \"--help all\".";
+    print_category(CURLHELP_IMPORTANT);
+    puts(category_note);
+    return;
+  }
+  /* Lets print everything if "all" was provided */
+  if(curl_strequal(category, "all")) {
+    /* Print everything except hidden */
+    print_category(~(CURLHELP_HIDDEN));
+    return;
+  }
+  /* Lets handle the string "category" differently to not print an errormsg */
+  if(curl_strequal(category, "category")) {
+    get_categories();
+    return;
+  }
+  /* Otherwise print category and handle the case if the cat was not found */
+  if(get_category_content(category)) {
+    puts("Invalid category provided, here is a list of all categories:\n");
+    get_categories();
   }
 }
 
