@@ -196,8 +196,8 @@
 
 #elif defined(__MINGW32__)
 #  define CURL_TYPEOF_CURL_OFF_T     long long
-#  define CURL_FORMAT_CURL_OFF_T     "I64d"
-#  define CURL_FORMAT_CURL_OFF_TU    "I64u"
+#  define CURL_FORMAT_CURL_OFF_T     "lld"
+#  define CURL_FORMAT_CURL_OFF_TU    "llu"
 #  define CURL_SUFFIX_CURL_OFF_T     LL
 #  define CURL_SUFFIX_CURL_OFF_TU    ULL
 #  define CURL_TYPEOF_CURL_SOCKLEN_T socklen_t
