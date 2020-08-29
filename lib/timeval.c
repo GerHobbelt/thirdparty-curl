@@ -24,8 +24,11 @@
 
 #if (defined(WIN32) || defined(WIN64)) && !defined(MSDOS)
 
+#include "curl_setup.h"
 #include <curl/curl.h>
 #include "system_win32.h"
+#include "version_win32.h"
+
 #include <profileapi.h>
 #include <sysinfoapi.h>
 
@@ -44,7 +47,7 @@ struct curltime Curl_now(void)
 
   if (!timer_initialized)
   {
-	  if (Curl_verify_windows_version(6, 0, PLATFORM_WINNT,
+	  if (curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
 		  VERSION_GREATER_THAN_EQUAL))
 	  {
 		  Curl_isVistaOrGreater = TRUE;
@@ -113,6 +116,9 @@ struct curltime Curl_now(void)
 }
 
 #elif defined(HAVE_CLOCK_GETTIME_MONOTONIC)
+
+#include <sys/time.h>
+#include <time.h>
 
 struct curltime Curl_now(void)
 {
@@ -201,6 +207,9 @@ struct curltime Curl_now(void)
 
 #elif defined(HAVE_GETTIMEOFDAY)
 
+#include <sys/time.h>
+#include <time.h>
+
 struct curltime Curl_now(void)
 {
   /*
@@ -217,6 +226,8 @@ struct curltime Curl_now(void)
 }
 
 #else
+
+#include <time.h>
 
 struct curltime Curl_now(void)
 {

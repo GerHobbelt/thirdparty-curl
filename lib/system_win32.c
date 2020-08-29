@@ -102,6 +102,7 @@ CURLcode Curl_win32_init(long flags)
       Curl_if_nametoindex = pIfNameToIndex;
   }
 
+#if 0 // [GHo] moved to timeval.c
   if(curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
                                   VERSION_GREATER_THAN_EQUAL)) {
     Curl_isVistaOrGreater = TRUE;
@@ -110,6 +111,11 @@ CURLcode Curl_win32_init(long flags)
     Curl_isVistaOrGreater = FALSE;
 
   QueryPerformanceFrequency(&Curl_freq);
+#else
+  // [GHo]
+  // Curl_now() + Curl_timediff() have been processed to be used independently of the rest of curl,
+  // hence also independent from this curl lib init function here.
+#endif
   return CURLE_OK;
 }
 
