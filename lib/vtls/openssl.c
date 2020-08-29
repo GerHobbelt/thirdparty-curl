@@ -34,6 +34,13 @@
 /* Wincrypt must be included before anything that could include OpenSSL. */
 #if defined(USE_WIN32_CRYPTO)
 #include <wincrypt.h>
+/* Undefine wincrypt conflicting symbols for BoringSSL. */
+#undef X509_NAME
+#undef X509_EXTENSIONS
+#undef PKCS7_ISSUER_AND_SERIAL
+#undef PKCS7_SIGNER_INFO
+#undef OCSP_REQUEST
+#undef OCSP_RESPONSE
 #endif
 
 #include "urldata.h"
@@ -2479,7 +2486,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   long * const certverifyresult = &data->set.ssl.certverifyresult;
 #endif
   const long int ssl_version = SSL_CONN_CONFIG(version);
-#ifdef USE_TLS_SRP
+#ifdef HAVE_OPENSSL_SRP
   const enum CURL_TLSAUTH ssl_authtype = SSL_SET_OPTION(authtype);
 #endif
   char * const ssl_cert = SSL_SET_OPTION(cert);
@@ -2524,7 +2531,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
     failf(data, OSSL_PACKAGE " was built without SSLv2 support");
     return CURLE_NOT_BUILT_IN;
 #else
-#ifdef USE_TLS_SRP
+#ifdef HAVE_OPENSSL_SRP
     if(ssl_authtype == CURL_TLSAUTH_SRP)
       return CURLE_SSL_CONNECT_ERROR;
 #endif
@@ -2537,7 +2544,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
     failf(data, OSSL_PACKAGE " was built without SSLv3 support");
     return CURLE_NOT_BUILT_IN;
 #else
-#ifdef USE_TLS_SRP
+#ifdef HAVE_OPENSSL_SRP
     if(ssl_authtype == CURL_TLSAUTH_SRP)
       return CURLE_SSL_CONNECT_ERROR;
 #endif
@@ -2793,7 +2800,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   SSL_CTX_set_post_handshake_auth(backend->ctx, 1);
 #endif
 
-#ifdef USE_TLS_SRP
+#ifdef HAVE_OPENSSL_SRP
   if(ssl_authtype == CURL_TLSAUTH_SRP) {
     char * const ssl_username = SSL_SET_OPTION(username);
 
@@ -2978,7 +2985,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
         /* Continue with a warning if no certificate verif is required. */
         infof(data, "error setting certificate file, continuing anyway\n");
       }
-      infof(data, "  CAfile: %s\n", ssl_cafile);
+      infof(data, " CAfile: %s\n", ssl_cafile);
     }
     if(ssl_capath) {
       if(!SSL_CTX_load_verify_dir(backend->ctx, ssl_capath)) {
@@ -2990,7 +2997,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
         /* Continue with a warning if no certificate verif is required. */
         infof(data, "error setting certificate path, continuing anyway\n");
       }
-      infof(data, "  CApath: %s\n", ssl_capath);
+      infof(data, " CApath: %s\n", ssl_capath);
     }
   }
 #else
@@ -3000,8 +3007,8 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
     if(!SSL_CTX_load_verify_locations(backend->ctx, ssl_cafile, ssl_capath)) {
       if(verifypeer && !imported_native_ca) {
         /* Fail if we insist on successfully verifying the server. */
-        failf(data, "error setting certificate verify locations:\n"
-              "  CAfile: %s\n  CApath: %s",
+        failf(data, "error setting certificate verify locations:"
+              "  CAfile: %s CApath: %s",
               ssl_cafile ? ssl_cafile : "none",
               ssl_capath ? ssl_capath : "none");
         return CURLE_SSL_CACERT_BADFILE;
@@ -3015,11 +3022,8 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
       /* Everything is fine. */
       infof(data, "successfully set certificate verify locations:\n");
     }
-    infof(data,
-          "  CAfile: %s\n"
-          "  CApath: %s\n",
-          ssl_cafile ? ssl_cafile : "none",
-          ssl_capath ? ssl_capath : "none");
+    infof(data, " CAfile: %s\n", ssl_cafile ? ssl_cafile : "none");
+    infof(data, " CApath: %s\n", ssl_capath ? ssl_capath : "none");
   }
 #endif
 

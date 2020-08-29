@@ -720,6 +720,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     argptr = (char *)va_arg(param, void *);
     if(argptr) {
       struct curl_slist *cl;
+      /* general protection against mistakes and abuse */
+      if(strlen(argptr) > CURL_MAX_INPUT_LENGTH)
+        return CURLE_BAD_FUNCTION_ARGUMENT;
       /* append the cookie file name to the list of file names, and deal with
          them later */
       cl = curl_slist_append(data->change.cookielist, argptr);
@@ -804,6 +807,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
         /* if cookie engine was not running, activate it */
         data->cookies = Curl_cookie_init(data, NULL, NULL, TRUE);
 
+      /* general protection against mistakes and abuse */
+      if(strlen(argptr) > CURL_MAX_INPUT_LENGTH)
+        return CURLE_BAD_FUNCTION_ARGUMENT;
       argptr = strdup(argptr);
       if(!argptr || !data->cookies) {
         result = CURLE_OUT_OF_MEMORY;
@@ -2075,6 +2081,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * The application kindly asks for a differently sized receive buffer.
      * If it seems reasonable, we'll use it.
      */
+    if(data->state.buffer)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+
     arg = va_arg(param, long);
 
     if(arg > READBUFFER_MAX)
@@ -2084,18 +2093,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     else if(arg < READBUFFER_MIN)
       arg = READBUFFER_MIN;
 
-    /* Resize if new size */
-    if((arg != data->set.buffer_size) && data->state.buffer) {
-      char *newbuff = realloc(data->state.buffer, arg + 1);
-      if(!newbuff) {
-        DEBUGF(fprintf(stderr, "Error: realloc of buffer failed\n"));
-        result = CURLE_OUT_OF_MEMORY;
-      }
-      else
-        data->state.buffer = newbuff;
-    }
     data->set.buffer_size = arg;
-
     break;
 
   case CURLOPT_UPLOAD_BUFFERSIZE:
