@@ -1772,6 +1772,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
     case 'h': /* h for help */
       if(toggle) {
+        global->help_category = nextarg;
         return PARAM_HELP_REQUESTED;
       }
       /* we now actually support --no-help too! */
