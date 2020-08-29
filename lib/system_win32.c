@@ -33,8 +33,8 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
-LARGE_INTEGER Curl_freq;
-bool Curl_isVistaOrGreater;
+//LARGE_INTEGER Curl_freq = { 0 };
+//bool Curl_isVistaOrGreater = FALSE;
 
 /* Handle of iphlpapp.dll */
 static HMODULE s_hIpHlpApiDll = NULL;
@@ -106,6 +106,7 @@ CURLcode Curl_win32_init(long flags)
       Curl_if_nametoindex = pIfNameToIndex;
   }
 
+#if 0 // [GHo] moved to timeval.c
   if(Curl_verify_windows_version(6, 0, PLATFORM_WINNT,
                                  VERSION_GREATER_THAN_EQUAL)) {
     Curl_isVistaOrGreater = TRUE;
@@ -113,6 +114,7 @@ CURLcode Curl_win32_init(long flags)
   }
   else
     Curl_isVistaOrGreater = FALSE;
+#endif
 
   return CURLE_OK;
 }

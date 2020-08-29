@@ -258,7 +258,6 @@
 #    define UNICODE
 #  endif
 #  include <winerror.h>
-#  include <windows.h>
 #  ifdef HAVE_WINSOCK2_H
 #    include <winsock2.h>
 #    ifdef HAVE_WS2TCPIP_H
@@ -269,6 +268,7 @@
 #      include <winsock.h>
 #    endif
 #  endif
+#  include <windows.h>
 #  include <tchar.h>
 #  ifdef UNICODE
      typedef wchar_t *(*curl_wcsdup_callback)(const wchar_t *str);

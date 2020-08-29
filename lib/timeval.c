@@ -24,33 +24,89 @@
 
 #if (defined(WIN32) || defined(WIN64)) && !defined(MSDOS)
 
+#include <curl/curl.h>
+#include "system_win32.h"
+#include <profileapi.h>
+#include <sysinfoapi.h>
+
 /* set in win32_init() */
-extern LARGE_INTEGER Curl_freq;
-extern bool Curl_isVistaOrGreater;
+//extern LARGE_INTEGER Curl_freq;
+//extern bool Curl_isVistaOrGreater;
+
+static LARGE_INTEGER Curl_freq;
+static bool Curl_isVistaOrGreater;
+static bool timer_initialized = FALSE;
 
 struct curltime Curl_now(void)
 {
   struct curltime now;
-  if(Curl_isVistaOrGreater) { /* QPC timer might have issues pre-Vista */
+
+  if (!timer_initialized)
+  {
+	  if (Curl_verify_windows_version(6, 0, PLATFORM_WINNT,
+		  VERSION_GREATER_THAN_EQUAL))
+	  {
+		  Curl_isVistaOrGreater = TRUE;
+		  QueryPerformanceFrequency(&Curl_freq);
+	  }
+	  else
+	  {
+		  Curl_isVistaOrGreater = FALSE;
+	  }
+	  timer_initialized = TRUE;
+  }
+
+  if (Curl_isVistaOrGreater) { /* QPC timer might have issues pre-Vista */
     LARGE_INTEGER count;
     QueryPerformanceCounter(&count);
+
     now.tv_sec = (time_t)(count.QuadPart / Curl_freq.QuadPart);
     now.tv_usec = (int)((count.QuadPart % Curl_freq.QuadPart) * 1000000 /
                         Curl_freq.QuadPart);
   }
   else {
-    /* Disable /analyze warning that GetTickCount64 is preferred  */
+#ifndef _WINRT
+
+#define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
+
+	FILETIME ft;
+	unsigned __int64 tmpres = 0;
+
+	GetSystemTimeAsFileTime(&ft);
+
+	tmpres |= ft.dwHighDateTime;
+	tmpres <<= 32;
+	tmpres |= ft.dwLowDateTime;
+
+	tmpres /= 10; /*convert into microseconds*/
+	/*converting file time to unix epoch*/
+	tmpres -= DELTA_EPOCH_IN_MICROSECS;
+	now.tv_sec = (long)(tmpres / 1000000UL);
+	now.tv_usec = (long)(tmpres % 1000000UL);
+
+#elif (_WIN32_WINNT >= 0x0600)
+
+    ULONGLONG milliseconds = GetTickCount64();
+
+    now.tv_sec = milliseconds / 1000;
+    now.tv_usec = (milliseconds % 1000) * 1000;
+
+#else
+
+	  /* Disable /analyze warning that GetTickCount64 is preferred  */
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable:28159)
 #endif
-    DWORD milliseconds = GetTickCount();
+	  DWORD milliseconds = GetTickCount();
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
-    now.tv_sec = milliseconds / 1000;
-    now.tv_usec = (milliseconds % 1000) * 1000;
+	  now.tv_sec = milliseconds / 1000;
+	  now.tv_usec = (milliseconds % 1000) * 1000;
+
+#endif
   }
   return now;
 }

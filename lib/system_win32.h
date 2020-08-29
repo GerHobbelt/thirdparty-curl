@@ -26,8 +26,8 @@
 
 #if defined(WIN32) || defined(WIN64)
 
-extern LARGE_INTEGER Curl_freq;
-extern bool Curl_isVistaOrGreater;
+//extern LARGE_INTEGER Curl_freq;
+//extern bool Curl_isVistaOrGreater;
 
 CURLcode Curl_win32_init(long flags);
 void Curl_win32_cleanup(long init_flags);
