@@ -1,6 +1,6 @@
 ### File to be included in the build ###
 
-SONAME = 10:0:6
+SONAME = 11:0:7
 
 # This variable is set to current[:revision[:age]].
 #
