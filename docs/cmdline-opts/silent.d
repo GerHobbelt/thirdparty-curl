@@ -1,8 +1,8 @@
 Long: silent
 Short: s
 Help: Silent mode
-See-also: verbose stderr
 Category: important verbose
+See-also: verbose stderr no-progress-meter
 ---
 Silent or quiet mode. Don't show progress meter or error messages.  Makes Curl
 mute. It will still output the data you ask for, potentially even to the
