@@ -329,6 +329,9 @@ static const struct helptxt helptext[] = {
   {"    --hostpubmd5 <md5>",
    "Acceptable MD5 hash of the host public key",
    CURLHELP_SFTP | CURLHELP_SCP},
+  {"    --hsts <file name>",
+   "Enable HSTS with this cache file",
+   CURLHELP_HTTP | CURLHELP_TLS},
   {"    --http0.9",
    "Allow HTTP 0.9 responses",
    CURLHELP_HTTP},
@@ -867,6 +870,7 @@ static const struct feat feats[] = {
   {"MultiSSL",       CURL_VERSION_MULTI_SSL},
   {"PSL",            CURL_VERSION_PSL},
   {"alt-svc",        CURL_VERSION_ALTSVC},
+  {"HSTS",           CURL_VERSION_HSTS},
 };
 
 static void print_category(curlhelp_t category)
