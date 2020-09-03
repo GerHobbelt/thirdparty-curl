@@ -97,7 +97,7 @@ Dependencies
  - NSS          3.14.x
  - Heimdal      ?
  - nghttp2      1.12.0
- - WinSock      2.0 (on Windows)
+ - WinSock      2.2 (on Windows 95+ and Windows CE .NET 4.1+)
 
 Operating Systems
 -----------------
@@ -147,7 +147,7 @@ Windows vs Unix
    also do it etc there might be reasons for applications to alter that
    behaviour.
 
-   We require WinSock version 2 and load this version during global init.
+   We require WinSock version 2.2 and load this version during global init.
 
  3. The file descriptors for network communication and file operations are
     not as easily interchangeable as in Unix.

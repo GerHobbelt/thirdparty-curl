@@ -55,7 +55,7 @@ CURLcode Curl_win32_init(long flags)
     WSADATA wsaData;
     int res;
 
-    wVersionRequested = MAKEWORD(2, 0);
+    wVersionRequested = MAKEWORD(2, 2);
     res = WSAStartup(wVersionRequested, &wsaData);
 
     if(res != 0)

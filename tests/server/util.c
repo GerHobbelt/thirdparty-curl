@@ -168,7 +168,7 @@ void win32_init(void)
   WSADATA wsaData;
   int err;
 
-  wVersionRequested = MAKEWORD(2, 0);
+  wVersionRequested = MAKEWORD(2, 2);
   err = WSAStartup(wVersionRequested, &wsaData);
 
   if(err != 0) {
