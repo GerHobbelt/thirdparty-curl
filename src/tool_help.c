@@ -189,7 +189,7 @@ static const struct helptxt helptext[] = {
    "Get a CRL list in PEM format from the given file",
    CURLHELP_TLS},
   {"    --curves <algorithm list>",
-   "(EC) TLS key exchange algorithm(s) to request ",
+   "(EC) TLS key exchange algorithm(s) to request",
    CURLHELP_TLS},
   {"-d, --data <data>",
    "HTTP POST data",
@@ -823,7 +823,8 @@ static const struct helptxt helptext[] = {
    CURLHELP_VERBOSE},
   {"    --xattr",
    "Store metadata in extended file attributes",
-   CURLHELP_MISC}
+   CURLHELP_MISC},
+  { NULL, NULL, CURLHELP_HIDDEN }
 };
 
 #ifdef NETWARE
