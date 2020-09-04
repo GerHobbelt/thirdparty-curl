@@ -76,30 +76,29 @@ struct category_descriptors {
 };
 
 static const struct category_descriptors categories[] = {
-  {"auth", "Options related to authentication of any kind", CURLHELP_AUTH},
-  {"connection", "Options related to low level network operations",
+  {"auth", "Different types of authentication methods", CURLHELP_AUTH},
+  {"connection", "Low level networking operations",
    CURLHELP_CONNECTION},
-  {"curl", "Options related to the behaviour of curl itself", CURLHELP_CURL},
-  {"dns", "Options related to DNS", CURLHELP_DNS},
-  {"file", "Options related to the FILE protocol", CURLHELP_FILE},
-  {"ftp", "Options related to the FTP protocol", CURLHELP_FTP},
-  {"http", "Options related to the HTTP and HTTPS protocols", CURLHELP_HTTP},
-  {"imap", "Options related to the IMAP protocol", CURLHELP_IMAP},
+  {"curl", "The command line tool itself", CURLHELP_CURL},
+  {"dns", "General DNS options", CURLHELP_DNS},
+  {"file", "FILE protocol options", CURLHELP_FILE},
+  {"ftp", "FTP protocol options", CURLHELP_FTP},
+  {"http", "HTTP and HTTPS protocol options", CURLHELP_HTTP},
+  {"imap", "IMAP protocol options", CURLHELP_IMAP},
   /* important is left out because it is the default help page */
-  {"misc", "Options that don't fit in any other category", CURLHELP_MISC},
-  {"output", "Options that handle the output of the downloaded content",
-   CURLHELP_OUTPUT},
-  {"pop3", "Options related to the POP3 protocol", CURLHELP_POP3},
-  {"post", "Optons related to HTTP Post", CURLHELP_POST},
-  {"proxy", "Options related to proxy settings of any kind", CURLHELP_PROXY},
-  {"scp", "Options related to the SCP protocol", CURLHELP_SCP},
-  {"sftp", "Options related to the SFTP protocol", CURLHELP_SFTP},
-  {"smtp", "Options related to the SMTP protocol", CURLHELP_SMTP},
-  {"ssh", "Options related to the SSH protocol", CURLHELP_SSH},
-  {"telnet", "Options related to the Telnet protocol", CURLHELP_TELNET},
-  {"tftp", "Options related to the TFTP protocol", CURLHELP_TFTP},
-  {"tls", "Options related to any kind of TLS/SSL operation", CURLHELP_TLS},
-  {"upload", "Options related to uploads of any kind",
+  {"misc", "Options that don't fit into any other category", CURLHELP_MISC},
+  {"output", "The output of curl", CURLHELP_OUTPUT},
+  {"pop3", "POP3 protocol options", CURLHELP_POP3},
+  {"post", "HTTP Post specific options", CURLHELP_POST},
+  {"proxy", "All options related to proxies", CURLHELP_PROXY},
+  {"scp", "SCP protocol options", CURLHELP_SCP},
+  {"sftp", "SFTP protocol options", CURLHELP_SFTP},
+  {"smtp", "SMTP protocol options", CURLHELP_SMTP},
+  {"ssh", "SSH protocol options", CURLHELP_SSH},
+  {"telnet", "TELNET protocol options", CURLHELP_TELNET},
+  {"tftp", "TFTP protocol options", CURLHELP_TFTP},
+  {"tls", "All TLS/SSL related options", CURLHELP_TLS},
+  {"upload", "All options for uploads",
    CURLHELP_UPLOAD},
   {"verbose", "Options related to any kind of command line output of curl",
    CURLHELP_VERBOSE},
@@ -900,7 +899,7 @@ static void get_categories(void)
 {
   unsigned int i;
   for(i = 0; categories[i].opt; ++i)
-    printf(" %-19s %s\n", categories[i].opt, categories[i].desc);
+    printf(" %-11s %s\n", categories[i].opt, categories[i].desc);
 }
 
 

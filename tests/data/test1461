@@ -30,7 +30,7 @@ curl important --help
 <errorcode>
 0
 </errorcode>
-<stdout>
+<stdout mode="text">
 Usage: curl [options...] <url>
  -d, --data <data>   HTTP POST data
  -f, --fail          Fail silently (no output at all) on HTTP errors
