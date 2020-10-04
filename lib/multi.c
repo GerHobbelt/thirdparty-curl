@@ -1183,7 +1183,7 @@ static CURLMcode Curl_multi_wait(struct Curl_multi *multi,
 #endif
         if(bitmap & GETSOCK_READSOCK(i)) {
 #ifdef USE_WINSOCK
-          if(SOCKET_READABLE(sockbunch[i], 0) > 0)
+          if(timeout_ms && SOCKET_READABLE(sockbunch[i], 0) > 0)
             timeout_ms = 0;
           wsa_events.lNetworkEvents |= FD_READ|FD_ACCEPT|FD_CLOSE;
 #else
@@ -1195,7 +1195,7 @@ static CURLMcode Curl_multi_wait(struct Curl_multi *multi,
         }
         if(bitmap & GETSOCK_WRITESOCK(i)) {
 #ifdef USE_WINSOCK
-          if(SOCKET_WRITABLE(sockbunch[i], 0) > 0)
+          if(timeout_ms && SOCKET_WRITABLE(sockbunch[i], 0) > 0)
             timeout_ms = 0;
           wsa_events.lNetworkEvents |= FD_WRITE|FD_CONNECT|FD_CLOSE;
 #else
@@ -1307,7 +1307,6 @@ static CURLMcode Curl_multi_wait(struct Curl_multi *multi,
             mask |= CURL_WAIT_POLLOUT;
           if(wsa_events.lNetworkEvents & FD_OOB)
             mask |= CURL_WAIT_POLLPRI;
-
           if(ret && wsa_events.lNetworkEvents != 0)
             retcode++;
         }
