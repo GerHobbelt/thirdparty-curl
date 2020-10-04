@@ -1531,35 +1531,26 @@ enum dupstring {
   STRING_RTSP_SESSION_ID, /* Session ID to use */
   STRING_RTSP_STREAM_URI, /* Stream URI for this request */
   STRING_RTSP_TRANSPORT,  /* Transport for this session */
-
   STRING_SSH_PRIVATE_KEY, /* path to the private key file for auth */
   STRING_SSH_PUBLIC_KEY,  /* path to the public key file for auth */
   STRING_SSH_HOST_PUBLIC_KEY_MD5, /* md5 of host public key in ascii hex */
   STRING_SSH_KNOWNHOSTS,  /* file name of knownhosts file */
-
   STRING_PROXY_SERVICE_NAME, /* Proxy service name */
   STRING_SERVICE_NAME,    /* Service name */
   STRING_MAIL_FROM,
   STRING_MAIL_AUTH,
-
   STRING_TLSAUTH_USERNAME_ORIG,  /* TLS auth <username> */
   STRING_TLSAUTH_USERNAME_PROXY, /* TLS auth <username> */
   STRING_TLSAUTH_PASSWORD_ORIG,  /* TLS auth <password> */
   STRING_TLSAUTH_PASSWORD_PROXY, /* TLS auth <password> */
-
   STRING_BEARER,                /* <bearer>, if used */
-
   STRING_UNIX_SOCKET_PATH,      /* path to Unix socket, if used */
-
   STRING_TARGET,                /* CURLOPT_REQUEST_TARGET */
   STRING_DOH,                   /* CURLOPT_DOH_URL */
-
   STRING_ALTSVC,                /* CURLOPT_ALTSVC */
-
+  STRING_HSTS,                  /* CURLOPT_HSTS */
   STRING_SASL_AUTHZID,          /* CURLOPT_SASL_AUTHZID */
-
   STRING_TEMP_URL,              /* temp URL storage for proxy use */
-
   STRING_DNS_SERVERS,
   STRING_DNS_INTERFACE,
   STRING_DNS_LOCAL_IP4,
@@ -1648,7 +1639,12 @@ struct UserDefined {
   curl_conv_callback convtonetwork;
   /* function to convert from UTF-8 encoding: */
   curl_conv_callback convfromutf8;
-
+#ifdef USE_HSTS
+  curl_hstsread_callback hsts_read;
+  void *hsts_read_userp;
+  curl_hstswrite_callback hsts_write;
+  void *hsts_write_userp;
+#endif
   void *progress_client; /* pointer to pass to the progress callback */
   void *ioctl_client;   /* pointer to pass to the ioctl callback */
   long timeout;         /* in milliseconds, 0 means no timeout */

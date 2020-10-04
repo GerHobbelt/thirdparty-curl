@@ -27,6 +27,10 @@
 #include <curl/curl.h>
 #include "llist.h"
 
+#ifdef DEBUGBUILD
+extern time_t deltatime;
+#endif
+
 struct stsentry {
   struct Curl_llist_element node;
   const char *host;
@@ -37,6 +41,8 @@ struct stsentry {
 /* The HSTS cache. Needs to be able to tailmatch host names. */
 struct hsts {
   struct Curl_llist list;
+  char *filename;
+  unsigned int flags;
 };
 
 struct hsts *Curl_hsts_init(void);
@@ -45,7 +51,15 @@ CURLcode Curl_hsts_parse(struct hsts *h, const char *hostname,
                          const char *sts);
 struct stsentry *Curl_hsts(struct hsts *h, const char *hostname,
                            bool subdomain);
+CURLcode Curl_hsts_save(struct Curl_easy *data, struct hsts *h,
+                        const char *file);
+CURLcode Curl_hsts_loadfile(struct Curl_easy *data,
+                            struct hsts *h, const char *file);
+CURLcode Curl_hsts_loadcb(struct Curl_easy *data,
+                          struct hsts *h);
 #else
 #define Curl_hsts_cleanup(x)
+#define Curl_hsts_loadcb(x,y)
+#define Curl_hsts_save(x,y,z)
 #endif /* CURL_DISABLE_HTTP || USE_HSTS */
 #endif /* HEADER_CURL_HSTS_H */

@@ -3,6 +3,7 @@ Arg: <file name>
 Protocols: HTTPS
 Help: Enable HSTS with this cache file
 Added: 7.74.0
+Category: http
 ---
 WARNING: this option is experimental. Do not use in production.
 
