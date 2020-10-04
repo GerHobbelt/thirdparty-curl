@@ -42,7 +42,7 @@
 static const char *unslashquote(const char *line, char *param);
 
 #define MAX_CONFIG_LINE_LENGTH (100*1024)
-static bool my_get_line(FILE *fp, struct curlx_dynbuf *, bool *error);
+static bool my_get_line(FILE *fp, struct dynbuf *, bool *error);
 
 #ifdef WIN32
 static FILE *execpath(const char *filename)
@@ -142,15 +142,15 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
     char *param;
     int lineno = 0;
     bool dashed_option;
-    struct curlx_dynbuf buf;
+    struct dynbuf buf;
     bool fileerror;
-    curlx_dyn_init(&buf, MAX_CONFIG_LINE_LENGTH);
+    Curl_dyn_init(&buf, MAX_CONFIG_LINE_LENGTH);
 
     while(my_get_line(file, &buf, &fileerror)) {
       int res;
       bool alloced_param = FALSE;
       lineno++;
-      line = curlx_dyn_ptr(&buf);
+      line = Curl_dyn_ptr(&buf);
       if(!line) {
         rc = 1; /* out of memory */
         break;
@@ -167,7 +167,7 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
       case '\n':
       case '*':
       case '\0':
-        curlx_dyn_reset(&buf);
+		  Curl_dyn_reset(&buf);
         continue;
       }
 
@@ -288,9 +288,9 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
       if(alloced_param)
         Curl_safefree(param);
 
-      curlx_dyn_reset(&buf);
+	  Curl_dyn_reset(&buf);
     }
-    curlx_dyn_free(&buf);
+	Curl_dyn_free(&buf);
     if(file != stdin)
       fclose(file);
     if(fileerror)
@@ -347,7 +347,7 @@ static const char *unslashquote(const char *line, char *param)
 /*
  * Reads a line from the given file, ensuring is NUL terminated.
  */
-static bool my_get_line(FILE *fp, struct curlx_dynbuf *db,
+static bool my_get_line(FILE *fp, struct dynbuf *db,
                         bool *error)
 {
   char buf[4096];
@@ -357,8 +357,8 @@ static bool my_get_line(FILE *fp, struct curlx_dynbuf *db,
        occurs while no characters have been read. */
     if(!fgets(buf, sizeof(buf), fp))
       /* only if there's data in the line, return TRUE */
-      return curlx_dyn_len(db) ? TRUE : FALSE;
-    if(curlx_dyn_add(db, buf)) {
+      return Curl_dyn_len(db) ? TRUE : FALSE;
+    if(Curl_dyn_add(db, buf)) {
       *error = TRUE; /* error */
       return FALSE; /* stop reading */
     }

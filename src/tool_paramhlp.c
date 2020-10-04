@@ -61,8 +61,8 @@ struct getout *new_getout(struct OperationConfig *config)
 
 ParameterError file2string(char **bufp, FILE *file)
 {
-  struct curlx_dynbuf dyn;
-  curlx_dyn_init(&dyn, MAX_FILE2STRING);
+  struct dynbuf dyn;
+  Curl_dyn_init(&dyn, MAX_FILE2STRING);
   if(file) {
     char buffer[256];
 
@@ -73,11 +73,11 @@ ParameterError file2string(char **bufp, FILE *file)
       ptr = strchr(buffer, '\n');
       if(ptr)
         *ptr = '\0';
-      if(curlx_dyn_add(&dyn, buffer))
+      if(Curl_dyn_add(&dyn, buffer))
         return PARAM_NO_MEM;
     }
   }
-  *bufp = curlx_dyn_ptr(&dyn);
+  *bufp = Curl_dyn_ptr(&dyn);
   return PARAM_OK;
 }
 
@@ -87,17 +87,17 @@ ParameterError file2memory(char **bufp, size_t *size, FILE *file)
 {
   if(file) {
     size_t nread;
-    struct curlx_dynbuf dyn;
-    curlx_dyn_init(&dyn, MAX_FILE2MEMORY);
+    struct dynbuf dyn;
+	Curl_dyn_init(&dyn, MAX_FILE2MEMORY);
     do {
       char buffer[4096];
       nread = fread(buffer, 1, sizeof(buffer), file);
       if(nread)
-        if(curlx_dyn_addn(&dyn, buffer, nread))
+        if(Curl_dyn_addn(&dyn, buffer, nread))
           return PARAM_NO_MEM;
     } while(nread);
-    *size = curlx_dyn_len(&dyn);
-    *bufp = curlx_dyn_ptr(&dyn);
+    *size = Curl_dyn_len(&dyn);
+    *bufp = Curl_dyn_ptr(&dyn);
   }
   else {
     *size = 0;
@@ -435,19 +435,19 @@ static CURLcode checkpasswd(const char *kind, /* for what purpose */
     /* no password present, prompt for one */
     char passwd[2048] = "";
     char prompt[256];
-    struct curlx_dynbuf dyn;
+    struct dynbuf dyn;
 
-    curlx_dyn_init(&dyn, MAX_USERPWDLENGTH);
+	Curl_dyn_init(&dyn, MAX_USERPWDLENGTH);
     if(osep)
       *osep = '\0';
 
     /* build a nice-looking prompt */
     if(!i && last)
-      curlx_msnprintf(prompt, sizeof(prompt),
+		curlx_msnprintf(prompt, sizeof(prompt),
                       "Enter %s password for user '%s':",
                       kind, *userpwd);
     else
-      curlx_msnprintf(prompt, sizeof(prompt),
+		curlx_msnprintf(prompt, sizeof(prompt),
                       "Enter %s password for user '%s' on URL #%zu:",
                       kind, *userpwd, i + 1);
 
@@ -456,12 +456,12 @@ static CURLcode checkpasswd(const char *kind, /* for what purpose */
     if(osep)
       *osep = ';';
 
-    if(curlx_dyn_addf(&dyn, "%s:%s", *userpwd, passwd))
+    if(Curl_dyn_addf(&dyn, "%s:%s", *userpwd, passwd))
       return CURLE_OUT_OF_MEMORY;
 
     /* return the new string */
     free(*userpwd);
-    *userpwd = curlx_dyn_ptr(&dyn);
+    *userpwd = Curl_dyn_ptr(&dyn);
   }
 
   return CURLE_OK;

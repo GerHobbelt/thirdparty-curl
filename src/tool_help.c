@@ -917,7 +917,7 @@ void tool_help(const char * const category)
     puts(category_note);
   }
   /* Lets print everything if "all" was provided */
-  else if(curl_strequal(category, "all"))
+  else if(curl_strequal(category, "all")) {
     /* Print everything except hidden */
     print_category(~(CURLHELP_HIDDEN));
     return;

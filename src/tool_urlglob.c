@@ -615,14 +615,14 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
   char numbuf[18];
   char *appendthis = (char *)"";
   size_t appendlen = 0;
-  struct curlx_dynbuf dyn;
+  struct dynbuf dyn;
 
   *result = NULL;
 
   /* We cannot use the glob_buffer for storage since the filename may be
    * longer than the URL we use.
    */
-  curlx_dyn_init(&dyn, MAX_OUTPUT_GLOB_LENGTH);
+  Curl_dyn_init(&dyn, MAX_OUTPUT_GLOB_LENGTH);
 
   while(*filename) {
     if(*filename == '#' && ISDIGIT(filename[1])) {
@@ -667,7 +667,7 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
         default:
           fprintf(stderr, "internal error: invalid pattern type (%d)\n",
                   (int)pat->type);
-          curlx_dyn_free(&dyn);
+		  Curl_dyn_free(&dyn);
           return CURLE_FAILED_INIT;
         }
       }
@@ -682,24 +682,24 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
       appendthis = filename++;
       appendlen = 1;
     }
-    if(curlx_dyn_addn(&dyn, appendthis, appendlen))
+    if(Curl_dyn_addn(&dyn, appendthis, appendlen))
       return CURLE_OUT_OF_MEMORY;
   }
 
 #if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
-    SANITIZEcode sc = sanitize_file_name(&sanitized, curlx_dyn_ptr(&dyn),
+    SANITIZEcode sc = sanitize_file_name(&sanitized, Curl_dyn_ptr(&dyn),
                                          (SANITIZE_ALLOW_PATH |
                                           SANITIZE_ALLOW_RESERVED));
-    curlx_dyn_free(&dyn);
+	Curl_dyn_free(&dyn);
     if(sc)
       return CURLE_URL_MALFORMAT;
     *result = sanitized;
     return CURLE_OK;
   }
 #else
-  *result = curlx_dyn_ptr(&dyn);
+  *result = Curl_dyn_ptr(&dyn);
   return CURLE_OK;
 #endif /* MSDOS || WIN32 */
 }
