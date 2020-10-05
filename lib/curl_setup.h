@@ -331,9 +331,15 @@
 #  define LSEEK_ERROR                (__int64)-1
 #  define fopen(fname,mode)          curlx_win32_fopen(fname, mode)
 #  define access(fname,mode)         curlx_win32_access(fname, mode)
-   int curlx_win32_stat(const char *path, struct_stat *buffer);
-   FILE *curlx_win32_fopen(const char *filename, const char *mode);
-   int curlx_win32_access(const char *path, int mode);
+#ifdef  __cplusplus
+extern "C" {
+#endif
+	int curlx_win32_stat(const char* path, struct_stat* buffer);
+	FILE* curlx_win32_fopen(const char* filename, const char* mode);
+	int curlx_win32_access(const char* path, int mode);
+#ifdef  __cplusplus
+}
+#endif
 #endif
 
 /*
@@ -352,9 +358,15 @@
 #    define struct_stat                struct _stat
 #    define fopen(fname,mode)          curlx_win32_fopen(fname, mode)
 #    define access(fname,mode)         curlx_win32_access(fname, mode)
-     int curlx_win32_stat(const char *path, struct_stat *buffer);
-     FILE *curlx_win32_fopen(const char *filename, const char *mode);
-     int curlx_win32_access(const char *path, int mode);
+#ifdef  __cplusplus
+extern "C" {
+#endif
+	int curlx_win32_stat(const char* path, struct_stat* buffer);
+	FILE* curlx_win32_fopen(const char* filename, const char* mode);
+	int curlx_win32_access(const char* path, int mode);
+#ifdef  __cplusplus
+}
+#endif
 #  endif
 #  define LSEEK_ERROR                (long)-1
 #endif

@@ -2565,8 +2565,11 @@ CURLcode operate(struct GlobalConfig *global, int argc, argv_item_t argv[])
       result = CURLE_OK;
 
       /* Check if we were asked for the help */
-      if(res == PARAM_HELP_REQUESTED)
-        tool_help(global->help_category);
+	  if (res == PARAM_HELP_REQUESTED)
+	  {
+		  tool_help(global->help_category);
+		  global->help_category = NULL;     // category string has been free()d inside tool_help()
+	  }
       /* Check if we were asked for the manual */
       else if(res == PARAM_MANUAL_REQUESTED)
         hugehelp();
