@@ -438,7 +438,7 @@ done:
 }
 
 static void
-GetFileAndPassword(char *nextarg, char **file, char **password)
+GetFileAndPassword(const char *nextarg, char **file, char **password)
 {
   char *certname, *passphrase;
   parse_cert_parameter(nextarg, &certname, &passphrase);
@@ -504,7 +504,7 @@ static ParameterError GetSizeParameter(struct GlobalConfig *global,
 }
 
 ParameterError getparameter(const char *flag, /* f or -long-flag */
-                            char *nextarg,    /* NULL if unset */
+                            const char *nextarg,    /* NULL if unset */
                             bool *usedarg,    /* set to TRUE if the arg
                                                  has been used */
                             struct GlobalConfig *global,
@@ -964,7 +964,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 's': { /* --local-port */
         char lrange[7];  /* 16bit base 10 is 5 digits, but we allow 6 so that
                             this catches overflows, not just truncates */
-        char *p = nextarg;
+        char *p = strdup(nextarg);
         while(ISDIGIT(*p))
           p++;
         if(*p) {
@@ -976,6 +976,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           rc = 0;
 
         err = str2unum(&config->localport, nextarg);
+		free((void *)nextarg);
         if(err || (config->localport > 65535))
           return PARAM_BAD_USE;
         if(!rc)
@@ -2271,12 +2272,12 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
 {
   int i;
   bool stillflags;
-  char *orig_opt = NULL;
+  const char *orig_opt = NULL;
   ParameterError result = PARAM_OK;
   struct OperationConfig *config = global->first;
 
   for(i = 1, stillflags = TRUE; i < argc && !result; i++) {
-    orig_opt = curlx_convert_tchar_to_UTF8(argv[i]);
+    orig_opt = argv[i];
 
     if(stillflags && ('-' == orig_opt[0])) {
       bool passarg;
@@ -2286,12 +2287,11 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
            following (URL) argument to start with -. */
         stillflags = FALSE;
       else {
-        char *nextarg = (i < (argc - 1))
-          ? curlx_convert_tchar_to_UTF8(argv[i + 1])
+        const char *nextarg = (i < (argc - 1))
+          ? argv[i + 1]
           : NULL;
 
         result = getparameter(orig_opt, nextarg, &passarg, global, config);
-        curlx_unicodefree(nextarg);
         config = global->last;
         if(result == PARAM_NEXT_OPERATION) {
           /* Reset result as PARAM_NEXT_OPERATION is only used here and not
@@ -2330,9 +2330,6 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       result = getparameter("--url", orig_opt, &used, global,
                             config);
     }
-
-    if(!result)
-      curlx_unicodefree(orig_opt);
   }
 
   if(result && result != PARAM_HELP_REQUESTED &&
@@ -2347,6 +2344,5 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       helpf(global->errors, "%s\n", reason);
   }
 
-  curlx_unicodefree(orig_opt);
   return result;
 }

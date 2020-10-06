@@ -106,7 +106,7 @@ ParameterError file2memory(char **bufp, size_t *size, FILE *file)
   return PARAM_OK;
 }
 
-void cleanarg(char *str)
+void cleanarg(const char *str)
 {
 #ifdef HAVE_WRITABLE_ARGV
   /* now that GetStr has copied the contents of nextarg, wipe the next
@@ -114,7 +114,7 @@ void cleanarg(char *str)
    * system process list */
   if(str) {
     size_t len = strlen(str);
-    memset(str, ' ', len);
+    memset((void *)str, ' ', len);
   }
 #else
   (void)str;

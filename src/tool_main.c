@@ -273,32 +273,23 @@ static void restore_terminal(void)
 /*
 ** curl tool main function.
 */
-#ifdef TESSERACT_STANDALONE
-#ifdef _UNICODE
-int wmain(int argc, const wchar_t* argv[])
-#else
-int main(int argc, const char* argv[])
-#endif
-#else
 int curl_main(int argc, const char* argv[])
-#endif
 {
   CURLcode result = CURLE_OK;
   struct GlobalConfig global;
   memset(&global, 0, sizeof(global));
 
 #ifdef WIN32
-#if defined(_tcscmp)
   /* Undocumented diagnostic option to list the full paths of all loaded
      modules. This is purposely pre-init. */
-  if(argc == 2 && !_tcscmp(argv[1], _T("--dump-module-paths"))) {
+  if(argc == 2 && !strcmp(argv[1], "--dump-module-paths")) {
     struct curl_slist *item, *head = GetLoadedModulePaths();
     for(item = head; item; item = item->next)
       printf("%s\n", item->data);
     curl_slist_free_all(head);
     return head ? 0 : 1;
   }
-#endif /* _tcscmp */
+
   /* win32_init must be called before other init routines. */
   result = win32_init();
   if(result) {
