@@ -168,6 +168,7 @@ const struct NameValue setopt_nv_CURLPROTO[] = {
   NV(CURLPROTO_SMTPS),
   NV(CURLPROTO_TELNET),
   NV(CURLPROTO_TFTP),
+  NV(CURLPROTO_SSH),
   NVEND,
 };
 
