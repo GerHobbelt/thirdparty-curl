@@ -273,10 +273,14 @@ static void restore_terminal(void)
 /*
 ** curl tool main function.
 */
+#ifdef TESSERACT_STANDALONE
 #ifdef _UNICODE
-int wmain(int argc, wchar_t *argv[])
+int wmain(int argc, const wchar_t* argv[])
 #else
-int main(int argc, char *argv[])
+int main(int argc, const char* argv[])
+#endif
+#else
+int curl_main(int argc, const char* argv[])
 #endif
 {
   CURLcode result = CURLE_OK;
@@ -284,7 +288,7 @@ int main(int argc, char *argv[])
   memset(&global, 0, sizeof(global));
 
 #ifdef WIN32
-#ifdef _tcscmp
+#if defined(_tcscmp)
   /* Undocumented diagnostic option to list the full paths of all loaded
      modules. This is purposely pre-init. */
   if(argc == 2 && !_tcscmp(argv[1], _T("--dump-module-paths"))) {
@@ -318,7 +322,7 @@ int main(int argc, char *argv[])
   /* Initialize the curl library - do not call any libcurl functions before
      this point */
   result = main_init(&global);
-  if(!result) {
+  if (!result) {
     /* Start our curl operation */
     result = operate(&global, argc, argv);
 

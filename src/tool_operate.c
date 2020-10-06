@@ -2528,7 +2528,7 @@ static CURLcode run_all_transfers(struct GlobalConfig *global,
   return result;
 }
 
-CURLcode operate(struct GlobalConfig *global, int argc, argv_item_t argv[])
+CURLcode operate(struct GlobalConfig *global, int argc, const argv_item_t argv[])
 {
   CURLcode result = CURLE_OK;
   char *first_arg = curlx_convert_tchar_to_UTF8(argv[1]);

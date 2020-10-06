@@ -59,7 +59,7 @@ char *curlx_convert_wchar_to_UTF8(const wchar_t *str_w);
 #define curlx_unicodefree(ptr)                          \
   do {                                                  \
     if(ptr) {                                           \
-      (free)(ptr);                                        \
+      (free)(ptr);                                      \
       (ptr) = NULL;                                     \
     }                                                   \
   } while(0)
@@ -73,10 +73,13 @@ typedef union {
 
 #else
 
-#define curlx_convert_UTF8_to_tchar(ptr) (ptr)
-#define curlx_convert_tchar_to_UTF8(ptr) (ptr)
-#define curlx_unicodefree(ptr) \
-  do {(ptr) = NULL;} while(0)
+#define curlx_convert_UTF8_to_tchar(ptr) strdup(ptr)
+#define curlx_convert_tchar_to_UTF8(ptr) strdup(ptr)
+#define curlx_unicodefree(ptr)	\
+  do {							\
+	free(ptr);					\
+	(ptr) = NULL;				\
+  } while(0)
 
 typedef union {
   char                *tchar_ptr;

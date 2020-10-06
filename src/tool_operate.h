@@ -74,7 +74,7 @@ struct per_transfer {
   char *uploadfile;
 };
 
-CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[]);
+CURLcode operate(struct GlobalConfig *config, int argc, const argv_item_t argv[]);
 
 extern struct per_transfer *transfers; /* first node */
 
