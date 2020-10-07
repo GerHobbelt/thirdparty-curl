@@ -188,11 +188,11 @@ stages:
     - script: $(container_cmd) -l -c "cd $(echo '%cd%') && ./buildconf && ./configure $(configure)"
       displayName: 'configure $(name)'
 
-    - script: $(container_cmd) -l -c "cd $(echo '%cd%') && make"
+    - script: $(container_cmd) -l -c "cd $(echo '%cd%') && make install"
       displayName: 'make'
 
     - script: $(container_cmd) -l -c "cd $(echo '%cd%') && make test-nonflaky"
       displayName: 'test'
       env:
         AZURE_ACCESS_TOKEN: "$(System.AccessToken)"
-        TFLAGS: "-r $(tests)"
+        TFLAGS: "-c curl.exe -r $(tests)"
