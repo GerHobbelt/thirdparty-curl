@@ -1898,7 +1898,7 @@ struct Curl_easy {
 #ifdef USE_HSTS
   struct hsts *hsts;
 #endif
-#ifdef USE_ALTSVC
+#ifndef CURL_DISABLE_ALTSVC
   struct altsvcinfo *asi;      /* the alt-svc cache */
 #endif
   struct Progress progress;    /* for all the progress meter data */

@@ -2879,7 +2879,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       Curl_hsts_cleanup(&data->hsts);
     break;
 #endif
-#ifdef USE_ALTSVC
+#ifndef CURL_DISABLE_ALTSVC
   case CURLOPT_ALTSVC:
     if(!data->asi) {
       data->asi = Curl_altsvc_init();
