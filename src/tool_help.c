@@ -330,7 +330,7 @@ static const struct helptxt helptext[] = {
    CURLHELP_SFTP | CURLHELP_SCP},
   {"    --hsts <file name>",
    "Enable HSTS with this cache file",
-   CURLHELP_HTTP | CURLHELP_TLS},
+   CURLHELP_HTTP},
   {"    --http0.9",
    "Allow HTTP 0.9 responses",
    CURLHELP_HTTP},
