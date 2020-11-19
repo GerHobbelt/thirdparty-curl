@@ -24,6 +24,9 @@
 
 #ifndef CURL_DISABLE_FILE
 
+int
+_wopen_hack(const char* file, int oflags, ...);
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
