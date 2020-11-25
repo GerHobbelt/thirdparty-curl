@@ -9,7 +9,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
- * are also available at https://curl.haxx.se/docs/copyright.html.
+ * are also available at https://curl.se/docs/copyright.html.
  *
  * You may opt to use, copy, modify, merge, publish, distribute and/or sell
  * copies of the Software, and permit persons to whom the Software is
@@ -22,7 +22,7 @@
 
 #include "curl_setup.h"
 
-#if defined(USE_NTLM)
+#if defined(USE_CURL_NTLM_CORE)
 
 /*
  * NTLM details:
@@ -49,8 +49,6 @@
      to issues with the latter supporting NTLM2Session responses
      in NTLM type-3 messages.
  */
-
-#if !defined(USE_WINDOWS_SSPI) || defined(USE_WIN32_CRYPTO)
 
 #if defined(USE_OPENSSL) || defined(USE_WOLFSSL)
 
@@ -744,6 +742,4 @@ CURLcode  Curl_ntlm_core_mk_lmv2_resp(unsigned char *ntlmv2hash,
 
 #endif /* USE_NTRESPONSES */
 
-#endif /* !USE_WINDOWS_SSPI || USE_WIN32_CRYPTO */
-
-#endif /* USE_NTLM */
+#endif /* USE_CURL_NTLM_CORE */
