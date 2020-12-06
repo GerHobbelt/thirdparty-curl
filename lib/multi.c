@@ -1247,13 +1247,19 @@ static CURLMcode Curl_multi_wait(struct Curl_multi *multi,
 #endif
 #endif
 
+#if defined(ENABLE_WAKEUP) && defined(USE_WINSOCK)
+  if(nfds || use_wakeup) {
+#else
   if(nfds) {
+#endif
     int pollrc;
 #ifdef USE_WINSOCK
-    pollrc = Curl_poll(ufds, nfds, 0); /* just pre-check with WinSock */
-    if(pollrc <= 0) { /* now wait... if not ready during the pre-check above */
-     WSAWaitForMultipleEvents(1, &multi->wsa_event, FALSE, timeout_ms, FALSE);
-    }
+    if(nfds)
+      pollrc = Curl_poll(ufds, nfds, 0); /* just pre-check with WinSock */
+    else
+      pollrc = 0;
+    if(pollrc <= 0) /* now wait... if not ready during the pre-check above */
+      WSAWaitForMultipleEvents(1, &multi->wsa_event, FALSE, timeout_ms, FALSE);
 #else
     pollrc = Curl_poll(ufds, nfds, timeout_ms); /* wait... */
 #endif
@@ -1354,10 +1360,11 @@ static CURLMcode Curl_multi_wait(struct Curl_multi *multi,
     free(ufds);
   if(ret)
     *ret = retcode;
-  if(!extrawait || nfds)
-    /* if any socket was checked */
-    ;
-  else {
+#if defined(ENABLE_WAKEUP) && defined(USE_WINSOCK)
+  if(extrawait && !nfds && !use_wakeup) {
+#else
+  if(extrawait && !nfds) {
+#endif
     long sleep_ms = 0;
 
     /* Avoid busy-looping when there's nothing particular to wait for */
