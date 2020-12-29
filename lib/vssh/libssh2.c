@@ -3144,7 +3144,7 @@ static CURLcode ssh_connect(struct connectdata *conn, bool *done)
     ssh->tls_recv = conn->recv[FIRSTSOCKET];
     ssh->tls_send = conn->send[FIRSTSOCKET];
   }
-
+  else
 #endif /* CURL_DISABLE_PROXY */
   if(conn->handler->protocol & CURLPROTO_SCP) {
     conn->recv[FIRSTSOCKET] = scp_recv;
