@@ -73,6 +73,7 @@
  5.3 Rearrange request header order
  5.4 Allow SAN names in HTTP/2 server push
  5.5 auth= in URLs
+ 5.6 alt-svc should fallback if alt-svc doesn't work
 
  6. TELNET
  6.1 ditch stdin
@@ -163,6 +164,7 @@
  18.21 retry on the redirected-to URL
  18.23 Set the modification date on an uploaded file
  18.24 Use multiple parallel transfers for a single download
+ 18.25 Prevent terminal injection when writing to terminal
 
  19. Build
  19.1 roffit
@@ -605,6 +607,13 @@
 
  Additionally this should be implemented for proxy base URLs as well.
 
+5.6 alt-svc should fallback if alt-svc doesn't work
+
+ The alt-svc: header provides a set of alternative services for curl to use
+ instead of the original. If the first attempted one fails, it should try the
+ next etc and if all alterantives fail go back to the original.
+
+ See https://github.com/curl/curl/issues/4908
 
 6. TELNET
 
@@ -1169,6 +1178,15 @@ that doesn't exist on the server, just like --ftp-create-dirs.
  defaults.
 
  See https://github.com/curl/curl/issues/5774
+
+18.25 Prevent terminal injection when writing to terminal
+
+ curl could offer an option to make escape sequence either non-functional or
+ avoid cursor moves or similar to reduce the risk of a user getting tricked by
+ clever tricks.
+
+ See https://github.com/curl/curl/issues/6150
+
 
 19. Build
 
