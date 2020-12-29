@@ -46,6 +46,7 @@ addons:
     - libidn2-dev
     - gnutls-bin
     - python-impacket
+    - ninja-build
 
 jobs:
   include:
@@ -79,6 +80,7 @@ jobs:
         - gnutls-bin
         # The above list is common_packages minus impacket.
         - libssh-dev
+        - ninja-build
   - env:
     - T=normal C="--enable-ares"
     - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
@@ -341,7 +343,7 @@ jobs:
         - libbrotli-dev
         - libzstd-dev
   - env:
-    - T=cmake NGTCP2=yes C="-DUSE_NGTCP2=ON -DCURL_BROTLI=1 -DCURL_ZSTD=1"
+    - T=cmake NGTCP2=yes C="-GNinja -DUSE_NGTCP2=ON -DCURL_BROTLI=1 -DCURL_ZSTD=1"
     - *clang
     - PKG_CONFIG_PATH="$HOME/ngbuild/lib/pkgconfig"
     compiler: clang
@@ -391,7 +393,7 @@ jobs:
         - libbrotli-dev
         - libzstd-dev
   - env:
-    - T=debug CFLAGS="-fsanitize=address,undefined,signed-integer-overflow -fno-sanitize-recover=undefined,integer -Wformat -Werror=format-security -Werror=array-bounds -g" LDFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=undefined,integer" LIBS="-ldl -lubsan"
+    - T=debug CFLAGS="-fsanitize=address,undefined,signed-integer-overflow -fno-sanitize-recover=undefined,integer -Wformat -Werror=format-security -Werror=array-bounds -g" LDFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=undefined,integer" LIBS="-ldl -lubsan" TFLAGS=-n
     - *clang
     compiler: clang
     addons:

@@ -49,7 +49,7 @@ if [ "$T" = "debug" ]; then
   make
   make examples
   if [ -z $NOTESTS ]; then
-    make TFLAGS=-n test-nonflaky
+    make test-nonflaky
   fi
 fi
 
@@ -106,6 +106,7 @@ fi
 if [ "$T" = "cmake" ]; then
   cmake -H. -Bbuild -DCURL_WERROR=ON $C
   cmake --build build
+  env TFLAGS="!1139" cmake --build build --target test-nonflaky
 fi
 
 if [ "$T" = "distcheck" ]; then

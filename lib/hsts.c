@@ -423,6 +423,7 @@ static CURLcode hsts_pull(struct Curl_easy *data, struct hsts *h)
   /* if the HSTS read callback is set, use it */
   if(data->set.hsts_read) {
     CURLSTScode sc;
+    DEBUGASSERT(h);
     do {
       char buffer[257];
       struct curl_hstsentry e;
