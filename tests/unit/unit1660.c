@@ -154,7 +154,7 @@ UNITTEST_START
     showsts(e, i, chost);
   }
 
-  printf("Number of entries: %d\n", h->list.size);
+  printf("Number of entries: %zu\n", h->list.size);
 
   /* verify that it is exists for 7 seconds */
   chost = "expire.example";

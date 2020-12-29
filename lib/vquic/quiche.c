@@ -131,7 +131,7 @@ static unsigned int quiche_conncheck(struct connectdata *conn,
 
 static CURLcode quiche_do(struct connectdata *conn, bool *done)
 {
-  struct HTTP *stream = conn->data->req.protop;
+  struct HTTP *stream = conn->data->req.p.http;
   stream->h3req = FALSE; /* not sent */
   return Curl_http(conn, done);
 }
@@ -358,7 +358,7 @@ static CURLcode process_ingress(struct connectdata *conn, int sockfd,
       break;
 
     if(recvd < 0) {
-      failf(conn->data, "quiche: recv() unexpectedly returned %d "
+      failf(conn->data, "quiche: recv() unexpectedly returned %zd "
             "(errno: %d, socket %d)", recvd, SOCKERRNO, sockfd);
       return CURLE_RECV_ERROR;
     }
@@ -368,7 +368,7 @@ static CURLcode process_ingress(struct connectdata *conn, int sockfd,
       break;
 
     if(recvd < 0) {
-      failf(conn->data, "quiche_conn_recv() == %d", recvd);
+      failf(conn->data, "quiche_conn_recv() == %zd", recvd);
       return CURLE_RECV_ERROR;
     }
   } while(1);
@@ -461,7 +461,7 @@ static ssize_t h3_stream_recv(struct connectdata *conn,
   int rc;
   struct h3h1header headers;
   struct Curl_easy *data = conn->data;
-  struct HTTP *stream = data->req.protop;
+  struct HTTP *stream = data->req.p.http;
   headers.dest = buf;
   headers.destlen = buffersize;
   headers.nlen = 0;
@@ -549,7 +549,7 @@ static ssize_t h3_stream_send(struct connectdata *conn,
   ssize_t sent;
   struct quicsocket *qs = conn->quic;
   curl_socket_t sockfd = conn->sock[sockindex];
-  struct HTTP *stream = conn->data->req.protop;
+  struct HTTP *stream = conn->data->req.p.http;
 
   if(!stream->h3req) {
     CURLcode result = http_request(conn, mem, len);
@@ -597,7 +597,7 @@ static CURLcode http_request(struct connectdata *conn, const void *mem,
 {
   /*
    */
-  struct HTTP *stream = conn->data->req.protop;
+  struct HTTP *stream = conn->data->req.p.http;
   size_t nheader;
   size_t i;
   size_t authority_idx;
@@ -762,7 +762,7 @@ static CURLcode http_request(struct connectdata *conn, const void *mem,
 
     if(acc > MAX_ACC) {
       infof(data, "http_request: Warning: The cumulative length of all "
-            "headers exceeds %zu bytes and that could cause the "
+            "headers exceeds %d bytes and that could cause the "
             "stream to be rejected.\n", MAX_ACC);
     }
   }
@@ -825,7 +825,7 @@ CURLcode Curl_quic_done_sending(struct connectdata *conn)
   if(conn->handler == &Curl_handler_http3) {
     /* only for HTTP/3 transfers */
     ssize_t sent;
-    struct HTTP *stream = conn->data->req.protop;
+    struct HTTP *stream = conn->data->req.p.http;
     struct quicsocket *qs = conn->quic;
     fprintf(stderr, "!!! Curl_quic_done_sending\n");
     stream->upload_done = TRUE;
