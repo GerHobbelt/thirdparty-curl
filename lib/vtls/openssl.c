@@ -3082,13 +3082,13 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
   }
 #endif
 
-#if defined(CURL_CA_FALLBACK)
+#if defined(CURL_CA_EXTERNAL_FALLBACK) || defined(CURL_CA_FALLBACK)
   if(verifypeer && !ssl_cafile && !ssl_capath && !imported_native_ca) {
+#if defined(CURL_CA_EXTERNAL_FALLBACK)
+    curl_ca_external_fallback(SSL_CTX_get_cert_store(backend->ctx));
+#elif defined(CURL_CA_FALLBACK)
     /* verifying the peer without any CA certificates won't
        work so use openssl's built in default as fallback */
-#ifdef CURL_CA_EXTERNAL_FALLBACK
-    curl_ca_external_fallback(SSL_CTX_get_cert_store(backend->ctx));
-#else
     SSL_CTX_set_default_verify_paths(backend->ctx);
 #endif
   }
