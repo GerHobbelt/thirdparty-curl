@@ -3290,14 +3290,15 @@ static CURLcode populate_x509_store(struct Curl_cfilter *cf,
     infof(data, " CApath: %s", ssl_capath ? ssl_capath : "none");
   }
 
-#ifdef CURL_CA_FALLBACK
+
+#if defined(CURL_CA_FALLBACK) || defined(CURL_CA_EXTERNAL_FALLBACK)
   if(verifypeer &&
      !ca_info_blob && !ssl_cafile && !ssl_capath && !imported_native_ca) {
     /* verifying the peer without any CA certificates won't
        work so use openssl's built-in default as fallback */
 #ifdef CURL_CA_EXTERNAL_FALLBACK
     curl_ca_external_fallback(store);
-#else
+#elif defined(CURL_CA_FALLBACK)
     X509_STORE_set_default_paths(store);
 #endif
   }
