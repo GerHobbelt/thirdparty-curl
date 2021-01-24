@@ -7,7 +7,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -22,22 +22,6 @@
  *
  ***************************************************************************/
 #include "curl_setup.h"
-
-#define READBUFFER_SIZE CURL_MAX_WRITE_SIZE
-#define READBUFFER_MAX  CURL_MAX_READ_SIZE
-#define READBUFFER_MIN  1024
-
-/* The default upload buffer size, should not be smaller than
-   CURL_MAX_WRITE_SIZE, as it needs to hold a full buffer as could be sent in
-   a write callback.
-
-   The size was 16KB for many years but was bumped to 64KB because it makes
-   libcurl able to do significantly faster uploads in some circumstances. Even
-   larger buffers can help further, but this is deemed a fair memory/speed
-   compromise. */
-#define UPLOADBUFFER_DEFAULT 65536
-#define UPLOADBUFFER_MAX (2*1024*1024)
-#define UPLOADBUFFER_MIN CURL_MAX_WRITE_SIZE
 
 /*
  * Prototypes for library-wide functions provided by url.c
@@ -72,9 +56,9 @@ void Curl_free_idnconverted_hostname(struct hostname *host);
                                              specified */
 
 #ifdef CURL_DISABLE_VERBOSE_STRINGS
-#define Curl_verboseconnect(x)  Curl_nop_stmt
+#define Curl_verboseconnect(x,y)  Curl_nop_stmt
 #else
-void Curl_verboseconnect(struct connectdata *conn);
+void Curl_verboseconnect(struct Curl_easy *data, struct connectdata *conn);
 #endif
 
 #ifdef CURL_DISABLE_PROXY
