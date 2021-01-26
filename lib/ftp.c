@@ -803,8 +803,7 @@ static int ftp_getsock(struct Curl_easy *data,
                        struct connectdata *conn,
                        curl_socket_t *socks)
 {
-  (void)data;
-  return Curl_pp_getsock(&conn->proto.ftpc.pp, socks);
+  return Curl_pp_getsock(data, &conn->proto.ftpc.pp, socks);
 }
 
 /* For the FTP "DO_MORE" phase only */
@@ -850,7 +849,7 @@ static int ftp_domore_getsock(struct Curl_easy *data,
 
     return bits;
   }
-  return Curl_pp_getsock(&conn->proto.ftpc.pp, socks);
+  return Curl_pp_getsock(data, &conn->proto.ftpc.pp, socks);
 }
 
 /* This is called after the FTP_QUOTE state is passed.
@@ -3543,7 +3542,7 @@ static CURLcode ftp_do_more(struct Curl_easy *data, int *completep)
     if(Curl_connect_ongoing(conn)) {
       /* As we're in TUNNEL_CONNECT state now, we know the proxy name and port
          aren't used so we blank their arguments. */
-      result = Curl_proxyCONNECT(conn, SECONDARYSOCKET, NULL, 0);
+      result = Curl_proxyCONNECT(data, SECONDARYSOCKET, NULL, 0);
 
       return result;
     }
@@ -3565,7 +3564,7 @@ static CURLcode ftp_do_more(struct Curl_easy *data, int *completep)
   }
 
 #ifndef CURL_DISABLE_PROXY
-  result = Curl_proxy_connect(conn, SECONDARYSOCKET);
+  result = Curl_proxy_connect(data, SECONDARYSOCKET);
   if(result)
     return result;
 
