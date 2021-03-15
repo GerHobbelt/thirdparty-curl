@@ -981,6 +981,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         char lrange[7];  /* 16bit base 10 is 5 digits, but we allow 6 so that
                             this catches overflows, not just truncates */
         char *p = strdup(nextarg);
+		char *n_a = p;
         while(ISDIGIT(*p))
           p++;
         if(*p) {
@@ -991,8 +992,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         else
           rc = 0;
 
-        err = str2unum(&config->localport, nextarg);
-		free((void *)nextarg);
+        err = str2unum(&config->localport, n_a);
+		free(n_a);
+		
         if(err || (config->localport > 65535))
           return PARAM_BAD_USE;
         if(!rc)
@@ -1543,7 +1545,8 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       break;
     case 'e':
     {
-      char *ptr = strstr(nextarg, ";auto");
+	  char* n_a = strdup(nextarg);
+      char *ptr = strstr(n_a, ";auto");
       if(ptr) {
         /* Automatic referer requested, this may be combined with a
            set initial one */
@@ -1552,8 +1555,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       }
       else
         config->autoreferer = FALSE;
-      ptr = *nextarg ? nextarg : NULL;
+      ptr = *n_a ? n_a : NULL;
       GetStr(&config->referer, ptr);
+	  free(n_a);
     }
     break;
     case 'E':
@@ -2309,12 +2313,12 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
 {
   int i;
   bool stillflags;
-  const char *orig_opt = NULL;
+  char *orig_opt = NULL;
   ParameterError result = PARAM_OK;
   struct OperationConfig *config = global->first;
 
   for(i = 1, stillflags = TRUE; i < argc && !result; i++) {
-    orig_opt = argv[i];
+    orig_opt = curlx_convert_tchar_to_UTF8(argv[i]);
 
     if(stillflags && ('-' == orig_opt[0])) {
       bool passarg;
@@ -2324,11 +2328,13 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
            following (URL) argument to start with -. */
         stillflags = FALSE;
       else {
-        const char *nextarg = (i < (argc - 1))
-          ? argv[i + 1]
+        char *nextarg = (i < (argc - 1))
+          ? curlx_convert_tchar_to_UTF8(argv[i + 1])
           : NULL;
 
         result = getparameter(orig_opt, nextarg, &passarg, global, config);
+        curlx_unicodefree(nextarg);
+		nextarg = NULL;
         config = global->last;
         if(result == PARAM_NEXT_OPERATION) {
           /* Reset result as PARAM_NEXT_OPERATION is only used here and not
@@ -2367,6 +2373,11 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       result = getparameter("--url", orig_opt, &used, global,
                             config);
     }
+
+    if(!result) {
+      curlx_unicodefree(orig_opt);
+	  orig_opt = NULL;
+	}
   }
 
   if(result && result != PARAM_HELP_REQUESTED &&
@@ -2381,5 +2392,6 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       helpf(global->errors, "%s\n", reason);
   }
 
+  curlx_unicodefree(orig_opt);
   return result;
 }
