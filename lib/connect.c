@@ -223,13 +223,13 @@ timediff_t Curl_timeleft(struct Curl_easy *data,
     nowp = &now;
   }
 
-  /* subtract elapsed time */
-  if(duringconnect)
-    /* since this most recent connect started */
-    timeout_ms -= Curl_timediff(*nowp, data->progress.t_startsingle);
-  else
-    /* since the entire operation started */
-    timeout_ms -= Curl_timediff(*nowp, data->progress.t_startop);
+  /* the duration for a connect and the total transfer are calculated from two
+     different time-stamps. It can end up with the total timeout triggering
+     before the connect timeout expires and we should make sure to acknowledge
+     whichever timeout that is reached first. The time since 'TIMER_STARTOP'
+     is always the longest. */
+  timeout_ms -= Curl_timediff(*nowp, data->progress.t_startop);
+
   if(!timeout_ms)
     /* avoid returning 0 as that means no timeout! */
     return -1;
