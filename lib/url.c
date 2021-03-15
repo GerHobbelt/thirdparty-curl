@@ -595,7 +595,7 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
    */
   if(Curl_ssl_backend() != CURLSSLBACKEND_SCHANNEL) {
 #if defined(CURL_CA_BUNDLE)
-    result = Curl_setstropt(&set->str[STRING_SSL_CAFILE_ORIG], CURL_CA_BUNDLE);
+    result = Curl_setstropt(&set->str[STRING_SSL_CAFILE], CURL_CA_BUNDLE);
     if(result)
       return result;
 
@@ -605,7 +605,7 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
       return result;
 #endif
 #if defined(CURL_CA_PATH)
-    result = Curl_setstropt(&set->str[STRING_SSL_CAPATH_ORIG], CURL_CA_PATH);
+    result = Curl_setstropt(&set->str[STRING_SSL_CAPATH], CURL_CA_PATH);
     if(result)
       return result;
 
@@ -1921,13 +1921,12 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
 
   if(data->set.str[STRING_DEFAULT_PROTOCOL] &&
      !Curl_is_absolute_url(data->change.url, NULL, MAX_SCHEME_LEN)) {
-    char *url;
-    if(data->change.url_alloc)
-      free(data->change.url);
-    url = aprintf("%s://%s", data->set.str[STRING_DEFAULT_PROTOCOL],
-                  data->change.url);
+    char *url = aprintf("%s://%s", data->set.str[STRING_DEFAULT_PROTOCOL],
+                        data->change.url);
     if(!url)
       return CURLE_OUT_OF_MEMORY;
+    if(data->change.url_alloc)
+      free(data->change.url);
     data->change.url = url;
     data->change.url_alloc = TRUE;
   }
@@ -1980,8 +1979,10 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
       if(uc)
         return Curl_uc_to_curlcode(uc);
       uc = curl_url_get(uh, CURLUPART_SCHEME, &data->state.up.scheme, 0);
-      if(uc)
+      if(uc) {
+        free(url);
         return Curl_uc_to_curlcode(uc);
+      }
       data->change.url = url;
       data->change.url_alloc = TRUE;
       infof(data, "Switched from HTTP to HTTPS due to HSTS => %s\n",
@@ -2423,13 +2424,18 @@ static CURLcode parse_proxy(struct Curl_easy *data,
   proxyinfo->proxytype = proxytype;
 
   /* Is there a username and password given in this proxy url? */
-  curl_url_get(uhp, CURLUPART_USER, &proxyuser, CURLU_URLDECODE);
-  curl_url_get(uhp, CURLUPART_PASSWORD, &proxypasswd, CURLU_URLDECODE);
+  uc = curl_url_get(uhp, CURLUPART_USER, &proxyuser, CURLU_URLDECODE);
+  if(uc && (uc != CURLUE_NO_USER))
+    goto error;
+  uc = curl_url_get(uhp, CURLUPART_PASSWORD, &proxypasswd, CURLU_URLDECODE);
+  if(uc && (uc != CURLUE_NO_PASSWORD))
+    goto error;
+
   if(proxyuser || proxypasswd) {
     Curl_safefree(proxyinfo->user);
     proxyinfo->user = proxyuser;
-    result = Curl_setstropt(&data->state.aptr.proxyuser,
-                            proxyuser);
+    result = Curl_setstropt(&data->state.aptr.proxyuser, proxyuser);
+    proxyuser = NULL;
     if(result)
       goto error;
     Curl_safefree(proxyinfo->passwd);
@@ -2441,8 +2447,8 @@ static CURLcode parse_proxy(struct Curl_easy *data,
       }
     }
     proxyinfo->passwd = proxypasswd;
-    result = Curl_setstropt(&data->state.aptr.proxypasswd,
-                            proxypasswd);
+    result = Curl_setstropt(&data->state.aptr.proxypasswd, proxypasswd);
+    proxypasswd = NULL;
     if(result)
       goto error;
     conn->bits.proxy_user_passwd = TRUE; /* enable it */
@@ -2490,6 +2496,8 @@ static CURLcode parse_proxy(struct Curl_easy *data,
   proxyinfo->host.name = host;
 
   error:
+  free(proxyuser);
+  free(proxypasswd);
   free(scheme);
   curl_url_cleanup(uhp);
   return result;
@@ -3358,7 +3366,7 @@ static CURLcode resolve_server(struct Curl_easy *data,
         result = CURLE_OPERATION_TIMEDOUT;
 
       else if(!hostaddr) {
-        failf(data, "Couldn't resolve host '%s'", connhost->dispname);
+        failf(data, "Could not resolve host: %s", connhost->dispname);
         result = CURLE_COULDNT_RESOLVE_HOST;
         /* don't return yet, we need to clean up the timeout first */
       }
@@ -3732,8 +3740,8 @@ static CURLcode create_conn(struct Curl_easy *data,
      that will be freed as part of the Curl_easy struct, but all cloned
      copies will be separately allocated.
   */
-  data->set.ssl.primary.CApath = data->set.str[STRING_SSL_CAPATH_ORIG];
-  data->set.ssl.primary.CAfile = data->set.str[STRING_SSL_CAFILE_ORIG];
+  data->set.ssl.primary.CApath = data->set.str[STRING_SSL_CAPATH];
+  data->set.ssl.primary.CAfile = data->set.str[STRING_SSL_CAFILE];
   data->set.proxy_ssl.primary.CAfile = data->set.str[STRING_SSL_CAFILE_PROXY];
   data->set.ssl.primary.ca_file_pem =
     data->set.str[STRING_SSL_CAFILE_PEM_ORIG];
@@ -3742,12 +3750,12 @@ static CURLcode create_conn(struct Curl_easy *data,
   data->set.ssl.primary.random_file = data->set.str[STRING_SSL_RANDOM_FILE];
   data->set.ssl.primary.egdsocket = data->set.str[STRING_SSL_EGDSOCKET];
   data->set.ssl.primary.cipher_list =
-    data->set.str[STRING_SSL_CIPHER_LIST_ORIG];
+    data->set.str[STRING_SSL_CIPHER_LIST];
   data->set.ssl.primary.cipher_list13 =
-    data->set.str[STRING_SSL_CIPHER13_LIST_ORIG];
+    data->set.str[STRING_SSL_CIPHER13_LIST];
   data->set.ssl.primary.pinned_key =
-    data->set.str[STRING_SSL_PINNEDPUBLICKEY_ORIG];
-  data->set.ssl.primary.cert_blob = data->set.blobs[BLOB_CERT_ORIG];
+    data->set.str[STRING_SSL_PINNEDPUBLICKEY];
+  data->set.ssl.primary.cert_blob = data->set.blobs[BLOB_CERT];
   data->set.ssl.primary.curves = data->set.str[STRING_SSL_EC_CURVES];
 
 #ifndef CURL_DISABLE_PROXY
@@ -3772,24 +3780,24 @@ static CURLcode create_conn(struct Curl_easy *data,
   data->set.proxy_ssl.primary.clientcert = data->set.str[STRING_CERT_PROXY];
   data->set.proxy_ssl.key_blob = data->set.blobs[BLOB_KEY_PROXY];
 #endif
-  data->set.ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE_ORIG];
-  data->set.ssl.issuercert = data->set.str[STRING_SSL_ISSUERCERT_ORIG];
-  data->set.ssl.cert_type = data->set.str[STRING_CERT_TYPE_ORIG];
-  data->set.ssl.key = data->set.str[STRING_KEY_ORIG];
-  data->set.ssl.key_type = data->set.str[STRING_KEY_TYPE_ORIG];
-  data->set.ssl.key_passwd = data->set.str[STRING_KEY_PASSWD_ORIG];
-  data->set.ssl.primary.clientcert = data->set.str[STRING_CERT_ORIG];
+  data->set.ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE];
+  data->set.ssl.issuercert = data->set.str[STRING_SSL_ISSUERCERT];
+  data->set.ssl.cert_type = data->set.str[STRING_CERT_TYPE];
+  data->set.ssl.key = data->set.str[STRING_KEY];
+  data->set.ssl.key_type = data->set.str[STRING_KEY_TYPE];
+  data->set.ssl.key_passwd = data->set.str[STRING_KEY_PASSWD];
+  data->set.ssl.primary.clientcert = data->set.str[STRING_CERT];
 #ifdef USE_TLS_SRP
-  data->set.ssl.username = data->set.str[STRING_TLSAUTH_USERNAME_ORIG];
-  data->set.ssl.password = data->set.str[STRING_TLSAUTH_PASSWORD_ORIG];
+  data->set.ssl.username = data->set.str[STRING_TLSAUTH_USERNAME];
+  data->set.ssl.password = data->set.str[STRING_TLSAUTH_PASSWORD];
 #ifndef CURL_DISABLE_PROXY
   data->set.proxy_ssl.username = data->set.str[STRING_TLSAUTH_USERNAME_PROXY];
   data->set.proxy_ssl.password = data->set.str[STRING_TLSAUTH_PASSWORD_PROXY];
 #endif
 #endif
 
-  data->set.ssl.key_blob = data->set.blobs[BLOB_KEY_ORIG];
-  data->set.ssl.issuercert_blob = data->set.blobs[BLOB_SSL_ISSUERCERT_ORIG];
+  data->set.ssl.key_blob = data->set.blobs[BLOB_KEY];
+  data->set.ssl.issuercert_blob = data->set.blobs[BLOB_SSL_ISSUERCERT];
 
   if(!Curl_clone_primary_ssl_config(&data->set.ssl.primary,
                                     &conn->ssl_config)) {
