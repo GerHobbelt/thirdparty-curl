@@ -3254,10 +3254,21 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
 #ifdef ENABLE_IPV6
      (0 == Curl_inet_pton(AF_INET6, hostname, &addr)) &&
 #endif
-     sni &&
-     !SSL_set_tlsext_host_name(backend->handle, hostname))
-    infof(data, "WARNING: failed to configure server name indication (SNI) "
-          "TLS extension\n");
+     sni) {
+    size_t nlen = strlen(hostname);
+    if((long)nlen >= data->set.buffer_size)
+      /* this is seriously messed up */
+      return CURLE_SSL_CONNECT_ERROR;
+
+    /* RFC 6066 section 3 says the SNI field is case insensitive, but browsers
+       send the data lowercase and subsequently there are now numerous servers
+       out there that don't work unless the name is lowercased */
+    Curl_strntolower(data->state.buffer, hostname, nlen);
+    data->state.buffer[nlen] = 0;
+    if(!SSL_set_tlsext_host_name(backend->handle, data->state.buffer))
+      infof(data, "WARNING: failed to configure server name indication (SNI) "
+            "TLS extension\n");
+  }
 #endif
 
   /* Check if there's a cached ID we can/should use here! */
@@ -4467,25 +4478,6 @@ static CURLcode ossl_random(struct Curl_easy *data,
   return (rc == 1 ? CURLE_OK : CURLE_FAILED_INIT);
 }
 
-static CURLcode ossl_md5sum(unsigned char *tmp, /* input */
-                            size_t tmplen,
-                            unsigned char *md5sum /* output */,
-                            size_t unused)
-{
-  EVP_MD_CTX *mdctx;
-  unsigned int len = 0;
-  (void) unused;
-
-  mdctx = EVP_MD_CTX_create();
-  if(!mdctx)
-    return CURLE_OUT_OF_MEMORY;
-  EVP_DigestInit(mdctx, EVP_md5());
-  EVP_DigestUpdate(mdctx, tmp, tmplen);
-  EVP_DigestFinal_ex(mdctx, md5sum, &len);
-  EVP_MD_CTX_destroy(mdctx);
-  return CURLE_OK;
-}
-
 #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL) && !defined(OPENSSL_NO_SHA256)
 static CURLcode ossl_sha256sum(const unsigned char *tmp, /* input */
                                size_t tmplen,
@@ -4558,7 +4550,6 @@ const struct Curl_ssl Curl_ssl_openssl = {
   ossl_set_engine_default,  /* set_engine_default */
   ossl_engines_list,        /* engines_list */
   Curl_none_false_start,    /* false_start */
-  ossl_md5sum,              /* md5sum */
 #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL) && !defined(OPENSSL_NO_SHA256)
   ossl_sha256sum            /* sha256sum */
 #else
