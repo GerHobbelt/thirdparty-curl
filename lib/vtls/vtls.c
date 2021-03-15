@@ -596,9 +596,6 @@ void Curl_ssl_close_all(struct Curl_easy *data)
   Curl_ssl->close_all(data);
 }
 
-#if defined(USE_OPENSSL) || defined(USE_GNUTLS) || defined(USE_SCHANNEL) || \
-  defined(USE_SECTRANSP) || defined(USE_NSS) || \
-  defined(USE_MBEDTLS) || defined(USE_WOLFSSL) || defined(USE_BEARSSL)
 int Curl_ssl_getsock(struct connectdata *conn, curl_socket_t *socks)
 {
   struct ssl_connect_data *connssl = &conn->ssl[FIRSTSOCKET];
@@ -616,16 +613,6 @@ int Curl_ssl_getsock(struct connectdata *conn, curl_socket_t *socks)
 
   return GETSOCK_BLANK;
 }
-#else
-int Curl_ssl_getsock(struct connectdata *conn,
-                     curl_socket_t *socks)
-{
-  (void)conn;
-  (void)socks;
-  return GETSOCK_BLANK;
-}
-/* USE_OPENSSL || USE_GNUTLS || USE_SCHANNEL || USE_SECTRANSP || USE_NSS */
-#endif
 
 void Curl_ssl_close(struct Curl_easy *data, struct connectdata *conn,
                     int sockindex)
@@ -1173,6 +1160,13 @@ static CURLcode multissl_connect_nonblocking(struct Curl_easy *data,
   return Curl_ssl->connect_nonblocking(data, conn, sockindex, done);
 }
 
+static int multissl_getsock(struct connectdata *conn, curl_socket_t *socks)
+{
+  if(multissl_setup(NULL))
+    return 0;
+  return Curl_ssl->getsock(conn, socks);
+}
+
 static void *multissl_get_internals(struct ssl_connect_data *connssl,
                                     CURLINFO info)
 {
@@ -1204,6 +1198,7 @@ static const struct Curl_ssl Curl_ssl_multi = {
   Curl_none_cert_status_request,     /* cert_status_request */
   multissl_connect,                  /* connect */
   multissl_connect_nonblocking,      /* connect_nonblocking */
+  multissl_getsock,                  /* getsock */
   multissl_get_internals,            /* get_internals */
   multissl_close,                    /* close_one */
   Curl_none_close_all,               /* close_all */
@@ -1230,6 +1225,8 @@ const struct Curl_ssl *Curl_ssl =
   &Curl_ssl_mbedtls;
 #elif defined(USE_NSS)
   &Curl_ssl_nss;
+#elif defined(USE_RUSTLS)
+  &Curl_ssl_rustls;
 #elif defined(USE_OPENSSL)
   &Curl_ssl_openssl;
 #elif defined(USE_SCHANNEL)
@@ -1272,6 +1269,9 @@ static const struct Curl_ssl *available_backends[] = {
 #endif
 #if defined(USE_BEARSSL)
   &Curl_ssl_bearssl,
+#endif
+#if defined(USE_RUSTLS)
+  &Curl_ssl_rustls,
 #endif
   NULL
 };
