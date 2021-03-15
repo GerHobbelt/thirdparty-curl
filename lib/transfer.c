@@ -79,6 +79,7 @@
 #include "strcase.h"
 #include "urlapi-int.h"
 #include "hsts.h"
+#include "setopt.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -1432,8 +1433,8 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
   data->state.followlocation = 0; /* reset the location-follow counter */
   data->state.this_is_a_follow = FALSE; /* reset this */
   data->state.errorbuf = FALSE; /* no error has occurred */
-  data->state.httpversion = 0; /* don't assume any particular server version */
-
+  data->state.httpwant = data->set.httpwant;
+  data->state.httpversion = 0;
   data->state.authproblem = FALSE;
   data->state.authhost.want = data->set.httpauth;
   data->state.authproxy.want = data->set.proxyauth;
@@ -1508,6 +1509,19 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
     if(!data->state.aptr.uagent)
       return CURLE_OUT_OF_MEMORY;
   }
+
+  if(!result)
+    result = Curl_setstropt(&data->state.aptr.user,
+                            data->set.str[STRING_USERNAME]);
+  if(!result)
+    result = Curl_setstropt(&data->state.aptr.passwd,
+                            data->set.str[STRING_PASSWORD]);
+  if(!result)
+    result = Curl_setstropt(&data->state.aptr.proxyuser,
+                            data->set.str[STRING_PROXYUSERNAME]);
+  if(!result)
+    result = Curl_setstropt(&data->state.aptr.proxypasswd,
+                            data->set.str[STRING_PROXYPASSWORD]);
 
   data->req.headerbytecount = 0;
   return result;

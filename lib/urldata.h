@@ -912,10 +912,6 @@ struct connstate {
  * unique for an entire connection.
  */
 struct connectdata {
-  /* 'data' is the CURRENT Curl_easy using this connection -- take great
-     caution that this might very well vary between different times this
-     connection is used! */
-  struct Curl_easy *data;
   struct connstate cnnct;
   struct Curl_llist_element bundle_node; /* conncache */
 
@@ -992,7 +988,7 @@ struct connectdata {
   char *passwd;  /* password string, allocated */
   char *options; /* options string, allocated */
   char *sasl_authzid;     /* authorisation identity string, allocated */
-  int httpversion;        /* the HTTP version*10 reported by the server */
+  unsigned char httpversion; /* the HTTP version*10 reported by the server */
   struct curltime now;     /* "current" time */
   struct curltime created; /* creation time */
   struct curltime lastused; /* when returned to the connection cache */
@@ -1376,9 +1372,10 @@ struct UrlState {
 
   /* a place to store the most recently set FTP entrypath */
   char *most_recent_ftp_entrypath;
-
-  int httpversion;       /* the lowest HTTP version*10 reported by any server
-                            involved in this request */
+  unsigned char httpwant; /* when non-zero, a specific HTTP version requested
+                             to be used in the library's request(s) */
+  unsigned char httpversion; /* the lowest HTTP version*10 reported by any
+                                server involved in this request */
 
 #if !(defined(WIN32) || defined(WIN64)) && !defined(MSDOS) && !defined(__EMX__)
 /* do FTP line-end conversions on most platforms */
@@ -1436,6 +1433,12 @@ struct UrlState {
     char *cookiehost;
     char *rtsp_transport;
     char *te; /* TE: request header */
+
+    /* transfer credentials */
+    char *user;
+    char *passwd;
+    char *proxyuser;
+    char *proxypasswd;
   } aptr;
 
 #ifdef CURLDEBUG
@@ -1721,8 +1724,8 @@ struct UserDefined {
   curl_proxytype proxytype; /* what kind of proxy that is in use */
   time_t timevalue;       /* what time to compare with */
   Curl_HttpReq method;   /* what kind of HTTP request (if any) is this */
-  long httpversion; /* when non-zero, a specific HTTP version requested to
-                       be used in the library's request(s) */
+  unsigned char httpwant; /* when non-zero, a specific HTTP version requested
+                             to be used in the library's request(s) */
   struct ssl_config_data ssl;  /* user defined SSL stuff */
 #ifndef CURL_DISABLE_PROXY
   struct ssl_config_data proxy_ssl;  /* user defined SSL stuff for proxy */
@@ -1868,6 +1871,9 @@ struct UserDefined {
   BIT(disallow_username_in_url); /* disallow username in url */
   BIT(doh); /* DNS-over-HTTPS enabled */
   BIT(doh_get); /* use GET for DoH requests, instead of POST */
+  BIT(doh_verifypeer);     /* DOH certificate peer verification */
+  BIT(doh_verifyhost);     /* DOH certificate hostname verification */
+  BIT(doh_verifystatus);   /* DOH certificate status verification */
   BIT(http09_allowed); /* allow HTTP/0.9 responses */
   BIT(mail_rcpt_allowfails); /* allow RCPT TO command to fail for some
                                 recipients */
