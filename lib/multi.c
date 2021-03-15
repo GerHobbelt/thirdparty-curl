@@ -1192,7 +1192,9 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
           ufds[nfds].events = POLLOUT;
           ++nfds;
         }
+        /* s is only set if either being readable or writable is checked */
         if(s == CURL_SOCKET_BAD) {
+          /* break on entry not checked for being readable or writable */
           break;
         }
 #ifdef USE_WINSOCK
@@ -1320,8 +1322,10 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
               }
               WSAEventSelect(sockbunch[i], multi->wsa_event, 0);
             }
-            else
+            else {
+              /* break on entry not checked for being readable or writable */
               break;
+            }
           }
 
           data = data->next;
