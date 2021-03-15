@@ -1177,7 +1177,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           set_binmode(stdin);
           if(!strcmp(per->uploadfile, ".")) {
-            if(Curl_nonblock((curl_socket_t)per->infd, TRUE) < 0)
+            if(curlx_nonblock((curl_socket_t)per->infd, TRUE) < 0)
               warnf(global,
                     "fcntl failed on fd=%d: %s\n", per->infd, strerror(errno));
           }
@@ -2463,7 +2463,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
      */
     if(tls_backend_info->backend != CURLSSLBACKEND_SCHANNEL) {
       char *env;
-      env = Curl_getenv("CURL_CA_BUNDLE");
+      env = curlx_getenv("CURL_CA_BUNDLE");
       if(env) {
         config->cacert = strdup(env);
         if(!config->cacert) {
@@ -2473,7 +2473,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
         }
       }
       else {
-        env = Curl_getenv("SSL_CERT_DIR");
+        env = curlx_getenv("SSL_CERT_DIR");
         if(env) {
           config->capath = strdup(env);
           if(!config->capath) {
@@ -2484,7 +2484,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
           capath_from_env = true;
         }
         else {
-          env = Curl_getenv("SSL_CERT_FILE");
+          env = curlx_getenv("SSL_CERT_FILE");
           if(env) {
             config->cacert = strdup(env);
             if(!config->cacert) {
