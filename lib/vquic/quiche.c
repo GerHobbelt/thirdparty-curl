@@ -255,8 +255,7 @@ CURLcode Curl_quic_connect(struct Curl_easy *data,
           SOCKERRNO, Curl_strerror(SOCKERRNO, buffer, sizeof(buffer)));
     return CURLE_BAD_FUNCTION_ARGUMENT;
   }
-  memcpy(conn->ip_addr_str, conn->primary_ip, MAX_IPADR_LEN);
-  Curl_persistconninfo(data, conn);
+  Curl_persistconninfo(data, conn, NULL, -1);
 
   /* for connection reuse purposes: */
   conn->ssl[FIRSTSOCKET].state = ssl_connection_complete;

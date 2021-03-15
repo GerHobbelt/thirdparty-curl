@@ -348,7 +348,7 @@ static CURLcode bindlocal(struct Curl_easy *data,
        * of the connection. The resolve functions should really be changed
        * to take a type parameter instead.
        */
-      long ipver = conn->ip_version;
+      unsigned char ipver = conn->ip_version;
       int rc;
 
       if(af == AF_INET)
@@ -610,14 +610,18 @@ static CURLcode trynextip(struct Curl_easy *data,
 
 /* Copies connection info into the transfer handle to make it available when
    the transfer handle is no longer associated with the connection. */
-void Curl_persistconninfo(struct Curl_easy *data, struct connectdata *conn)
+void Curl_persistconninfo(struct Curl_easy *data, struct connectdata *conn,
+                          char *local_ip, long local_port)
 {
   memcpy(data->info.conn_primary_ip, conn->primary_ip, MAX_IPADR_LEN);
-  memcpy(data->info.conn_local_ip, conn->local_ip, MAX_IPADR_LEN);
+  if(local_ip && local_ip[0])
+    memcpy(data->info.conn_local_ip, local_ip, MAX_IPADR_LEN);
+  else
+    data->info.conn_local_ip[0] = 0;
   data->info.conn_scheme = conn->handler->scheme;
   data->info.conn_protocol = conn->handler->protocol;
-  data->info.conn_primary_port = conn->primary_port;
-  data->info.conn_local_port = conn->local_port;
+  data->info.conn_primary_port = conn->port;
+  data->info.conn_local_port = local_port;
 }
 
 /* retrieves ip address and port from a sockaddr structure.
@@ -686,6 +690,7 @@ void Curl_conninfo_remote(struct Curl_easy *data,
   char buffer[STRERROR_LEN];
   struct Curl_sockaddr_storage ssrem;
   curl_socklen_t plen;
+  long port;
   plen = sizeof(struct Curl_sockaddr_storage);
   memset(&ssrem, 0, sizeof(ssrem));
   if(getpeername(sockfd, (struct sockaddr*) &ssrem, &plen)) {
@@ -695,12 +700,11 @@ void Curl_conninfo_remote(struct Curl_easy *data,
     return;
   }
   if(!Curl_addr2string((struct sockaddr*)&ssrem, plen,
-                       conn->primary_ip, &conn->primary_port)) {
+                       conn->primary_ip, &port)) {
     failf(data, "ssrem inet_ntop() failed with errno %d: %s",
           errno, Curl_strerror(errno, buffer, sizeof(buffer)));
     return;
   }
-  memcpy(conn->ip_addr_str, conn->primary_ip, MAX_IPADR_LEN);
 #else
   (void)data;
   (void)conn;
@@ -710,8 +714,8 @@ void Curl_conninfo_remote(struct Curl_easy *data,
 
 /* retrieves the start/end point information of a socket of an established
    connection */
-void Curl_conninfo_local(struct Curl_easy *data, struct connectdata *conn,
-                         curl_socket_t sockfd)
+void Curl_conninfo_local(struct Curl_easy *data, curl_socket_t sockfd,
+                         char *local_ip, long *local_port)
 {
 #ifdef HAVE_GETSOCKNAME
   char buffer[STRERROR_LEN];
@@ -726,7 +730,7 @@ void Curl_conninfo_local(struct Curl_easy *data, struct connectdata *conn,
     return;
   }
   if(!Curl_addr2string((struct sockaddr*)&ssloc, slen,
-                       conn->local_ip, &conn->local_port)) {
+                       local_ip, local_port)) {
     failf(data, "ssloc inet_ntop() failed with errno %d: %s",
           errno, Curl_strerror(errno, buffer, sizeof(buffer)));
     return;
@@ -743,15 +747,21 @@ void Curl_conninfo_local(struct Curl_easy *data, struct connectdata *conn,
 void Curl_updateconninfo(struct Curl_easy *data, struct connectdata *conn,
                          curl_socket_t sockfd)
 {
+  /* 'local_ip' and 'local_port' get filled with local's numerical
+     ip address and port number whenever an outgoing connection is
+     **established** from the primary socket to a remote address. */
+  char local_ip[MAX_IPADR_LEN] = "";
+  long local_port = -1;
+
   if(conn->transport == TRNSPRT_TCP) {
     if(!conn->bits.reuse && !conn->bits.tcp_fastopen) {
       Curl_conninfo_remote(data, conn, sockfd);
-      Curl_conninfo_local(data, conn, sockfd);
+      Curl_conninfo_local(data, sockfd, local_ip, &local_port);
     }
   } /* end of TCP-only section */
 
   /* persist connection info in session handle */
-  Curl_persistconninfo(data, conn);
+  Curl_persistconninfo(data, conn, local_ip, local_port);
 }
 
 /* After a TCP connection to the proxy has been verified, this function does

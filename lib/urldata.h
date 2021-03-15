@@ -783,7 +783,7 @@ struct Curl_handler {
                                    struct connectdata *conn,
                                    unsigned int checks_to_perform);
 
-  long defport;           /* Default port. */
+  int defport;            /* Default port. */
   unsigned int protocol;  /* See CURLPROTO_* - this needs to be the single
                              specific protocol bit */
   unsigned int family;    /* single bit for protocol family; basically the
@@ -940,11 +940,6 @@ struct connectdata {
   struct Curl_addrinfo *ip_addr;
   struct Curl_addrinfo *tempaddr[2]; /* for happy eyeballs */
 
-  /* 'ip_addr_str' is the ip_addr data as a human readable string.
-     It remains available as long as the connection does, which is longer than
-     the ip_addr itself. */
-  char ip_addr_str[MAX_IPADR_LEN];
-
   unsigned int scope_id;  /* Scope id for IPv6 */
 
   enum {
@@ -967,7 +962,7 @@ struct connectdata {
   struct proxy_info socks_proxy;
   struct proxy_info http_proxy;
 #endif
-  long port;       /* which port to use locally */
+  int port;        /* which port to use locally - to connect to */
   int remote_port; /* the remote port, not the proxy port! */
   int conn_to_port; /* the remote port to connect to. valid only if
                        bits.conn_to_port is set */
@@ -982,14 +977,7 @@ struct connectdata {
      these are updated with data which comes directly from the socket. */
 
   char primary_ip[MAX_IPADR_LEN];
-  long primary_port;
-
-  /* 'local_ip' and 'local_port' get filled with local's numerical
-     ip address and port number whenever an outgoing connection is
-     **established** from the primary socket to a remote address. */
-
-  char local_ip[MAX_IPADR_LEN];
-  long local_port;
+  unsigned char ip_version; /* copied from the Curl_easy at creation time */
 
   char *user;    /* user name string, allocated */
   char *passwd;  /* password string, allocated */
@@ -1041,14 +1029,10 @@ struct connectdata {
   const struct Curl_handler *handler; /* Connection's protocol handler */
   const struct Curl_handler *given;   /* The protocol first given */
 
-  long ip_version; /* copied from the Curl_easy at creation time */
-
   /* Protocols can use a custom keepalive mechanism to keep connections alive.
      This allows those protocols to track the last time the keepalive mechanism
      was used on this connection. */
   struct curltime keepalive;
-
-  long upkeep_interval_ms;      /* Time between calls for connection upkeep. */
 
   /**** curl_get() phase fields */
 
@@ -1118,24 +1102,8 @@ struct connectdata {
     struct mqtt_conn mqtt;
   } proto;
 
-  int cselect_bits; /* bitmask of socket events */
-  int waitfor;      /* current READ/WRITE bits to wait for */
-
-#if defined(HAVE_GSSAPI) || defined(USE_WINDOWS_SSPI)
-  int socks5_gssapi_enctype;
-#endif
-
-  /* When this connection is created, store the conditions for the local end
-     bind. This is stored before the actual bind and before any connection is
-     made and will serve the purpose of being used for comparison reasons so
-     that subsequent bound-requested connections aren't accidentally re-using
-     wrong connections. */
-  char *localdev;
-  unsigned short localport;
-  int localportrange;
   struct http_connect_state *connect_state; /* for HTTP CONNECT */
   struct connectbundle *bundle; /* The bundle we are member of */
-  int negnpn; /* APLN or NPN TLS negotiated protocol, CURL_HTTP_VERSION* */
 #ifdef USE_UNIX_SOCKETS
   char *unix_domain_socket;
 #endif
@@ -1143,6 +1111,21 @@ struct connectdata {
   /* if set, an alternative data transfer function */
   Curl_datastream datastream;
 #endif
+  /* When this connection is created, store the conditions for the local end
+     bind. This is stored before the actual bind and before any connection is
+     made and will serve the purpose of being used for comparison reasons so
+     that subsequent bound-requested connections aren't accidentally re-using
+     wrong connections. */
+  char *localdev;
+  int localportrange;
+  int cselect_bits; /* bitmask of socket events */
+  int waitfor;      /* current READ/WRITE bits to wait for */
+  int negnpn; /* APLN or NPN TLS negotiated protocol, CURL_HTTP_VERSION* */
+
+#if defined(HAVE_GSSAPI) || defined(USE_WINDOWS_SSPI)
+  int socks5_gssapi_enctype;
+#endif
+  unsigned short localport;
 };
 
 /* The end of connectdata. */
@@ -1744,8 +1727,8 @@ struct UserDefined {
                                 keep it >= CURL_MAX_WRITE_SIZE */
   void *private_data; /* application-private data */
   struct curl_slist *http200aliases; /* linked list of aliases for http200 */
-  long ipver; /* the CURL_IPRESOLVE_* defines in the public header file
-                 0 - whatever, 1 - v2, 2 - v6 */
+  unsigned char ipver; /* the CURL_IPRESOLVE_* defines in the public header
+                          file 0 - whatever, 1 - v2, 2 - v6 */
   curl_off_t max_filesize; /* Maximum file size to download */
 #ifndef CURL_DISABLE_FTP
   curl_ftpfile ftp_filemethod; /* how to get to a file when FTP is used  */

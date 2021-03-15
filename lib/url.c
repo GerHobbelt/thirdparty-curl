@@ -1196,9 +1196,9 @@ ConnectionExists(struct Curl_easy *data,
         }
 
         if(Curl_resolver_asynch()) {
-          /* ip_addr_str[0] is NUL only if the resolving of the name hasn't
+          /* primary_ip[0] is NUL only if the resolving of the name hasn't
              completed yet and until then we don't re-use this connection */
-          if(!check->ip_addr_str[0]) {
+          if(!check->primary_ip[0]) {
             infof(data,
                   "Connection #%ld is still name resolving, can't reuse\n",
                   check->connection_id);
@@ -1511,7 +1511,7 @@ void Curl_verboseconnect(struct Curl_easy *data,
 #endif
           conn->bits.conn_to_host ? conn->conn_to_host.dispname :
           conn->host.dispname,
-          conn->ip_addr_str, conn->port, conn->connection_id);
+          conn->primary_ip, conn->port, conn->connection_id);
 }
 #endif
 
@@ -1693,9 +1693,6 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
 
   /* Store current time to give a baseline to keepalive connection times. */
   conn->keepalive = Curl_now();
-
-  /* Store off the configured connection upkeep time. */
-  conn->upkeep_interval_ms = data->set.upkeep_interval_ms;
 
   conn->data = data; /* Setup the association between this connection
                         and the Curl_easy */
@@ -2339,7 +2336,7 @@ static CURLcode parse_proxy(struct Curl_easy *data,
                             curl_proxytype proxytype)
 {
   char *portptr = NULL;
-  long port = -1;
+  int port = -1;
   char *proxyuser = NULL;
   char *proxypasswd = NULL;
   char *host;
@@ -2428,14 +2425,14 @@ static CURLcode parse_proxy(struct Curl_easy *data,
   curl_url_get(uhp, CURLUPART_PORT, &portptr, 0);
 
   if(portptr) {
-    port = strtol(portptr, NULL, 10);
+    port = (int)strtol(portptr, NULL, 10);
     free(portptr);
   }
   else {
     if(data->set.proxyport)
       /* None given in the proxy string, then get the default one if it is
          given */
-      port = data->set.proxyport;
+      port = (int)data->set.proxyport;
     else {
       if(proxytype == CURLPROXY_HTTPS)
         port = CURL_DEFAULT_HTTPS_PROXY_PORT;
@@ -3386,6 +3383,11 @@ static void reuse_conn(struct Curl_easy *data,
                        struct connectdata *old_conn,
                        struct connectdata *conn)
 {
+  /* 'local_ip' and 'local_port' get filled with local's numerical
+     ip address and port number whenever an outgoing connection is
+     **established** from the primary socket to a remote address. */
+  char local_ip[MAX_IPADR_LEN] = "";
+  long local_port = -1;
 #ifndef CURL_DISABLE_PROXY
   Curl_free_idnconverted_hostname(&old_conn->http_proxy.host);
   Curl_free_idnconverted_hostname(&old_conn->socks_proxy.host);
@@ -3452,7 +3454,11 @@ static void reuse_conn(struct Curl_easy *data,
   old_conn->hostname_resolve = NULL;
 
   /* persist connection info in session handle */
-  Curl_persistconninfo(data, conn);
+  if(conn->transport == TRNSPRT_TCP) {
+    Curl_conninfo_local(data, conn->sock[FIRSTSOCKET],
+                        local_ip, &local_port);
+  }
+  Curl_persistconninfo(data, conn, local_ip, local_port);
 
   conn_reset_all_postponed_data(old_conn); /* free buffers */
 
@@ -3666,7 +3672,7 @@ static CURLcode create_conn(struct Curl_easy *data,
     /* this is supposed to be the connect function so we better at least check
        that the file is present here! */
     DEBUGASSERT(conn->handler->connect_it);
-    Curl_persistconninfo(data, conn);
+    Curl_persistconninfo(data, conn, NULL, -1);
     result = conn->handler->connect_it(data, &done);
 
     /* Setup a "faked" transfer that'll do nothing */
