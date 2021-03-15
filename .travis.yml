@@ -193,104 +193,6 @@ jobs:
         - libbrotli-dev
         - libzstd-dev
   - env:
-    - T=iconv
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-  - env:
-    - T=cmake BORINGSSL=yes QUICHE=yes C="-DUSE_QUICHE=1 -DOPENSSL_ROOT_DIR=$HOME/boringssl -DCURL_BROTLI=1 -DCURL_ZSTD=1"
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    - PKG_CONFIG_PATH="$HOME/quiche/target/release"
-    before_install:
-    - eval "$(gimme stable)"; gimme --list  # Install latest Go (for boringssl)
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-  - env:
-    - T=torture
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - lcov
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-        - libssh2-1-dev
-  - env:
-    - T=debug C="--enable-alt-svc"
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    arch: arm64
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-        - libev-dev
-        - libssl-dev
-        - libtool
-        - pkg-config
-        - zlib1g-dev
-
-  - env:
-    - T=debug C="--enable-alt-svc"
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    arch: ppc64le
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-        - libev-dev
-        - libssl-dev
-        - libtool
-        - pkg-config
-        - zlib1g-dev
-
-  - env:
-    - T=debug C="--enable-alt-svc"
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    arch: s390x
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-        - libev-dev
-        - libssl-dev
-        - libtool
-        - pkg-config
-        - zlib1g-dev
-
-  - env:
-    - T=distcheck
-    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
-    addons:
-      apt:
-        <<: *common_apt
-        packages:
-        - *common_packages
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-
-# Begin clang section
-
-  - env:
     - T=debug
     - &clang OVERRIDE_CC="CC=clang-9" OVERRIDE_CXX="CXX=clang++-9"
     compiler: clang
@@ -350,6 +252,23 @@ jobs:
         packages:
         - *clang_packages
         - libnss3-dev
+        - libpsl-dev
+        - libbrotli-dev
+        - libzstd-dev
+  - env:
+    - T=iconv
+    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
+  - env:
+    - T=cmake BORINGSSL=yes QUICHE=yes C="-GNinja -DUSE_QUICHE=1 -DOPENSSL_ROOT_DIR=$HOME/boringssl -DCURL_BROTLI=1 -DCURL_ZSTD=1" TFLAGS="https ftps"
+    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
+    - PKG_CONFIG_PATH="$HOME/quiche/target/release"
+    before_install:
+    - eval "$(gimme stable)"; gimme --list  # Install latest Go (for boringssl)
+    addons:
+      apt:
+        <<: *common_apt
+        packages:
+        - *common_packages
         - libpsl-dev
         - libbrotli-dev
         - libzstd-dev
@@ -452,6 +371,59 @@ jobs:
         - libpsl-dev
         - libbrotli-dev
         - libzstd-dev
+  - env:
+    - T=debug C="" TFLAGS=-n
+    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
+    arch: arm64
+    addons:
+      apt:
+        <<: *common_apt
+        packages:
+        - *common_packages
+        - libpsl-dev
+        - libbrotli-dev
+        - libzstd-dev
+        - libev-dev
+        - libssl-dev
+        - libtool
+        - pkg-config
+        - zlib1g-dev
+
+  - env:
+    - T=debug C="" TFLAGS=-n
+    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
+    arch: ppc64le
+    addons:
+      apt:
+        <<: *common_apt
+        packages:
+        - *common_packages
+        - libpsl-dev
+        - libbrotli-dev
+        - libzstd-dev
+        - libev-dev
+        - libssl-dev
+        - libtool
+        - pkg-config
+        - zlib1g-dev
+
+  - env:
+    - T=debug C="" TFLAGS=-n
+    - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
+    arch: s390x
+    addons:
+      apt:
+        <<: *common_apt
+        packages:
+        - *common_packages
+        - libpsl-dev
+        - libbrotli-dev
+        - libzstd-dev
+        - libev-dev
+        - libssl-dev
+        - libtool
+        - pkg-config
+        - zlib1g-dev
 
 before_install:
 - export "${OVERRIDE_CC-blank=}"

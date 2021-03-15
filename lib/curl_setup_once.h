@@ -481,6 +481,8 @@ typedef int sig_atomic_t;
 
 #ifdef __VMS
 #define argv_item_t  __char_ptr32
+#elif defined(_UNICODE)
+#define argv_item_t wchar_t *
 #else
 #define argv_item_t  char *
 #endif
