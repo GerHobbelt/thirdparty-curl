@@ -372,6 +372,15 @@ struct kerberos5data {
 };
 #endif
 
+/* Struct used for SCRAM-SHA-1 authentication */
+#ifdef USE_GSASL
+#include <gsasl.h>
+struct gsasldata {
+  Gsasl *ctx;
+  Gsasl_session *client;
+};
+#endif
+
 /* Struct used for NTLM challenge-response authentication */
 #if defined(USE_NTLM)
 struct ntlmdata {
@@ -982,12 +991,8 @@ struct connectdata {
   char *user;    /* user name string, allocated */
   char *passwd;  /* password string, allocated */
   char *options; /* options string, allocated */
-
   char *sasl_authzid;     /* authorisation identity string, allocated */
-
   int httpversion;        /* the HTTP version*10 reported by the server */
-  int rtspversion;        /* the RTSP version*10 reported by the server */
-
   struct curltime now;     /* "current" time */
   struct curltime created; /* creation time */
   struct curltime lastused; /* when returned to the connection cache */
@@ -1064,6 +1069,10 @@ struct connectdata {
   /*************** Request - specific items ************/
 #if defined(USE_WINDOWS_SSPI) && defined(SECPKG_ATTR_ENDPOINT_BINDINGS)
   CtxtHandle *sslContext;
+#endif
+
+#ifdef USE_GSASL
+  struct gsasldata gsasl;
 #endif
 
 #if defined(USE_NTLM)
@@ -1158,9 +1167,9 @@ struct PureInfo {
      reused, in the connection cache. */
 
   char conn_primary_ip[MAX_IPADR_LEN];
-  long conn_primary_port;
+  int conn_primary_port;
   char conn_local_ip[MAX_IPADR_LEN];
-  long conn_local_port;
+  int conn_local_port;
   const char *conn_scheme;
   unsigned int conn_protocol;
   struct curl_certinfo certs; /* info about the certs, only populated in
@@ -1342,6 +1351,7 @@ struct UrlState {
   unsigned int tempcount; /* number of entries in use in tempwrite, 0 - 3 */
   int os_errno;  /* filled in with errno whenever an error occurs */
   char *scratch; /* huge buffer[set.buffer_size*2] for upload CRLF replacing */
+  long followlocation; /* redirect counter */
 #ifdef HAVE_SIGNAL
   /* storage for the previous bag^H^H^HSIGPIPE signal handler :-) */
   void (*prev_signal)(int sig);
@@ -1458,6 +1468,8 @@ struct UrlState {
   BIT(stream_depends_e); /* set or don't set the Exclusive bit */
   BIT(previouslypending); /* this transfer WAS in the multi->pending queue */
   BIT(cookie_engine);
+  BIT(prefer_ascii);   /* ASCII rather than binary */
+  BIT(list_only);      /* list directory contents */
 };
 
 
@@ -1626,7 +1638,6 @@ struct UserDefined {
   unsigned long httpauth;  /* kind of HTTP authentication to use (bitmask) */
   unsigned long proxyauth; /* kind of proxy authentication to use (bitmask) */
   unsigned long socks5auth;/* kind of SOCKS5 authentication to use (bitmask) */
-  long followlocation; /* as in HTTP Location: */
   long maxredirs;    /* maximum no. of http(s) redirects to follow, set to -1
                         for infinity */
 
@@ -1799,8 +1810,8 @@ struct UserDefined {
   BIT(get_filetime);     /* get the time and get of the remote file */
   BIT(tunnel_thru_httpproxy); /* use CONNECT through a HTTP proxy */
   BIT(prefer_ascii);     /* ASCII rather than binary */
-  BIT(ftp_append);       /* append, not overwrite, on upload */
-  BIT(ftp_list_only);    /* switch FTP command for listing directories */
+  BIT(remote_append);    /* append, not overwrite, on upload */
+  BIT(list_only);        /* list directory */
 #ifndef CURL_DISABLE_FTP
   BIT(ftp_use_port);     /* use the FTP PORT command */
   BIT(ftp_use_epsv);     /* if EPSV is to be attempted or not */

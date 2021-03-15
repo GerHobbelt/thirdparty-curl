@@ -184,8 +184,8 @@ static const struct helptxt helptext[] = {
   {"    --create-dirs",
    "Create necessary local directory hierarchy",
    CURLHELP_CURL},
-  {"    --create-file-mode",
-   "File mode for created files",
+  {"    --create-file-mode <mode>",
+   "File mode (octal) for created files",
    CURLHELP_SFTP | CURLHELP_SCP | CURLHELP_FILE | CURLHELP_UPLOAD},
   {"    --crlf",
    "Convert LF to CRLF in upload",
@@ -268,6 +268,9 @@ static const struct helptxt helptext[] = {
   {"    --fail-early",
    "Fail on first transfer error, do not continue",
    CURLHELP_CURL},
+  {"    --fail-with-body",
+   "Fail on HTTP errors but save the body",
+   CURLHELP_HTTP | CURLHELP_OUTPUT},
   {"    --false-start",
    "Enable TLS False Start",
    CURLHELP_TLS},
@@ -872,6 +875,7 @@ static const struct feat feats[] = {
   {"PSL",            CURL_VERSION_PSL},
   {"alt-svc",        CURL_VERSION_ALTSVC},
   {"HSTS",           CURL_VERSION_HSTS},
+  {"gsasl",          CURL_VERSION_GSASL},
 };
 
 static void print_category(curlhelp_t category)

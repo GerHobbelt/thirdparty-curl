@@ -1504,7 +1504,7 @@ static CURLcode add_haproxy_protocol_header(struct Curl_easy *data)
 
   msnprintf(proxy_header,
             sizeof(proxy_header),
-            "PROXY %s %s %s %li %li\r\n",
+            "PROXY %s %s %s %i %i\r\n",
             tcp_version,
             data->info.conn_local_ip,
             data->info.conn_primary_ip,
@@ -1552,7 +1552,7 @@ static int https_getsock(struct Curl_easy *data,
 {
   (void)data;
   if(conn->handler->flags & PROTOPT_SSL)
-    return Curl_ssl_getsock(conn, socks);
+    return Curl_ssl->getsock(conn, socks);
   return GETSOCK_BLANK;
 }
 #endif /* USE_SSL */
@@ -1702,7 +1702,7 @@ CURLcode Curl_http_compile_trailers(struct curl_slist *trailers,
 
   if(
 #ifdef CURL_DO_LINEEND_CONV
-     (handle->set.prefer_ascii) ||
+     (handle->state.prefer_ascii) ||
 #endif
      (handle->set.crlf)) {
     /* \n will become \r\n later on */
@@ -2209,7 +2209,7 @@ CURLcode Curl_http_target(struct Curl_easy *data,
         }
         if(!type) {
           result = Curl_dyn_addf(r, ";type=%c",
-                                 data->set.prefer_ascii ? 'a' : 'i');
+                                 data->state.prefer_ascii ? 'a' : 'i');
           if(result)
             return result;
         }
@@ -4204,14 +4204,14 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
       }
       else if(conn->handler->protocol & CURLPROTO_RTSP) {
         char separator;
+        int rtspversion;
         nc = sscanf(HEADER1,
                     " RTSP/%1d.%1d%c%3d",
                     &rtspversion_major,
-                    &conn->rtspversion,
+                    &rtspversion,
                     &separator,
                     &k->httpcode);
         if((nc == 4) && (' ' == separator)) {
-          conn->rtspversion += 10 * rtspversion_major;
           conn->httpversion = 11; /* For us, RTSP acts like HTTP 1.1 */
         }
         else {

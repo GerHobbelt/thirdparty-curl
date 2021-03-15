@@ -155,7 +155,8 @@ typedef enum {
   CURLSSLBACKEND_AXTLS = 10, /* never used since 7.63.0 */
   CURLSSLBACKEND_MBEDTLS = 11,
   CURLSSLBACKEND_MESALINK = 12,
-  CURLSSLBACKEND_BEARSSL = 13
+  CURLSSLBACKEND_BEARSSL = 13,
+  CURLSSLBACKEND_RUSTLS = 14
 } curl_sslbackend;
 
 /* aliases for library clones and renames */
@@ -2963,6 +2964,7 @@ typedef struct curl_version_info_data curl_version_info_data;
 #define CURL_VERSION_ZSTD         (1<<26) /* zstd features are present */
 #define CURL_VERSION_UNICODE      (1<<27) /* Unicode support on Windows */
 #define CURL_VERSION_HSTS         (1<<28) /* HSTS is supported */
+#define CURL_VERSION_GSASL        (1<<29) /* libgsasl is supported */
 
  /*
  * NAME curl_version_info()
