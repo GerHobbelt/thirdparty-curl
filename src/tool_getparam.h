@@ -60,6 +60,6 @@ void parse_cert_parameter(const char *cert_parameter,
 #endif
 
 ParameterError parse_args(struct GlobalConfig *config, int argc,
-                          const argv_item_t argv[]);
+                          const char* argv[]);
 
 #endif /* HEADER_CURL_TOOL_GETPARAM_H */

@@ -1177,7 +1177,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           set_binmode(stdin);
           if(!strcmp(per->uploadfile, ".")) {
-            if(curlx_nonblock((curl_socket_t)per->infd, TRUE) < 0)
+            if(Curl_nonblock((curl_socket_t)per->infd, TRUE) < 0)
               warnf(global,
                     "fcntl failed on fd=%d: %s\n", per->infd, strerror(errno));
           }
@@ -1771,17 +1771,17 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt_slist(curl, CURLOPT_PREQUOTE, config->prequote);
 
         if(config->cookies) {
-          struct curlx_dynbuf cookies;
+          struct dynbuf cookies;
           struct curl_slist *cl;
           CURLcode ret;
 
           /* The maximum size needs to match MAX_NAME in cookie.h */
-          curlx_dyn_init(&cookies, 4096);
+          Curl_dyn_init(&cookies, 4096);
           for(cl = config->cookies; cl; cl = cl->next) {
             if(cl == config->cookies)
-              ret = curlx_dyn_addf(&cookies, "%s", cl->data);
+              ret = Curl_dyn_addf(&cookies, "%s", cl->data);
             else
-              ret = curlx_dyn_addf(&cookies, ";%s", cl->data);
+              ret = Curl_dyn_addf(&cookies, ";%s", cl->data);
 
             if(ret) {
               result = CURLE_OUT_OF_MEMORY;
@@ -1789,8 +1789,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             }
           }
 
-          my_setopt_str(curl, CURLOPT_COOKIE, curlx_dyn_ptr(&cookies));
-          curlx_dyn_free(&cookies);
+          my_setopt_str(curl, CURLOPT_COOKIE, Curl_dyn_ptr(&cookies));
+          Curl_dyn_free(&cookies);
         }
 
         if(config->cookiefiles) {
@@ -2463,7 +2463,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
      */
     if(tls_backend_info->backend != CURLSSLBACKEND_SCHANNEL) {
       char *env;
-      env = curlx_getenv("CURL_CA_BUNDLE");
+      env = Curl_getenv("CURL_CA_BUNDLE");
       if(env) {
         config->cacert = strdup(env);
         if(!config->cacert) {
@@ -2473,7 +2473,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
         }
       }
       else {
-        env = curlx_getenv("SSL_CERT_DIR");
+        env = Curl_getenv("SSL_CERT_DIR");
         if(env) {
           config->capath = strdup(env);
           if(!config->capath) {
@@ -2484,7 +2484,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
           capath_from_env = true;
         }
         else {
-          env = curlx_getenv("SSL_CERT_FILE");
+          env = Curl_getenv("SSL_CERT_FILE");
           if(env) {
             config->cacert = strdup(env);
             if(!config->cacert) {
@@ -2578,10 +2578,10 @@ static CURLcode run_all_transfers(struct GlobalConfig *global,
   return result;
 }
 
-CURLcode operate(struct GlobalConfig *global, int argc, const argv_item_t argv[])
+CURLcode operate(struct GlobalConfig *global, int argc, const char* argv[])
 {
   CURLcode result = CURLE_OK;
-  char *first_arg = argc > 1 ? curlx_convert_tchar_to_UTF8(argv[1]) : NULL;
+  const char *first_arg = argc > 1 ? argv[1] : NULL;
 
   /* Setup proper locale from environment */
 #ifdef HAVE_SETLOCALE
@@ -2600,8 +2600,6 @@ CURLcode operate(struct GlobalConfig *global, int argc, const argv_item_t argv[]
       result = CURLE_FAILED_INIT;
     }
   }
-
-  curlx_unicodefree(first_arg);
 
   if(!result) {
     /* Parse the command line arguments */

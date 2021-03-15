@@ -2309,7 +2309,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 }
 
 ParameterError parse_args(struct GlobalConfig *global, int argc,
-                          const argv_item_t argv[])
+                          const char* argv[])
 {
   int i;
   bool stillflags;
