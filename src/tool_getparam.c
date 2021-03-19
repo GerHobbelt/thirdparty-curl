@@ -2333,7 +2333,6 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
           : NULL;
 
         result = getparameter(orig_opt, nextarg, &passarg, global, config);
-        curlx_unicodefree(nextarg);
 		nextarg = NULL;
         config = global->last;
         if(result == PARAM_NEXT_OPERATION) {
@@ -2373,11 +2372,6 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       result = getparameter("--url", orig_opt, &used, global,
                             config);
     }
-
-    if(!result) {
-      curlx_unicodefree(orig_opt);
-	  orig_opt = NULL;
-	}
   }
 
   if(result && result != PARAM_HELP_REQUESTED &&
@@ -2392,6 +2386,5 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
       helpf(global->errors, "%s\n", reason);
   }
 
-  curlx_unicodefree(orig_opt);
   return result;
 }
