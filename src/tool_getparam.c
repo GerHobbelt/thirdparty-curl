@@ -2313,12 +2313,12 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
 {
   int i;
   bool stillflags;
-  char *orig_opt = NULL;
+  const char *orig_opt = NULL;
   ParameterError result = PARAM_OK;
   struct OperationConfig *config = global->first;
 
   for(i = 1, stillflags = TRUE; i < argc && !result; i++) {
-    orig_opt = curlx_convert_tchar_to_UTF8(argv[i]);
+    orig_opt = argv[i];
 
     if(stillflags && ('-' == orig_opt[0])) {
       bool passarg;
@@ -2328,8 +2328,8 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
            following (URL) argument to start with -. */
         stillflags = FALSE;
       else {
-        char *nextarg = (i < (argc - 1))
-          ? curlx_convert_tchar_to_UTF8(argv[i + 1])
+        const char *nextarg = (i < (argc - 1))
+          ? argv[i + 1]
           : NULL;
 
         result = getparameter(orig_opt, nextarg, &passarg, global, config);
