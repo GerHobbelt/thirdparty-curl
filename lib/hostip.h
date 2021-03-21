@@ -196,7 +196,7 @@ Curl_cache_addr(struct Curl_easy *data, struct Curl_addrinfo *addr,
 #define CURL_INADDR_NONE INADDR_NONE
 #endif
 
-#ifdef HAVE_SIGSETJMP
+#if defined(HAVE_SIGSETJMP) && HAVE_SIGSETJMP
 /* Forward-declaration of variable defined in hostip.c. Beware this
  * is a global and unique instance. This is used to store the return
  * address that we can jump back to from inside a signal handler.
