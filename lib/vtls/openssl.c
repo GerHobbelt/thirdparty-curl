@@ -2644,6 +2644,7 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
     /* the SSL trace callback is only used for verbose logging */
     SSL_CTX_set_msg_callback(backend->ctx, ossl_trace);
     SSL_CTX_set_msg_callback_arg(backend->ctx, conn);
+    set_logger(conn, data);
   }
 #endif
 
@@ -2804,7 +2805,10 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
     /* expects length prefixed preference ordered list of protocols in wire
      * format
      */
-    SSL_CTX_set_alpn_protos(backend->ctx, protocols, cur);
+    if(SSL_CTX_set_alpn_protos(backend->ctx, protocols, cur)) {
+      failf(data, "Error setting ALPN");
+      return CURLE_SSL_CONNECT_ERROR;
+    }
   }
 #endif
 

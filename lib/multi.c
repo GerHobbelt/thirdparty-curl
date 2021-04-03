@@ -2188,7 +2188,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
       }
       else {
         send_timeout_ms = 0;
-        if(data->set.max_send_speed > 0)
+        if(data->set.max_send_speed)
           send_timeout_ms =
             Curl_pgrsLimitWaitTime(data->progress.uploaded,
                                    data->progress.ul_limit_size,
@@ -2197,7 +2197,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
                                    *nowp);
 
         recv_timeout_ms = 0;
-        if(data->set.max_recv_speed > 0)
+        if(data->set.max_recv_speed)
           recv_timeout_ms =
             Curl_pgrsLimitWaitTime(data->progress.downloaded,
                                    data->progress.dl_limit_size,
@@ -2224,7 +2224,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
       DEBUGASSERT(data->state.buffer);
       /* check if over send speed */
       send_timeout_ms = 0;
-      if(data->set.max_send_speed > 0)
+      if(data->set.max_send_speed)
         send_timeout_ms = Curl_pgrsLimitWaitTime(data->progress.uploaded,
                                                  data->progress.ul_limit_size,
                                                  data->set.max_send_speed,
@@ -2233,7 +2233,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
 
       /* check if over recv speed */
       recv_timeout_ms = 0;
-      if(data->set.max_recv_speed > 0)
+      if(data->set.max_recv_speed)
         recv_timeout_ms = Curl_pgrsLimitWaitTime(data->progress.downloaded,
                                                  data->progress.dl_limit_size,
                                                  data->set.max_recv_speed,
@@ -2277,12 +2277,13 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
 
         if(!ret) {
           infof(data, "Downgrades to HTTP/1.1!\n");
+          connclose(data->conn, "Disconnect HTTP/2 for HTTP/1");
           data->state.httpwant = CURL_HTTP_VERSION_1_1;
           /* clear the error message bit too as we ignore the one we got */
           data->state.errorbuf = FALSE;
           if(!newurl)
             /* typically for HTTP_1_1_REQUIRED error on first flight */
-            newurl = strdup(data->change.url);
+            newurl = strdup(data->state.url);
           /* if we are to retry, set the result to OK and consider the request
              as done */
           retry = TRUE;
