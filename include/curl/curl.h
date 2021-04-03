@@ -2097,6 +2097,9 @@ typedef enum {
      this option is used only if PROXY_SSL_VERIFYPEER is true */
   CURLOPT(CURLOPT_PROXY_CAINFO_PEM, CURLOPTTYPE_STRINGPOINT, 307),
 
+  /* Connection timeout per address attempt in milliseconds */
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 309),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
