@@ -3180,6 +3180,7 @@ static CURLcode ssh_connect(struct Curl_easy *data, bool *done)
     }
     if(!sshc->kh) {
       libssh2_session_free(sshc->ssh_session);
+      sshc->ssh_session = NULL;
       return CURLE_FAILED_INIT;
     }
 
