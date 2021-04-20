@@ -3933,7 +3933,12 @@ sub singletest {
             }
             my $fileContent = join('', @inputfile);
             open(OUTFILE, ">$filename");
-            binmode OUTFILE if($filemode ne "text");
+            if($filemode eq "text") {
+                $fileContent =~ s/\n/\r\n/g;
+            }
+            else {
+                binmode OUTFILE;
+            }
             if($fileattr{'nonewline'}) {
                 # cut off the final newline
                 chomp($fileContent);
