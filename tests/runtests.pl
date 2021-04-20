@@ -3923,6 +3923,8 @@ sub singletest {
         my @inputfile=getpart("client", "file".$partsuffix);
         my %fileattr = getpartattr("client", "file".$partsuffix);
         my $filename=$fileattr{'name'};
+        # get the mode attribute
+        my $filemode=$fileattr{'mode'};
         if(@inputfile || $filename) {
             if(!$filename) {
                 logmsg "ERROR: section client=>file has no name attribute\n";
@@ -3931,7 +3933,7 @@ sub singletest {
             }
             my $fileContent = join('', @inputfile);
             open(OUTFILE, ">$filename");
-            binmode OUTFILE; # for crapage systems, use binary
+            binmode OUTFILE if($filemode ne "text");
             if($fileattr{'nonewline'}) {
                 # cut off the final newline
                 chomp($fileContent);

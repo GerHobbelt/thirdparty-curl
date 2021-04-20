@@ -497,13 +497,15 @@ parameter is the not negative integer number of seconds for the delay. This
 'delay' attribute is intended for very specific test cases, and normally not
 needed.
 
-### `<file name="log/filename" [nonewline="yes"]>`
+### `<file name="log/filename" [nonewline="yes"] [mode="text"]>`
 This creates the named file with this content before the test case is run,
 which is useful if the test case needs a file to act on.
 
 If 'nonewline="yes"` is used, the created file will have the final newline
 stripped off.
 
+Use the mode="text" attribute if the file is in text mode on platforms that
+have a text/binary difference.
 ### `<stdin [nonewline="yes"]>`
 Pass this given data on stdin to the tool.
 
