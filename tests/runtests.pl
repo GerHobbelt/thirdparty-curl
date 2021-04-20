@@ -3936,9 +3936,7 @@ sub singletest {
             if($filemode eq "text") {
                 $fileContent =~ s/\n/\r\n/g;
             }
-            else {
-                binmode OUTFILE;
-            }
+            binmode OUTFILE;
             if($fileattr{'nonewline'}) {
                 # cut off the final newline
                 chomp($fileContent);
