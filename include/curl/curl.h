@@ -2100,6 +2100,9 @@ typedef enum {
   /* Connection timeout per address attempt in milliseconds */
   CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 309),
 
+  /* Connection timeout per address attempt in milliseconds */
+  CURLOPT(CURLOPT_IPTIMEOUT_MS, CURLOPTTYPE_LONG, 309),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

@@ -1416,6 +1416,13 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.timeout_per_addr = arg;
     break;
 
+  case CURLOPT_IPTIMEOUT_MS:
+    arg = va_arg(param, long);
+    if(arg < 0)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+    data->set.timeout_per_addr = arg;
+    break;
+
   case CURLOPT_ACCEPTTIMEOUT_MS:
     /*
      * The maximum time you allow curl to wait for server connect
