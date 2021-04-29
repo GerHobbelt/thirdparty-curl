@@ -18,14 +18,29 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
-###########################################################################
-extraction:
-  cpp:
-    prepare:
-      packages: # to avoid confusion with libopenafs-dev which also provides a des.h
-        - libssl-dev
-    after_prepare: # make sure lgtm.com doesn't use CMake (which generates and runs tests)
-      - rm -f CMakeLists.txt
-      - ./buildconf
-    configure: # enable as many optional features as possible
-      command: ./configure --enable-ares --with-libssh2 --with-gssapi --with-librtmp --with-libmetalink --with-openssl
+#***************************************************************************
+
+AC_DEFUN([CURL_WITH_SCHANNEL], [
+AC_MSG_CHECKING([whether to enable Windows native SSL/TLS])
+if test "x$OPT_SCHANNEL" != xno; then
+  ssl_msg=
+  if test "x$OPT_SCHANNEL" != "xno"  &&
+     test "x$curl_cv_native_windows" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(USE_SCHANNEL, 1, [to enable Windows native SSL/TLS support])
+    AC_SUBST(USE_SCHANNEL, [1])
+    ssl_msg="Schannel"
+    test schannel != "$DEFAULT_SSL_BACKEND" || VALID_DEFAULT_SSL_BACKEND=yes
+    SCHANNEL_ENABLED=1
+    # --with-schannel implies --enable-sspi
+    AC_DEFINE(USE_WINDOWS_SSPI, 1, [to enable SSPI support])
+    AC_SUBST(USE_WINDOWS_SSPI, [1])
+    curl_sspi_msg="enabled"
+  else
+    AC_MSG_RESULT(no)
+  fi
+  test -z "$ssl_msg" || ssl_backends="${ssl_backends:+$ssl_backends, }$ssl_msg"
+else
+  AC_MSG_RESULT(no)
+fi
+])

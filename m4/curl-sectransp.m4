@@ -18,14 +18,26 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
-###########################################################################
-extraction:
-  cpp:
-    prepare:
-      packages: # to avoid confusion with libopenafs-dev which also provides a des.h
-        - libssl-dev
-    after_prepare: # make sure lgtm.com doesn't use CMake (which generates and runs tests)
-      - rm -f CMakeLists.txt
-      - ./buildconf
-    configure: # enable as many optional features as possible
-      command: ./configure --enable-ares --with-libssh2 --with-gssapi --with-librtmp --with-libmetalink --with-openssl
+#***************************************************************************
+
+AC_DEFUN([CURL_WITH_SECURETRANSPORT], [
+AC_MSG_CHECKING([whether to enable Secure Transport])
+if test "x$OPT_SECURETRANSPORT" != xno; then
+  if test "x$OPT_SECURETRANSPORT" != "xno" &&
+     (test "x$cross_compiling" != "xno" || test -d "/System/Library/Frameworks/Security.framework"); then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(USE_SECTRANSP, 1, [enable Secure Transport])
+    AC_SUBST(USE_SECTRANSP, [1])
+    ssl_msg="Secure Transport"
+    test secure-transport != "$DEFAULT_SSL_BACKEND" || VALID_DEFAULT_SSL_BACKEND=yes
+    SECURETRANSPORT_ENABLED=1
+    LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Security"
+  else
+    AC_MSG_RESULT(no)
+  fi
+  test -z "$ssl_msg" || ssl_backends="${ssl_backends:+$ssl_backends, }$ssl_msg"
+else
+  AC_MSG_RESULT(no)
+fi
+
+])

@@ -117,6 +117,10 @@
 #define SP_PROT_TLS1_2_CLIENT           0x00000800
 #endif
 
+#ifndef SCH_USE_STRONG_CRYPTO
+#define SCH_USE_STRONG_CRYPTO           0x00400000
+#endif
+
 #ifndef SECBUFFER_ALERT
 #define SECBUFFER_ALERT                 17
 #endif
@@ -335,6 +339,11 @@ set_ssl_ciphers(SCHANNEL_CRED *schannel_cred, char *ciphers)
       alg = get_alg_id_by_name(startCur);
     if(alg)
       algIds[algCount++] = alg;
+    else if(!strncmp(startCur, "USE_STRONG_CRYPTO",
+                     sizeof("USE_STRONG_CRYPTO") - 1) ||
+            !strncmp(startCur, "SCH_USE_STRONG_CRYPTO",
+                     sizeof("SCH_USE_STRONG_CRYPTO") - 1))
+      schannel_cred->dwFlags |= SCH_USE_STRONG_CRYPTO;
     else
       return CURLE_SSL_CIPHER;
     startCur = strchr(startCur, ':');
@@ -428,12 +437,7 @@ schannel_connect_step1(struct Curl_easy *data, struct connectdata *conn,
 #endif
   TCHAR *host_name;
   CURLcode result;
-#ifndef CURL_DISABLE_PROXY
-  char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
-    conn->host.name;
-#else
-  char * const hostname = conn->host.name;
-#endif
+  char * const hostname = SSL_HOST_NAME();
 
   DEBUGF(infof(data,
                "schannel: SSL/TLS connection with %s port %hu (step 1/3)\n",
@@ -557,6 +561,20 @@ schannel_connect_step1(struct Curl_easy *data, struct connectdata *conn,
                    "comparing the supplied target name with the subject "
                    "names in server certificates.\n"));
     }
+
+    /* security request flags */
+    BACKEND->req_flags = ISC_REQ_SEQUENCE_DETECT | ISC_REQ_REPLAY_DETECT |
+      ISC_REQ_CONFIDENTIALITY | ISC_REQ_ALLOCATE_MEMORY |
+      ISC_REQ_STREAM;
+
+    if(!SSL_SET_OPTION(auto_client_cert)) {
+      schannel_cred.dwFlags &= ~SCH_CRED_USE_DEFAULT_CREDS;
+      schannel_cred.dwFlags |= SCH_CRED_NO_DEFAULT_CREDS;
+      BACKEND->req_flags |= ISC_REQ_USE_SUPPLIED_CREDS;
+      infof(data, "schannel: disabled automatic use of client certificate\n");
+    }
+    else
+      infof(data, "schannel: enabled automatic use of client certificate\n");
 
     switch(conn->ssl_config.version) {
     case CURL_SSLVERSION_DEFAULT:
@@ -891,11 +909,6 @@ schannel_connect_step1(struct Curl_easy *data, struct connectdata *conn,
   InitSecBuffer(&outbuf, SECBUFFER_EMPTY, NULL, 0);
   InitSecBufferDesc(&outbuf_desc, &outbuf, 1);
 
-  /* setup request flags */
-  BACKEND->req_flags = ISC_REQ_SEQUENCE_DETECT | ISC_REQ_REPLAY_DETECT |
-    ISC_REQ_CONFIDENTIALITY | ISC_REQ_ALLOCATE_MEMORY |
-    ISC_REQ_STREAM;
-
   /* allocate memory for the security context handle */
   BACKEND->ctxt = (struct Curl_schannel_ctxt *)
     calloc(1, sizeof(struct Curl_schannel_ctxt));
@@ -995,12 +1008,7 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
   SECURITY_STATUS sspi_status = SEC_E_OK;
   CURLcode result;
   bool doread;
-#ifndef CURL_DISABLE_PROXY
-  char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
-    conn->host.name;
-#else
-  char * const hostname = conn->host.name;
-#endif
+  char * const hostname = SSL_HOST_NAME();
   const char *pubkey_ptr;
 
   doread = (connssl->connecting_state != ssl_connect_2_writing) ? TRUE : FALSE;
@@ -1249,9 +1257,7 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
     DEBUGF(infof(data, "schannel: SSL/TLS handshake complete\n"));
   }
 
-  pubkey_ptr = SSL_IS_PROXY() ?
-    data->set.str[STRING_SSL_PINNEDPUBLICKEY_PROXY] :
-    data->set.str[STRING_SSL_PINNEDPUBLICKEY];
+  pubkey_ptr = SSL_PINNED_PUB_KEY();
   if(pubkey_ptr) {
     result = pkp_pin_peer_pubkey(data, conn, sockindex, pubkey_ptr);
     if(result) {
@@ -1338,8 +1344,7 @@ schannel_connect_step3(struct Curl_easy *data, struct connectdata *conn,
   CERT_CONTEXT *ccert_context = NULL;
   bool isproxy = SSL_IS_PROXY();
 #ifdef DEBUGBUILD
-  const char * const hostname = isproxy ? conn->http_proxy.host.name :
-    conn->host.name;
+  const char * const hostname = SSL_HOST_NAME();
 #endif
 #ifdef HAS_ALPN
   SecPkgContext_ApplicationProtocol alpn_result;
@@ -2126,12 +2131,7 @@ static int schannel_shutdown(struct Curl_easy *data, struct connectdata *conn,
    * Shutting Down an Schannel Connection
    */
   struct ssl_connect_data *connssl = &conn->ssl[sockindex];
-#ifndef CURL_DISABLE_PROXY
-  char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
-    conn->host.name;
-#else
-  char * const hostname = conn->host.name;
-#endif
+  char * const hostname = SSL_HOST_NAME();
 
   DEBUGASSERT(data);
 
