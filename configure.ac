@@ -2532,6 +2532,7 @@ if test X"$want_h2" != Xno; then
           curl_h2_msg="enabled (nghttp2)"
           NGHTTP2_ENABLED=1
           AC_DEFINE(USE_NGHTTP2, 1, [if nghttp2 is in use])
+          AC_DEFINE(USE_HTTP2, 1, [if HTTP/2 is in use])
           AC_SUBST(USE_NGHTTP2, [1])
        )
       ],
@@ -3006,6 +3007,7 @@ if test X"$want_hyper" != Xno; then
           curl_h2_msg=$curl_h1_msg
           HYPER_ENABLED=1
           AC_DEFINE(USE_HYPER, 1, [if hyper is in use])
+          AC_DEFINE(USE_HTTP2, 1, [if HTTP/2 is in use])
           AC_SUBST(USE_HYPER, [1])
           CURL_LIBRARY_PATH="$CURL_LIBRARY_PATH:$DIR_HYPER"
           export CURL_LIBRARY_PATH
