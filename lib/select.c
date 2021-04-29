@@ -387,7 +387,7 @@ int Curl_poll(struct pollfd ufds[], unsigned int nfds, timediff_t timeout_ms)
       if(ufds[i].events & POLLPRI)
         ufds[i].revents |= POLLPRI;
     }
-    if(ufds[i].revents != 0)
+    if(ufds[i].revents)
       r++;
   }
 

@@ -668,7 +668,7 @@ restart:
         rc = SSH_OK;
       else if(rc == SSH_AUTH_INFO) {
         nprompts = ssh_userauth_kbdint_getnprompts(sshc->ssh_session);
-        if(nprompts != 0)
+        if(nprompts)
           return SSH_ERROR;
 
         sshc->kbd_state = 2;
@@ -998,7 +998,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
        * Get the "home" directory
        */
       sshc->homedir = sftp_canonicalize_path(sshc->sftp_session, ".");
-      if(sshc->homedir == NULL) {
+      if(!sshc->homedir) {
         MOVE_TO_ERROR_STATE(CURLE_COULDNT_CONNECT);
         break;
       }
@@ -1073,7 +1073,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     case SSH_SFTP_QUOTE_SETSTAT:
       rc = sftp_setstat(sshc->sftp_session, sshc->quote_path2,
                         sshc->quote_attrs);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         Curl_safefree(sshc->quote_path2);
         failf(data, "Attempt to set SFTP stats failed: %s",
@@ -1092,7 +1092,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     case SSH_SFTP_QUOTE_SYMLINK:
       rc = sftp_symlink(sshc->sftp_session, sshc->quote_path2,
                         sshc->quote_path1);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         Curl_safefree(sshc->quote_path2);
         failf(data, "symlink command failed: %s",
@@ -1108,7 +1108,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     case SSH_SFTP_QUOTE_MKDIR:
       rc = sftp_mkdir(sshc->sftp_session, sshc->quote_path1,
                       (mode_t)data->set.new_directory_perms);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         failf(data, "mkdir command failed: %s",
               ssh_get_error(sshc->ssh_session));
@@ -1123,7 +1123,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     case SSH_SFTP_QUOTE_RENAME:
       rc = sftp_rename(sshc->sftp_session, sshc->quote_path1,
                        sshc->quote_path2);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         Curl_safefree(sshc->quote_path2);
         failf(data, "rename command failed: %s",
@@ -1138,7 +1138,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
 
     case SSH_SFTP_QUOTE_RMDIR:
       rc = sftp_rmdir(sshc->sftp_session, sshc->quote_path1);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         failf(data, "rmdir command failed: %s",
               ssh_get_error(sshc->ssh_session));
@@ -1152,7 +1152,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
 
     case SSH_SFTP_QUOTE_UNLINK:
       rc = sftp_unlink(sshc->sftp_session, sshc->quote_path1);
-      if(rc != 0 && !sshc->acceptfail) {
+      if(rc && !sshc->acceptfail) {
         Curl_safefree(sshc->quote_path1);
         failf(data, "rm command failed: %s",
               ssh_get_error(sshc->ssh_session));
@@ -1227,7 +1227,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       sftp_attributes attrs;
 
       attrs = sftp_stat(sshc->sftp_session, protop->path);
-      if(attrs != 0) {
+      if(attrs) {
         data->info.filetime = attrs->mtime;
         sftp_attributes_free(attrs);
       }
@@ -1251,12 +1251,12 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     {
       int flags;
 
-      if(data->state.resume_from != 0) {
+      if(data->state.resume_from) {
         sftp_attributes attrs;
 
         if(data->state.resume_from < 0) {
           attrs = sftp_stat(sshc->sftp_session, protop->path);
-          if(attrs != 0) {
+          if(attrs) {
             curl_off_t size = attrs->size;
             if(size < 0) {
               failf(data, "Bad file size (%" CURL_FORMAT_CURL_OFF_T ")", size);
@@ -1357,7 +1357,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         }
 
         rc = sftp_seek64(sshc->sftp_file, data->state.resume_from);
-        if(rc != 0) {
+        if(rc) {
           MOVE_TO_SFTP_CLOSE_STATE();
           break;
         }
@@ -1473,7 +1473,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
           char *tmpLine;
 
           tmpLine = aprintf("%s\n", sshc->readdir_filename);
-          if(tmpLine == NULL) {
+          if(!tmpLine) {
             state(data, SSH_SFTP_CLOSE);
             sshc->actualcode = CURLE_OUT_OF_MEMORY;
             break;
@@ -1512,7 +1512,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
             const size_t linkPath_sz = strlen(protop->path) +
                                       strlen(sshc->readdir_filename);
             sshc->readdir_linkPath = malloc(linkPath_sz + 1);
-            if(sshc->readdir_linkPath == NULL) {
+            if(!sshc->readdir_linkPath) {
               state(data, SSH_SFTP_CLOSE);
               sshc->actualcode = CURLE_OUT_OF_MEMORY;
               break;
@@ -1553,10 +1553,10 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         break;
       }
 
-      if(sshc->readdir_link_attrs->name == NULL) {
+      if(!sshc->readdir_link_attrs->name) {
         sshc->readdir_tmp = sftp_readlink(sshc->sftp_session,
                                           sshc->readdir_linkPath);
-        if(sshc->readdir_filename == NULL)
+        if(!sshc->readdir_filename)
           sshc->readdir_len = 0;
         else
           sshc->readdir_len = strlen(sshc->readdir_tmp);
@@ -1722,7 +1722,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
           }
 
           rc = sftp_seek64(sshc->sftp_file, from);
-          if(rc != 0) {
+          if(rc) {
             MOVE_TO_SFTP_CLOSE_STATE();
             break;
           }
@@ -1761,7 +1761,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
                                  size - data->state.resume_from);
 
         rc = sftp_seek64(sshc->sftp_file, data->state.resume_from);
-        if(rc != 0) {
+        if(rc) {
           MOVE_TO_SFTP_CLOSE_STATE();
           break;
         }
@@ -2345,7 +2345,7 @@ static CURLcode myssh_connect(struct Curl_easy *data, bool *done)
   ssh = &conn->proto.sshc;
 
   ssh->ssh_session = ssh_new();
-  if(ssh->ssh_session == NULL) {
+  if(!ssh->ssh_session) {
     failf(data, "Failure initialising ssh session");
     return CURLE_FAILED_INIT;
   }
@@ -2981,7 +2981,7 @@ static void sftp_quote(struct Curl_easy *data)
    * command with a space so we can check for it unconditionally
    */
   cp = strchr(cmd, ' ');
-  if(cp == NULL) {
+  if(!cp) {
     failf(data, "Syntax error in SFTP command. Supply parameter(s)!");
     state(data, SSH_SFTP_CLOSE);
     sshc->nextstate = SSH_NO_STATE;
@@ -3130,7 +3130,7 @@ static void sftp_quote_stat(struct Curl_easy *data)
   if(sshc->quote_attrs)
     sftp_attributes_free(sshc->quote_attrs);
   sshc->quote_attrs = sftp_stat(sshc->sftp_session, sshc->quote_path2);
-  if(sshc->quote_attrs == NULL) {
+  if(!sshc->quote_attrs) {
     Curl_safefree(sshc->quote_path1);
     Curl_safefree(sshc->quote_path2);
     failf(data, "Attempt to get SFTP stats failed: %d",
