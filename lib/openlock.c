@@ -91,7 +91,10 @@ void Curl_openunlock(struct openlock *o)
 {
 #ifdef HAVE_FTRUNCATE
   long pos = ftell(o->out);
-  ftruncate(o->fd, (off_t)pos);
+  fflush(o->out);
+  if(ftruncate(o->fd, (off_t)pos))
+    /* ignoring the return code causes warnings ... */
+    pos = 0;
 #endif
 #ifdef HAVE_LOCKF
   if(o->fd != -1) {
