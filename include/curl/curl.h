@@ -2094,13 +2094,13 @@ typedef enum {
   /* Same as CURLOPT_SSL_VERIFYSTATUS but for DOH (DNS-over-HTTPS) servers. */
   CURLOPT(CURLOPT_DOH_SSL_VERIFYSTATUS, CURLOPTTYPE_LONG, 308),
 
-  /* The CAfile in memory as PEM used to validate the proxy certificate
-     this option is used only if PROXY_SSL_VERIFYPEER is true */
-  CURLOPT(CURLOPT_CAINFO_PEM, CURLOPTTYPE_STRINGPOINT, 306),
+  /* The CA certificates as "blob" used to validate the peer certificate
+     this option is used only if SSL_VERIFYPEER is true */
+  CURLOPT(CURLOPT_CAINFO_BLOB, CURLOPTTYPE_BLOB, 309),
 
-  /* The CAfile in memory as PEM used to validate the proxy certificate
+  /* The CA certificates as "blob" used to validate the proxy certificate
      this option is used only if PROXY_SSL_VERIFYPEER is true */
-  CURLOPT(CURLOPT_PROXY_CAINFO_PEM, CURLOPTTYPE_STRINGPOINT, 307),
+  CURLOPT(CURLOPT_PROXY_CAINFO_BLOB, CURLOPTTYPE_BLOB, 310),
 
   /* Connection timeout per address attempt in milliseconds */
   CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 309),
