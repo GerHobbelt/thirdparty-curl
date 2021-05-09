@@ -1273,14 +1273,6 @@ CURLcode Curl_buffer_send(struct dynbuf *in,
     else
       sendsize = size;
 
-    /* We never send more than CURL_MAX_WRITE_SIZE bytes in one single chunk
-       when we speak HTTPS, as if only a fraction of it is sent now, this data
-       needs to fit into the normal read-callback buffer later on and that
-       buffer is using this size.
-    */
-    if(sendsize > CURL_MAX_WRITE_SIZE)
-      sendsize = CURL_MAX_WRITE_SIZE;
-
     /* OpenSSL is very picky and we must send the SAME buffer pointer to the
        library when we attempt to re-send this buffer. Sending the same data
        is not enough, we must use the exact same address. For this reason, we
@@ -1293,6 +1285,14 @@ CURLcode Curl_buffer_send(struct dynbuf *in,
       Curl_dyn_free(in);
       return result;
     }
+    /* We never send more than upload_buffer_size bytes in one single chunk
+       when we speak HTTPS, as if only a fraction of it is sent now, this data
+       needs to fit into the normal read-callback buffer later on and that
+       buffer is using this size.
+    */
+    if(sendsize > (size_t)data->set.upload_buffer_size)
+      sendsize = (size_t)data->set.upload_buffer_size;
+
     memcpy(data->state.ulbuf, ptr, sendsize);
     ptr = data->state.ulbuf;
   }
@@ -3119,6 +3119,10 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
 
   /* initialize a dynamic send-buffer */
   Curl_dyn_init(&req, DYN_HTTP_REQUEST);
+
+  /* make sure the header buffer is reset - if there are leftovers from a
+     previous transfer */
+  Curl_dyn_reset(&data->state.headerb);
 
   /* add the main request stuff */
   /* GET/HEAD/POST/PUT */
