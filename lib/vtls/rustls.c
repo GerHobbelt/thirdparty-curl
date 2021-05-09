@@ -332,7 +332,7 @@ cr_init_backend(struct Curl_easy *data, struct connectdata *conn,
   }
 
   config_builder = rustls_client_config_builder_new();
-#ifdef USE_NGHTTP2
+#ifdef USE_HTTP2
   infof(data, "offering ALPN for HTTP/1.1 and HTTP/2\n");
   rustls_client_config_builder_set_protocols(config_builder, alpn, 2);
 #else
