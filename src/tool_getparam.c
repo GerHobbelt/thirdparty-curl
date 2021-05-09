@@ -2360,6 +2360,8 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
 
   for(i = 1, stillflags = TRUE; i < argc && !result; i++) {
     orig_opt = argv[i];
+    if(!orig_opt)
+      return PARAM_NO_MEM;
 
     if(stillflags && ('-' == orig_opt[0])) {
       bool passarg;
