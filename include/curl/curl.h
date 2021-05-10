@@ -2103,7 +2103,7 @@ typedef enum {
   CURLOPT(CURLOPT_PROXY_CAINFO_BLOB, CURLOPTTYPE_BLOB, 310),
 
   /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 309),
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 311),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
