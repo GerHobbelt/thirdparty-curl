@@ -2273,10 +2273,10 @@ CURLcode Curl_http2_switched(struct Curl_easy *data,
     /* stream 1 is opened implicitly on upgrade */
     stream->stream_id = 1;
     /* queue SETTINGS frame (again) */
-    rv = nghttp2_session_upgrade(httpc->h2, httpc->binsettings,
-                                 httpc->binlen, NULL);
+    rv = nghttp2_session_upgrade2(httpc->h2, httpc->binsettings, httpc->binlen,
+                                  data->state.httpreq == HTTPREQ_HEAD, NULL);
     if(rv) {
-      failf(data, "nghttp2_session_upgrade() failed: %s(%d)",
+      failf(data, "nghttp2_session_upgrade2() failed: %s(%d)",
             nghttp2_strerror(rv), rv);
       return CURLE_HTTP2;
     }
@@ -2335,8 +2335,15 @@ CURLcode Curl_http2_switched(struct Curl_easy *data,
 
   DEBUGASSERT(httpc->nread_inbuf == 0);
 
-  if(-1 == h2_process_pending_input(data, httpc, &result))
-    return CURLE_HTTP2;
+  /* Good enough to call it an end once the remaining payload is copied to the
+   * connection buffer.
+   * Some servers (e.g. nghttpx v1.43.0) may fulfill stream 1 immediately
+   * following the protocol switch other than waiting for the client-side
+   * connection preface. If h2_process_pending_input is invoked here to parse
+   * the remaining payload, stream 1 would be marked as closed too early and
+   * thus ignored in http2_recv (following 252790c53).
+   * The logic in lib/http.c and lib/transfer.c guarantees a following
+   * http2_recv would be invoked very soon. */
 
   return CURLE_OK;
 }
