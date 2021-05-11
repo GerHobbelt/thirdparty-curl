@@ -536,10 +536,6 @@ static struct Curl_addrinfo *get_localhost(int port)
  * function is used. You MUST call Curl_resolv_unlock() later (when you're
  * done using this struct) to decrease the counter again.
  *
- * In debug mode, we specifically test for an interface name "LocalHost"
- * and resolve "localhost" instead as a means to permit test cases
- * to connect to a local test server with any host name.
- *
  * Return codes:
  *
  * CURLRESOLV_ERROR   (-1) = error, no pointer
@@ -649,13 +645,7 @@ enum resolve_t Curl_resolv(struct Curl_easy *data,
         /* If Curl_getaddrinfo() returns NULL, 'respwait' might be set to a
            non-zero value indicating that we need to wait for the response to
            the resolve call */
-        addr = Curl_getaddrinfo(data,
-#ifdef DEBUGBUILD
-                                (data->set.str[STRING_DEVICE]
-                                 && !strcmp(data->set.str[STRING_DEVICE],
-                                            "LocalHost"))?"localhost":
-#endif
-                                hostname, port, &respwait);
+        addr = Curl_getaddrinfo(data, hostname, port, &respwait);
       }
     }
     if(!addr) {
