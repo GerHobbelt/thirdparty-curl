@@ -1640,10 +1640,13 @@ static CURLcode cookie_output(struct Curl_easy *data,
     free(array);
   }
 
-  goto cleanup;
+  /*
+   * If we reach here we have successfully written a cookie file so there is
+   * no need to inspect the error, any error case should have jumped into the
+   * error block below.
+   */
+
 error:
-  error = true;
-cleanup:
   if(!use_stdout)
     Curl_openunlock(&o);
   return error;
