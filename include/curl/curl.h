@@ -613,6 +613,7 @@ typedef enum {
   CURLE_QUIC_CONNECT_ERROR,      /* 96 - QUIC connection error */
   CURLE_PROXY,                   /* 97 - proxy handshake error */
   CURLE_SSL_CLIENTCERT,          /* 98 - client-side certificate required */
+  CURLE_LOCK_ERROR,              /* 99 - curl was unable to lock the file */
   CURL_LAST /* never use! */
 } CURLcode;
 

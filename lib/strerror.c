@@ -326,6 +326,9 @@ curl_easy_strerror(CURLcode error)
   case CURLE_SSL_CLIENTCERT:
     return "SSL Client Certificate required";
 
+  case CURLE_LOCK_ERROR:
+	  return "Unable to lock the file";
+
     /* error codes not used by current libcurl */
   case CURLE_OBSOLETE20:
   case CURLE_OBSOLETE24:
