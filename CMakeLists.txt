@@ -853,7 +853,8 @@ elseif(CURL_CA_PATH_AUTODETECT OR CURL_CA_BUNDLE_AUTODETECT)
     foreach(SEARCH_CA_BUNDLE_PATH ${SEARCH_CA_BUNDLE_PATHS})
       if(EXISTS "${SEARCH_CA_BUNDLE_PATH}")
         message(STATUS "Found CA bundle: ${SEARCH_CA_BUNDLE_PATH}")
-        set(CURL_CA_BUNDLE "${SEARCH_CA_BUNDLE_PATH}")
+        set(CURL_CA_BUNDLE "${SEARCH_CA_BUNDLE_PATH}" CACHE STRING
+            "Path to the CA bundle. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
         set(CURL_CA_BUNDLE_SET TRUE CACHE BOOL "Path to the CA bundle has been set")
         break()
       endif()
@@ -862,7 +863,8 @@ elseif(CURL_CA_PATH_AUTODETECT OR CURL_CA_BUNDLE_AUTODETECT)
 
   if(CURL_CA_PATH_AUTODETECT AND (NOT CURL_CA_PATH_SET))
     if(EXISTS "/etc/ssl/certs")
-      set(CURL_CA_PATH "/etc/ssl/certs")
+      set(CURL_CA_PATH "/etc/ssl/certs" CACHE STRING
+          "Location of default CA path. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
       set(CURL_CA_PATH_SET TRUE CACHE BOOL "Path to the CA bundle has been set")
     endif()
   endif()
@@ -1064,6 +1066,16 @@ if(HAVE_FSETXATTR)
     curl_internal_test(${CURL_TEST})
   endforeach()
 endif()
+
+set(CMAKE_EXTRA_INCLUDE_FILES   "sys/socket.h")
+check_type_size("sa_family_t"   SIZEOF_SA_FAMILY_T)
+set(HAVE_SA_FAMILY_T            ${HAVE_SIZEOF_SA_FAMILY_T})
+set(CMAKE_EXTRA_INCLUDE_FILES   "")
+
+set(CMAKE_EXTRA_INCLUDE_FILES   "ws2def.h")
+check_type_size("ADDRESS_FAMILY"    SIZEOF_ADDRESS_FAMILY)
+set(HAVE_ADDRESS_FAMILY         ${HAVE_SIZEOF_ADDRESS_FAMILY})
+set(CMAKE_EXTRA_INCLUDE_FILES   "")
 
 # sigaction and sigsetjmp are special. Use special mechanism for
 # detecting those, but only if previous attempt failed.
@@ -1274,6 +1286,11 @@ if(MSVC)
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
+  endif()
+
+  # Use multithreaded compilation on VS 2008+
+  if(MSVC_VERSION GREATER_EQUAL 1500)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
   endif()
 endif()
 
