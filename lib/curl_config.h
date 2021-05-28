@@ -1,35 +1,40 @@
 /* lib/curl_config.h.  Generated from curl_config.h.in by configure.  */
 /* lib/curl_config.h.in.  Generated from configure.ac by autoheader.  */
 
+#error A
+
 /* Location of default ca bundle */
 #define CURL_CA_BUNDLE "/etc/ssl/certs/ca-certificates.crt"
+
+/* define "1" to use built-in ca store of TLS backend */
+#define CURL_CA_FALLBACK 1
 
 /* Location of default ca path */
 /* #undef CURL_CA_PATH */
 
 /* to disable cookies support */
-#define CURL_DISABLE_COOKIES
+#undef CURL_DISABLE_COOKIES
 
 /* to disable cryptographic authentication */
-#define CURL_DISABLE_CRYPTO_AUTH
+#undef CURL_DISABLE_CRYPTO_AUTH
 
 /* to disable DICT */
 #define CURL_DISABLE_DICT
 
 /* to disable FILE */
-#define CURL_DISABLE_FILE
+#undef CURL_DISABLE_FILE
 
 /* to disable FTP */
-#define CURL_DISABLE_FTP
+#undef CURL_DISABLE_FTP
 
-/* to disable Gopher */
+/* to disable GOPHER */
 #define CURL_DISABLE_GOPHER
-
-/* to disable HTTP */
-/* #undef CURL_DISABLE_HTTP */
 
 /* to disable IMAP */
 #define CURL_DISABLE_IMAP
+
+/* to disable HTTP */
+/* #undef CURL_DISABLE_HTTP */
 
 /* to disable LDAP */
 #define CURL_DISABLE_LDAP 1
@@ -40,14 +45,20 @@
 /* to disable --libcurl C code generation option */
 /* #undef CURL_DISABLE_LIBCURL_OPTION */
 
+/* to disable MQTT */
+#define CURL_DISABLE_MQTT 1
+
 /* to disable POP3 */
 #define CURL_DISABLE_POP3
 
 /* to disable proxies */
-#define CURL_DISABLE_PROXY
+#undef CURL_DISABLE_PROXY
 
 /* to disable RTSP */
 #define CURL_DISABLE_RTSP
+
+/* to disable SMB */
+#undef CURL_DISABLE_SMB 
 
 /* to disable SMTP */
 #define CURL_DISABLE_SMTP
@@ -67,14 +78,18 @@
 /* Definition to make a library symbol externally visible. */
 #define CURL_EXTERN_SYMBOL __attribute__ ((__visibility__ ("default")))
 
+/* Allow SMB to work on Windows */
+#define USE_WIN32_CRYPTO 1
+
 /* Use Windows LDAP implementation */
+#define USE_WIN32_LDAP 1
 /* #undef CURL_LDAP_WIN */
 
 /* your Entropy Gathering Daemon socket pathname */
 /* #undef EGD_SOCKET */
 
 /* Define if you want to enable IPv6 support */
-/* #define ENABLE_IPV6 1 */
+#define ENABLE_IPV6 1
 
 /* Define to the type of arg 2 for gethostname. */
 #define GETHOSTNAME_TYPE_ARG2 unsigned int
@@ -115,17 +130,20 @@
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
 
-/* Define to 1 if you have the basename function. */
+/* Define to 1 if you have the `basename' function. */
 #define HAVE_BASENAME 1
 
 /* Define to 1 if bool is an available type. */
 #define HAVE_BOOL_T 1
 
+/* Define to 1 if you have the __builtin_available function. */
+#undef HAVE_BUILTIN_AVAILABLE 
+
 /* Define to 1 if you have the clock_gettime function and monotonic timer. */
 /* #undef HAVE_CLOCK_GETTIME_MONOTONIC */
 
-/* Define to 1 if you have the closesocket function. */
-/* #undef HAVE_CLOSESOCKET */
+/* Define to 1 if you have the `closesocket' function. */
+#define HAVE_CLOSESOCKET 1
 
 /* Define to 1 if you have the CloseSocket camel case function. */
 /* #undef HAVE_CLOSESOCKET_CAMEL */
@@ -138,9 +156,6 @@
 
 /* Define to 1 if you have the <crypto.h> header file. */
 /* #undef HAVE_CRYPTO_H */
-
-/* Define to 1 if you have the <des.h> header file. */
-/* #undef HAVE_DES_H */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -178,20 +193,8 @@
 /* Define to 1 if you have the freeifaddrs function. */
 #define HAVE_FREEIFADDRS 1
 
-/* Define to 1 if you have the fsetxattr function. */
-#define HAVE_FSETXATTR 1
-
-/* fsetxattr() takes 5 args */
-#define HAVE_FSETXATTR_5 1
-
-/* fsetxattr() takes 6 args */
-/* #undef HAVE_FSETXATTR_6 */
-
 /* Define to 1 if you have the ftruncate function. */
 #define HAVE_FTRUNCATE 1
-
-/* Define to 1 if you have the gai_strerror function. */
-#define HAVE_GAI_STRERROR 1
 
 /* Define to 1 if you have a working getaddrinfo function. */
 #define HAVE_GETADDRINFO 1
@@ -201,6 +204,9 @@
 
 /* Define to 1 if you have the `geteuid' function. */
 #define HAVE_GETEUID 1
+
+/* Define to 1 if you have the `getppid' function. */
+#define HAVE_GETPPID 1
 
 /* Define to 1 if you have the gethostbyaddr function. */
 #define HAVE_GETHOSTBYADDR 1
@@ -250,8 +256,23 @@
 /* Define to 1 if you have the `getprotobyname' function. */
 #define HAVE_GETPROTOBYNAME 1
 
+/* Define to 1 if you have the `getpeername' function. */
+#define HAVE_GETPEERNAME 1
+
+/* Define to 1 if you have the `getsockname' function. */
+#define HAVE_GETSOCKNAME 1
+
+/* Define to 1 if you have the `if_nametoindex' function. */
+#define HAVE_IF_NAMETOINDEX 1
+
+/* Define to 1 if you have the `lockf' function. */
+#define HAVE_LOCKF 1
+
 /* Define to 1 if you have the `getpwuid' function. */
 #define HAVE_GETPWUID 1
+
+/* Define to 1 if you have the `getpwuid_r' function. */
+#define HAVE_GETPWUID_R 1
 
 /* Define to 1 if you have the `getrlimit' function. */
 #define HAVE_GETRLIMIT 1
@@ -322,6 +343,12 @@
 /* Define to 1 if you have a IPv6 capable working inet_pton function. */
 #define HAVE_INET_PTON 1
 
+/* Define to 1 if symbol `sa_family_t' exists */
+#define HAVE_SA_FAMILY_T 1
+
+/* Define to 1 if symbol `ADDRESS_FAMILY' exists */
+#define HAVE_ADDRESS_FAMILY 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -383,8 +410,11 @@
 /* Define to 1 if you have the <libgen.h> header file. */
 #define HAVE_LIBGEN_H 1
 
-/* Define to 1 if you have the `idn' library (-lidn). */
-/* #undef HAVE_LIBIDN */
+/* Define to 1 if you have the `idn2' library (-lidn2). */
+#define HAVE_LIBIDN2 1
+
+/* Define to 1 if you have the idn2.h header file. */
+#define HAVE_IDN2_H 1
 
 /* Define to 1 if you have the `resolv' library (-lresolv). */
 /* #undef HAVE_LIBRESOLV */
@@ -422,6 +452,15 @@
 /* if zlib is available */
 #define HAVE_LIBZ 1
 
+/* if zlib-ng is available */
+#define HAVE_LIBZ_NG 1
+
+/* if brotli is available */
+#define HAVE_BROTLI 1
+
+/* if zstd is available */
+#define HAVE_ZSTD 1
+
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
 
@@ -457,6 +496,9 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #define HAVE_NETINET_TCP_H 1
+
+/* Define to 1 if you have the <linux/tcp.h> header file. */
+/* #undef HAVE_LINUX_TCP_H */
 
 /* Define to 1 if you have the <net/if.h> header file. */
 #define HAVE_NET_IF_H 1
@@ -516,7 +558,7 @@
 /* Define to 1 if you have a working POSIX-style strerror_r function. */
 #define HAVE_POSIX_STRERROR_R 1
 
-/* if you have <pthread.h> */
+/* Define to 1 if you have the <pthread.h> header file */
 /* #undef HAVE_PTHREAD_H */
 
 /* Define to 1 if you have the <pwd.h> header file. */
@@ -534,6 +576,9 @@
 /* Define to 1 if you have the recv function. */
 #define HAVE_RECV 1
 
+/* Define to 1 if you have the recvfrom function. */
+#define HAVE_RECVFROM 1
+
 /* Define to 1 if you have the <rsa.h> header file. */
 /* #undef HAVE_RSA_H */
 
@@ -542,6 +587,15 @@
 
 /* Define to 1 if you have the send function. */
 #define HAVE_SEND 1
+
+/* Define to 1 if you have the fsetxattr function. */
+#define HAVE_FSETXATTR 1
+
+/* fsetxattr() takes 5 args */
+#define HAVE_FSETXATTR_5 1
+
+/* fsetxattr() takes 6 args */
+/* #undef HAVE_FSETXATTR_6 */
 
 /* Define to 1 if you have the <setjmp.h> header file. */
 #define HAVE_SETJMP_H 1
@@ -588,7 +642,7 @@
 /* Define to 1 if struct sockaddr_in6 has the sin6_scope_id member */
 #define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 
-/* Define to 1 if you have the socket function. */
+/* Define to 1 if you have the `socket' function. */
 #define HAVE_SOCKET 1
 
 /* Define to 1 if you have the socketpair function. */
@@ -626,6 +680,9 @@
 
 /* Define to 1 if you have the strcasecmp function. */
 #define HAVE_STRCASECMP 1
+
+/* Define to 1 if you have the strcasestr function. */
+#define HAVE_STRCASESTR 1
 
 /* Define to 1 if you have the strcmpi function. */
 /* #undef HAVE_STRCMPI */
@@ -747,6 +804,9 @@
 /* Define to 1 if you have the `utime' function. */
 #define HAVE_UTIME 1
 
+/* Define to 1 if you have the `utimes' function. */
+#define HAVE_UTIMES 1
+
 /* Define to 1 if you have the <utime.h> header file. */
 #define HAVE_UTIME_H 1
 
@@ -783,8 +843,14 @@
 /* Define to 1 if you have the <x509.h> header file. */
 /* #undef HAVE_X509_H */
 
+/* Define if you have the <process.h> header file. */
+#define HAVE_PROCESS_H 1
+
 /* if you have the zlib.h header file */
 #define HAVE_ZLIB_H 1
+
+/* if you have the zlib-ng.h header file */
+#define HAVE_ZLIB_NG_H 1
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -895,14 +961,17 @@
 /* The size of `int', as computed by sizeof. */
 #define SIZEOF_INT 4
 
+/* The size of `short', as computed by sizeof. */
+#define SIZEOF_SHORT 2
+
 /* The size of `long', as computed by sizeof. */
 #define SIZEOF_LONG 4
 
 /* The size of `off_t', as computed by sizeof. */
 #define SIZEOF_OFF_T 8
 
-/* The size of `short', as computed by sizeof. */
-#define SIZEOF_SHORT 2
+/* The size of `curl_off_t', as computed by sizeof. */
+#define SIZEOF_CURL_OFF_T 8
 
 /* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T 4
