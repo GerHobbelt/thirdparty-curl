@@ -191,6 +191,9 @@ mark_as_advanced(CURL_DISABLE_GOPHER)
 option(CURL_DISABLE_MQTT "to disable MQTT" OFF)
 mark_as_advanced(CURL_DISABLE_MQTT)
 
+option(CURL_ENABLE_EXPORT_TARGET "to enable cmake export target" ON)
+mark_as_advanced(CURL_ENABLE_EXPORT_TARGET)
+
 if(HTTP_ONLY)
   set(CURL_DISABLE_DICT ON)
   set(CURL_DISABLE_FILE ON)
@@ -381,6 +384,14 @@ if(CMAKE_USE_SECTRANSP)
   set(SSL_ENABLED ON)
   set(USE_SECTRANSP ON)
   list(APPEND CURL_LIBS "${COREFOUNDATION_FRAMEWORK}" "${SECURITY_FRAMEWORK}")
+endif()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  find_library(SYSTEMCONFIGURATION_FRAMEWORK "SystemConfiguration")
+  if(NOT SYSTEMCONFIGURATION_FRAMEWORK)
+     message(FATAL_ERROR "SystemConfiguration framework not found")
+  endif()
+  list(APPEND CURL_LIBS "${SYSTEMCONFIGURATION_FRAMEWORK}")
 endif()
 
 if(CMAKE_USE_OPENSSL)
@@ -1585,11 +1596,13 @@ configure_package_config_file(CMake/curl-config.cmake.in
         INSTALL_DESTINATION ${CURL_INSTALL_CMAKE_DIR}
 )
 
-install(
-        EXPORT "${TARGETS_EXPORT_NAME}"
-        NAMESPACE "${PROJECT_NAME}::"
-        DESTINATION ${CURL_INSTALL_CMAKE_DIR}
-)
+if(CURL_ENABLE_EXPORT_TARGET)
+  install(
+          EXPORT "${TARGETS_EXPORT_NAME}"
+          NAMESPACE "${PROJECT_NAME}::"
+          DESTINATION ${CURL_INSTALL_CMAKE_DIR}
+  )
+endif()
 
 install(
         FILES ${version_config} ${project_config}
