@@ -58,6 +58,10 @@
 #include <zlib.h>
 #endif
 
+#ifdef HAVE_ZLIB_NG_H
+#include <zlib-ng.h>
+#endif
+
 #ifdef HAVE_BROTLI
 #include <brotli/decode.h>
 #endif
@@ -122,6 +126,9 @@ char *curl_version(void)
 #ifdef HAVE_LIBZ
   char z_version[40];
 #endif
+#ifdef HAVE_LIBZ_NG
+  char zng_version[40];
+#endif
 #ifdef HAVE_BROTLI
   char br_version[40] = "brotli/";
 #endif
@@ -182,6 +189,10 @@ char *curl_version(void)
 #ifdef HAVE_LIBZ
   msnprintf(z_version, sizeof(z_version), "zlib/%s", zlibVersion());
   src[i++] = z_version;
+#endif
+#ifdef HAVE_LIBZ_NG
+  msnprintf(zng_version, sizeof(zng_version), "zlib-ng/%s", zng_zlibVersion());
+  src[i++] = zng_version;
 #endif
 #ifdef HAVE_BROTLI
   brotli_version(&br_version[7], sizeof(br_version) - 7);
