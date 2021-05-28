@@ -63,6 +63,9 @@
 /* to disable LDAPS */
 #cmakedefine CURL_DISABLE_LDAPS 1
 
+/* to disable --libcurl C code generation option */
+/* #undef CURL_DISABLE_LIBCURL_OPTION */
+
 /* to disable MQTT */
 #cmakedefine CURL_DISABLE_MQTT 1
 
@@ -147,6 +150,9 @@
 
 /* Define to 1 if you have the `closesocket' function. */
 #cmakedefine HAVE_CLOSESOCKET 1
+
+/* Define to 1 if you have the CloseSocket camel case function. */
+#cmakedefine HAVE_CLOSESOCKET_CAMEL 1
 
 /* Define to 1 if you have the `CRYPTO_cleanup_all_ex_data' function. */
 #cmakedefine HAVE_CRYPTO_CLEANUP_ALL_EX_DATA 1
@@ -422,11 +428,17 @@
 /* if zlib is available */
 #cmakedefine HAVE_LIBZ 1
 
+/* if zlib-ng is available */
+#cmakedefine HAVE_LIBZ_NG 1
+
 /* if brotli is available */
 #cmakedefine HAVE_BROTLI 1
 
 /* if zstd is available */
 #cmakedefine HAVE_ZSTD 1
+
+/* Define to 1 if you have the <limits.h> header file. */
+#cmakedefine HAVE_LIMITS_H 1
 
 /* if your compiler supports LL */
 #cmakedefine HAVE_LL 1
@@ -445,6 +457,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H 1
+
+/* Define to 1 if you have the memrchr function or macro. */
+#cmakedefine HAVE_MEMRCHR 1
 
 /* Define to 1 if you have the MSG_NOSIGNAL flag. */
 #cmakedefine HAVE_MSG_NOSIGNAL 1
@@ -596,6 +611,12 @@
 /* Define to 1 if you have the `socket' function. */
 #cmakedefine HAVE_SOCKET 1
 
+/* Define to 1 if you have the <socket.h> header file. */
+#cmakedefine HAVE_SOCKET_H 1
+
+/* Define to 1 if you have the `SSL_get_shutdown' function. */
+#cmakedefine HAVE_SSL_GET_SHUTDOWN 1
+
 /* Define to 1 if you have the <ssl.h> header file. */
 #cmakedefine HAVE_SSL_H 1
 
@@ -701,6 +722,9 @@
 /* Define to 1 if you have the <sys/utime.h> header file. */
 #cmakedefine HAVE_SYS_UTIME_H 1
 
+/* Define to 1 if you have the <sys/wait.h> header file. */
+#cmakedefine HAVE_SYS_WAIT_H 1
+
 /* Define to 1 if you have the <termios.h> header file. */
 #cmakedefine HAVE_TERMIOS_H 1
 
@@ -770,6 +794,9 @@
 /* if you have the zlib.h header file */
 #cmakedefine HAVE_ZLIB_H 1
 
+/* if you have the zlib-ng.h header file */
+#cmakedefine HAVE_ZLIB_NG_H 1
+
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #cmakedefine LT_OBJDIR ${LT_OBJDIR}
@@ -803,6 +830,9 @@
 
 /* Define to the one symbol short name of this package. */
 #cmakedefine PACKAGE_TARNAME ${PACKAGE_TARNAME}
+
+/* Define to the home page for this package. */
+#cmakedefine PACKAGE_URL ${PACKAGE_URL}
 
 /* Define to the version of this package. */
 #cmakedefine PACKAGE_VERSION ${PACKAGE_VERSION}
@@ -917,6 +947,12 @@ ${SIZEOF_SIZE_T_CODE}
 
 /* The size of `time_t', as computed by sizeof. */
 ${SIZEOF_TIME_T_CODE}
+
+/* The size of `long long', as computed by sizeof. */
+${SIZEOF_LONG_LONG_CODE}
+
+/* The size of `__int64', as computed by sizeof. */
+${SIZEOF___INT64_CODE}
 
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
