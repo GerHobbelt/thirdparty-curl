@@ -232,7 +232,11 @@ static void main_free(struct GlobalConfig *config)
 /*
 ** curl tool main function.
 */
-int curl_main(int argc, const char* argv[])
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURLcode result = CURLE_OK;
   struct GlobalConfig global;
