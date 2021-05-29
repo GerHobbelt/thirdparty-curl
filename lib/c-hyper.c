@@ -318,6 +318,8 @@ CURLcode Curl_hyper_stream(struct Curl_easy *data,
         failf(data, "Hyper: [%d] %.*s", (int)code, (int)errlen, errbuf);
         if((code == HYPERE_UNEXPECTED_EOF) && !data->req.bytecount)
           result = CURLE_GOT_NOTHING;
+        else if(code == HYPERE_INVALID_PEER_MESSAGE)
+          result = CURLE_UNSUPPORTED_PROTOCOL; /* maybe */
         else
           result = CURLE_RECV_ERROR;
       }
@@ -530,8 +532,12 @@ static int uploadpostfields(void *userdata, hyper_context *ctx,
     *chunk = NULL; /* nothing more to deliver */
   else {
     /* send everything off in a single go */
-    *chunk = hyper_buf_copy(data->set.postfields,
-                            (size_t)data->req.p.http->postsize);
+    hyper_buf *copy = hyper_buf_copy(data->set.postfields,
+                                     (size_t)data->req.p.http->postsize);
+    if(copy)
+      *chunk = copy;
+    else
+      return HYPER_POLL_ERROR;
     data->req.upload_done = TRUE;
   }
   return HYPER_POLL_READY;
@@ -550,8 +556,13 @@ static int uploadstreamed(void *userdata, hyper_context *ctx,
   if(!fillcount)
     /* done! */
     *chunk = NULL;
-  else
-    *chunk = hyper_buf_copy((uint8_t *)data->state.ulbuf, fillcount);
+  else {
+    hyper_buf *copy = hyper_buf_copy((uint8_t *)data->state.ulbuf, fillcount);
+    if(copy)
+      *chunk = copy;
+    else
+      return HYPER_POLL_ERROR;
+  }
   return HYPER_POLL_READY;
 }
 
