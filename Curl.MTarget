@@ -16,12 +16,31 @@ Compile
 		{
 			CurlTargetInDependencies true
 			MalterlibUseCurl true
-
 		}
 	}
 	
 	SearchPath += ['include'->MakeAbsolute(), `@(GetProperty("Property", "GeneratedDirectory", "Group:External.Group:curl_original.Target:Lib_Curl.Target:Lib_Curl"))curl`]
 	PreprocessorDefines += ["CURL_STATICLIB"]
+}
+
+Target
+{
+	&
+	{
+		LanguageFamily "Native"
+		TargetIsExecutable true
+		!Target.Type "Driver"
+		|
+		{
+			CurlTargetInDependencies true
+			MalterlibUseCurl true
+		}
+	}
+
+	LinkWithLibraries =+ [["-framework", "SystemConfiguration"]]
+	{
+		!!PlatformIsDarwin true
+	}
 }
 
 %Target "Lib_Curl"
