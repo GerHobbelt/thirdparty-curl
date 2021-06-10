@@ -1696,7 +1696,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_SSLCERT_BLOB:
     /*
-     * Blob that holds file name of the SSL certificate to use
+     * Blob that holds file content of the SSL certificate to use
      */
     result = Curl_setblobopt(&data->set.blobs[BLOB_CERT],
                              va_arg(param, struct curl_blob *));
@@ -1711,7 +1711,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_PROXY_SSLCERT_BLOB:
     /*
-     * Blob that holds file name of the SSL certificate to use for proxy
+     * Blob that holds file content of the SSL certificate to use for proxy
      */
     result = Curl_setblobopt(&data->set.blobs[BLOB_CERT_PROXY],
                              va_arg(param, struct curl_blob *));
@@ -1742,7 +1742,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_SSLKEY_BLOB:
     /*
-     * Blob that holds file name of the SSL key to use
+     * Blob that holds file content of the SSL key to use
      */
     result = Curl_setblobopt(&data->set.blobs[BLOB_KEY],
                              va_arg(param, struct curl_blob *));
@@ -1757,7 +1757,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_PROXY_SSLKEY_BLOB:
     /*
-     * Blob that holds file name of the SSL key to use for proxy
+     * Blob that holds file content of the SSL key to use for proxy
      */
     result = Curl_setblobopt(&data->set.blobs[BLOB_KEY_PROXY],
                              va_arg(param, struct curl_blob *));

@@ -479,7 +479,8 @@ static struct Curl_addrinfo *get_localhost6(int port)
   sa6.sin6_port = htons(port16);
   sa6.sin6_flowinfo = 0;
   sa6.sin6_scope_id = 0;
-  Curl_inet_pton(AF_INET6, "::1", ipv6);
+  if(Curl_inet_pton(AF_INET6, "::1", ipv6) < 1)
+    return NULL;
   memcpy(&sa6.sin6_addr, ipv6, sizeof(ipv6));
 
   ca->ai_flags     = 0;
@@ -511,9 +512,12 @@ static struct Curl_addrinfo *get_localhost(int port)
   if(!ca)
     return NULL;
 
+  /* memset to clear the sa.sin_zero field */
+  memset(&sa, 0, sizeof(sa));
   sa.sin_family = AF_INET;
   sa.sin_port = htons(port16);
-  Curl_inet_pton(AF_INET, "127.0.0.1", (char *)&ipv4);
+  if(Curl_inet_pton(AF_INET, "127.0.0.1", (char *)&ipv4) < 1)
+    return NULL;
   memcpy(&sa.sin_addr, &ipv4, sizeof(ipv4));
 
   ca->ai_flags     = 0;

@@ -1213,8 +1213,12 @@ CURLcode Curl_readwrite(struct connectdata *conn,
   }
 
 #ifdef USE_HYPER
-  if(conn->datastream)
-    return conn->datastream(data, conn, &didwhat, done, select_res);
+  if(conn->datastream) {
+    result = conn->datastream(data, conn, &didwhat, done, select_res);
+    if(result || *done)
+      return result;
+  }
+  else {
 #endif
   /* We go ahead and do a read if we have a readable socket or if
      the stream was rewound (in which case we have data in a
@@ -1233,6 +1237,9 @@ CURLcode Curl_readwrite(struct connectdata *conn,
     if(result)
       return result;
   }
+#ifdef USE_HYPER
+  }
+#endif
 
   k->now = Curl_now();
   if(!didwhat) {

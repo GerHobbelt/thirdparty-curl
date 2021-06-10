@@ -410,8 +410,9 @@ bool Curl_ssl_getsessionid(struct Curl_easy *data,
 
   DEBUGASSERT(SSL_SET_OPTION(primary.sessionid));
 
-  if(!SSL_SET_OPTION(primary.sessionid))
-    /* session ID re-use is disabled */
+  if(!SSL_SET_OPTION(primary.sessionid) || !data->state.session)
+    /* session ID re-use is disabled or the session cache has not been
+       setup */
     return TRUE;
 
   /* Lock if shared */
@@ -501,8 +502,8 @@ CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
                                int sockindex)
 {
   size_t i;
-  struct Curl_ssl_session *store = &data->state.session[0];
-  long oldest_age = data->state.session[0].age; /* zero if unused */
+  struct Curl_ssl_session *store;
+  long oldest_age;
   char *clone_host;
   char *clone_conn_to_host;
   int conn_to_port;
@@ -518,6 +519,11 @@ CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
   const char *hostname = conn->host.name;
 #endif
   (void)sockindex;
+  if(!data->state.session)
+    return CURLE_OK;
+
+  store = &data->state.session[0];
+  oldest_age = data->state.session[0].age; /* zero if unused */
   DEBUGASSERT(SSL_SET_OPTION(primary.sessionid));
 
   clone_host = strdup(hostname);
