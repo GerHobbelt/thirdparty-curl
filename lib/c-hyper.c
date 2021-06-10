@@ -186,7 +186,13 @@ static int hyper_body_chunk(void *userdata, const hyper_buf *chunk)
       Curl_safefree(data->req.newurl);
     }
 #endif
-    result = Curl_http_firstwrite(data, data->conn, &done);
+    if(data->state.hconnect &&
+       (data->req.httpcode/100 != 2)) {
+      done = TRUE;
+      result = CURLE_OK;
+    }
+    else
+      result = Curl_http_firstwrite(data, data->conn, &done);
     if(result || done) {
       infof(data, "Return early from hyper_body_chunk\n");
       data->state.hresult = result;
@@ -562,6 +568,10 @@ static int uploadpostfields(void *userdata, hyper_context *ctx,
       *chunk = copy;
     else
       return HYPER_POLL_ERROR;
+    /* increasing the writebytecount here is a little premature but we
+       don't know exactly when the body is sent*/
+    data->req.writebytecount += (size_t)data->req.p.http->postsize;
+    Curl_pgrsSetUploadCounter(data, data->req.writebytecount);
     data->req.upload_done = TRUE;
   }
   return HYPER_POLL_READY;
@@ -586,6 +596,10 @@ static int uploadstreamed(void *userdata, hyper_context *ctx,
       *chunk = copy;
     else
       return HYPER_POLL_ERROR;
+    /* increasing the writebytecount here is a little premature but we
+       don't know exactly when the body is sent*/
+    data->req.writebytecount += fillcount;
+    Curl_pgrsSetUploadCounter(data, fillcount);
   }
   return HYPER_POLL_READY;
 }
