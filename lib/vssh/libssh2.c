@@ -2950,6 +2950,7 @@ static CURLcode ssh_block_statemach(struct Curl_easy *data,
 {
   struct ssh_conn *sshc = &conn->proto.sshc;
   CURLcode result = CURLE_OK;
+  struct curltime dis = Curl_now();
 
   while((sshc->state != SSH_STOP) && !result) {
     bool block;
@@ -2973,6 +2974,12 @@ static CURLcode ssh_block_statemach(struct Curl_easy *data,
         failf(data, "Operation timed out");
         return CURLE_OPERATION_TIMEDOUT;
       }
+    }
+    else if(Curl_timediff(now, dis) > 1000) {
+      /* disconnect timeout */
+      failf(data, "Disconnect timed out");
+      result = CURLE_OK;
+      break;
     }
 
     if(block) {
