@@ -66,6 +66,7 @@ CURL_CFILES = \
   tool_easysrc.c \
   tool_filetime.c \
   tool_formparse.c \
+  tool_getenv.c \
   tool_getparam.c \
   tool_getpass.c \
   tool_help.c \

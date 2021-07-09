@@ -358,7 +358,7 @@ sub nostrings {
 
 sub scanfile {
     my ($file) = @_;
-
+    my $istoolsrc = ($file =~ /(^|[\\\/])(src[\\\/]|tool_)[^\\\/]+$/) ? 1 : 0;
     my $line = 1;
     my $prevl="";
     my $l;
@@ -637,6 +637,13 @@ sub scanfile {
             checkwarn("BANNEDFUNC",
                       $line, length($1), $file, $ol,
                       "use of $2 is banned");
+        }
+
+        # scan for use of curl_getenv, banned only in the curl tool
+        if($istoolsrc && $l =~ /^(.*\W)(curlx?_getenv)\s*\(/x) {
+            checkwarn("BANNEDFUNC",
+                      $line, length($1), $file, $ol,
+                      "use of $2 is banned in curl tool, use tool_getenv.h");
         }
 
         # scan for use of snprintf for curl-internals reasons

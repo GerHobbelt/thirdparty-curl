@@ -1,5 +1,3 @@
-#ifndef HEADER_CURL_TOOL_HOMEDIR_H
-#define HEADER_CURL_TOOL_HOMEDIR_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -7,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -25,21 +23,55 @@
 
 #include "tool_getenv.h"
 
-char *tool_homedir(const char *fname, char *(*funcptr_getenv)(const char *));
-
-/* home directory in current locale encoding */
-#define homedir_local(fname) tool_homedir((fname), tool_getenv_local)
+#include "curlx.h"
+#include "memdebug.h" /* keep this as LAST include */
 
 #if defined(WIN32) && defined(_UNICODE)
-/* home directory in unicode utf-8 encoding. */
-#define homedir_utf8(fname) tool_homedir((fname), tool_getenv_utf8)
-/* Windows Unicode builds of curl/libcurl always expect UTF-8 strings for
-   internal file paths, regardless of current locale. For paths passed to a
-   dependency that always expects local encoding, call homedir_local directly
-   instead. */
-#define homedir(variable) homedir_utf8(variable)
-#else
-#define homedir(variable) homedir_local(variable)
-#endif
+char *tool_getenv_utf8(const char *variable)
+{
+  char *buf;
+  WCHAR *w_buf, *w_var;
+  DWORD count, rc;
 
-#endif /* HEADER_CURL_TOOL_HOMEDIR_H */
+  w_var = curlx_convert_UTF8_to_wchar(variable);
+  if(!w_var)
+    return NULL;
+
+  count = GetEnvironmentVariableW(w_var, NULL, 0);
+  if(!count || count > 32768) {
+    free(w_var);
+    return NULL;
+  }
+
+  w_buf = malloc(count * sizeof(WCHAR));
+  if(!w_buf) {
+    free(w_var);
+    return NULL;
+  }
+
+  rc = GetEnvironmentVariableW(w_var, w_buf, count);
+  if(!rc || rc >= count) {
+    free(w_var);
+    free(w_buf);
+    return NULL;
+  }
+
+  buf = curlx_convert_wchar_to_UTF8(w_buf);
+  free(w_var);
+  free(w_buf);
+  return buf;
+}
+#endif /* WIN32 && _UNICODE */
+
+char *tool_getenv_local(const char *variable)
+{
+  char *dupe, *env;
+  /* !checksrc! disable BANNEDFUNC 1 */
+  env = curl_getenv(variable);
+  if(!env)
+    return NULL;
+
+  dupe = strdup(env);
+  curl_free(env);
+  return dupe;
+}

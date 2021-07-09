@@ -1644,7 +1644,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
         if((built_in_protos & (CURLPROTO_SCP|CURLPROTO_SFTP)) &&
            !config->insecure_ok) {
-          char *home = homedir(NULL);
+          char *home = homedir_local(NULL);
           if(home) {
             char *file = aprintf("%s/.ssh/known_hosts", home);
             if(file) {
@@ -2351,7 +2351,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
      */
     if(tls_backend_info->backend != CURLSSLBACKEND_SCHANNEL) {
       char *env;
-      env = curlx_getenv("CURL_CA_BUNDLE");
+      env = tool_getenv_local("CURL_CA_BUNDLE");
       if(env) {
         config->cacert = strdup(env);
         if(!config->cacert) {
@@ -2361,7 +2361,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
         }
       }
       else {
-        env = curlx_getenv("SSL_CERT_DIR");
+        env = tool_getenv_local("SSL_CERT_DIR");
         if(env) {
           config->capath = strdup(env);
           if(!config->capath) {
@@ -2372,7 +2372,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
           capath_from_env = true;
         }
         else {
-          env = curlx_getenv("SSL_CERT_FILE");
+          env = tool_getenv_local("SSL_CERT_FILE");
           if(env) {
             config->cacert = strdup(env);
             if(!config->cacert) {

@@ -35,6 +35,7 @@
 #include "tool_cfgable.h"
 #include "tool_msgs.h"
 #include "tool_cb_wrt.h"
+#include "tool_getenv.h"
 #include "tool_operate.h"
 
 #include "memdebug.h" /* keep this as LAST include */
@@ -127,7 +128,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
 
 #ifdef DEBUGBUILD
   {
-    char *tty = curlx_getenv("CURL_ISATTY");
+    char *tty = tool_getenv("CURL_ISATTY");
     if(tty) {
       is_tty = TRUE;
       curl_free(tty);
