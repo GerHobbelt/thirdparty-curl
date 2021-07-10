@@ -1003,7 +1003,7 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
         char buffer[STRERROR_LEN];
         Curl_printable_address(conn->tempaddr[i], ipaddress,
                                sizeof(ipaddress));
-        infof(data, "connect to %s port %ld failed: %s\n",
+        infof(data, "connect to %s port %u failed: %s\n",
               ipaddress, conn->port,
               Curl_strerror(error, buffer, sizeof(buffer)));
 #endif
@@ -1061,7 +1061,7 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
     else
       hostname = conn->host.name;
 
-    failf(data, "Failed to connect to %s port %ld after %ld ms: %s",
+    failf(data, "Failed to connect to %s port %u after %ld ms: %s",
         hostname, conn->port,
         Curl_timediff(now, data->progress.t_startsingle),
         Curl_strerror(error, buffer, sizeof(buffer)));
