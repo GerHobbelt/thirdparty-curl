@@ -895,15 +895,6 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
 
   now = Curl_now();
 
-  /* figure out how long time we have left to connect */
-  allow = Curl_timeleft(data, &now, TRUE);
-
-  if(allow < 0) {
-    /* time-out, bail out, go home */
-    failf(data, "Connection time-out");
-    return CURLE_OPERATION_TIMEDOUT;
-  }
-
   if(SOCKS_STATE(conn->cnnct.state)) {
     /* still doing SOCKS */
     result = connect_SOCKS(data, sockindex, connected);
@@ -1017,8 +1008,9 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
               Curl_strerror(error, buffer, sizeof(buffer)));
 #endif
 
-        conn->timeoutms_per_addr[i] =
-          timeout_per_addr(data, allow, conn->tempaddr[i]->ai_next != NULL);
+        allow = Curl_timeleft(data, &now, TRUE);
+        conn->timeoutms_per_addr[i] = conn->tempaddr[i]->ai_next == NULL ?
+          allow : allow / 2;
         ainext(conn, i, TRUE);
         status = trynextip(data, conn, sockindex, i);
         if((status != CURLE_COULDNT_CONNECT) ||
@@ -1027,6 +1019,21 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
           result = status;
       }
     }
+  }
+
+  /*
+   * Now that we've checked whether we are connected, check whether we've
+   * already timed out.
+   *
+   * First figure out how long time we have left to connect */
+
+  allow = Curl_timeleft(data, &now, TRUE);
+
+  if(allow < 0) {
+    /* time-out, bail out, go home */
+    failf(data, "Connection timeout after %ld ms",
+          Curl_timediff(now, data->progress.t_startsingle));
+    return CURLE_OPERATION_TIMEDOUT;
   }
 
   if(result &&
@@ -1054,9 +1061,10 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
     else
       hostname = conn->host.name;
 
-    failf(data, "Failed to connect to %s port %ld: %s",
-          hostname, conn->port,
-          Curl_strerror(error, buffer, sizeof(buffer)));
+    failf(data, "Failed to connect to %s port %ld after %ld ms: %s",
+        hostname, conn->port,
+        Curl_timediff(now, data->progress.t_startsingle),
+        Curl_strerror(error, buffer, sizeof(buffer)));
 
     Curl_quic_disconnect(data, conn, 0);
     Curl_quic_disconnect(data, conn, 1);
