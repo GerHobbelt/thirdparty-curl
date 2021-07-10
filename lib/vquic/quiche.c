@@ -463,8 +463,7 @@ static CURLcode flush_egress(struct Curl_easy *data, int sockfd,
       return CURLE_SEND_ERROR;
     }
 
-    while((socksent = sendto(sockfd, out, sent, 0,
-                  (struct sockaddr *)&send_info.to, send_info.to_len)) == -1 && errno == EINTR)
+    while((socksent = send(sockfd, out, sent, 0)) == -1 && errno == EINTR)
       ;
     if(socksent < 0) {
       if(errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -473,6 +472,7 @@ static CURLcode flush_egress(struct Curl_easy *data, int sockfd,
         return CURLE_AGAIN;
       }
       else {
+        failf(data, "send() returned %zd", socksent);
         return CURLE_SEND_ERROR;
       }
     }
