@@ -29,6 +29,7 @@
 
 #include "tool_cfgable.h"
 #include "tool_doswin.h"
+#include "tool_getenv.h"
 #include "tool_msgs.h"
 #include "tool_cb_hdr.h"
 #include "tool_cb_wrt.h"
@@ -295,7 +296,7 @@ static char *parse_filename(const char *ptr, size_t len)
    */
 #ifdef DEBUGBUILD
   {
-    char *tdir = curlx_getenv("CURL_TESTDIR");
+    char *tdir = tool_getenv("CURL_TESTDIR");
     if(tdir) {
       char buffer[512]; /* suitably large */
       msnprintf(buffer, sizeof(buffer), "%s/%s", tdir, copy);

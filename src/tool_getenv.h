@@ -1,5 +1,5 @@
-#ifndef HEADER_CURL_TOOL_HOMEDIR_H
-#define HEADER_CURL_TOOL_HOMEDIR_H
+#ifndef HEADER_CURL_TOOL_GETENV_H
+#define HEADER_CURL_TOOL_GETENV_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -23,23 +23,22 @@
  ***************************************************************************/
 #include "tool_setup.h"
 
-#include "tool_getenv.h"
-
-char *tool_homedir(const char *fname, char *(*funcptr_getenv)(const char *));
-
-/* home directory in current locale encoding */
-#define homedir_local(fname) tool_homedir((fname), tool_getenv_local)
-
 #if defined(WIN32) && defined(_UNICODE)
-/* home directory in unicode utf-8 encoding. */
-#define homedir_utf8(fname) tool_homedir((fname), tool_getenv_utf8)
-/* Windows Unicode builds of curl/libcurl always expect UTF-8 strings for
-   internal file paths, regardless of current locale. For paths passed to a
-   dependency that always expects local encoding, call homedir_local directly
-   instead. */
-#define homedir(variable) homedir_utf8(variable)
-#else
-#define homedir(variable) homedir_local(variable)
+/* returns environment variable value in Unicode UTF-8 encoding. */
+char *tool_getenv_utf8(const char *variable);
 #endif
 
-#endif /* HEADER_CURL_TOOL_HOMEDIR_H */
+/* returns environment variable value in current locale encoding. */
+char *tool_getenv_local(const char *variable);
+
+#if defined(WIN32) && defined(_UNICODE)
+/* Windows Unicode builds of curl/libcurl always expect UTF-8 strings for
+   internal file paths, regardless of current locale. For paths (or other
+   values) passed to a dependency that will always expect local encoding, call
+   tool_getenv_local directly instead.*/
+#define tool_getenv(variable) tool_getenv_utf8(variable)
+#else
+#define tool_getenv(variable) tool_getenv_local(variable)
+#endif
+
+#endif /* HEADER_CURL_TOOL_GETENV_H */

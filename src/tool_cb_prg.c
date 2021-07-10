@@ -31,6 +31,7 @@
 
 #include "tool_cfgable.h"
 #include "tool_cb_prg.h"
+#include "tool_getenv.h"
 #include "tool_util.h"
 #include "tool_operate.h"
 
@@ -221,7 +222,7 @@ void progressbarinit(struct ProgressData *bar,
   if(config->use_resume)
     bar->initial_size = config->resume_from;
 
-  colp = curlx_getenv("COLUMNS");
+  colp = tool_getenv("COLUMNS");
   if(colp) {
     char *endptr;
     long num = strtol(colp, &endptr, 10);
