@@ -203,11 +203,9 @@ static int hyper_body_chunk(void *userdata, const hyper_buf *chunk)
       }
       else { /* >= 4xx */
         k->exp100 = EXP100_FAILED;
-        done = TRUE;
       }
     }
-    if(data->state.hconnect &&
-       (data->req.httpcode/100 != 2)) {
+    if(data->state.hconnect && (data->req.httpcode/100 != 2)) {
       done = TRUE;
       result = CURLE_OK;
     }
@@ -259,6 +257,9 @@ static CURLcode status_line(struct Curl_easy *data,
   conn->httpversion =
     http_version == HYPER_HTTP_VERSION_1_1 ? 11 :
     (http_version == HYPER_HTTP_VERSION_2 ? 20 : 10);
+  if(http_version == HYPER_HTTP_VERSION_1_0)
+    data->state.httpwant = CURL_HTTP_VERSION_1_0;
+
   data->req.httpcode = http_status;
 
   result = Curl_http_statusline(data, conn);
@@ -596,6 +597,16 @@ static int uploadpostfields(void *userdata, hyper_context *ctx,
 {
   struct Curl_easy *data = (struct Curl_easy *)userdata;
   (void)ctx;
+  if(data->req.exp100 > EXP100_SEND_DATA) {
+    if(data->req.exp100 == EXP100_FAILED)
+      return HYPER_POLL_ERROR;
+
+    /* still waiting confirmation */
+    if(data->hyp.exp100_waker)
+      hyper_waker_free(data->hyp.exp100_waker);
+    data->hyp.exp100_waker = hyper_context_waker(ctx);
+    return HYPER_POLL_PENDING;
+  }
   if(data->req.upload_done)
     *chunk = NULL; /* nothing more to deliver */
   else {
@@ -892,7 +903,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
     goto error;
   }
 
-  if(data->state.httpwant == CURL_HTTP_VERSION_1_0) {
+  if(!Curl_use_http_1_1plus(data, conn)) {
     if(HYPERE_OK != hyper_request_set_version(req,
                                               HYPER_HTTP_VERSION_1_0)) {
       failf(data, "error setting HTTP version");
