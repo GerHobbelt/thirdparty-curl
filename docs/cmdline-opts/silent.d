@@ -4,6 +4,7 @@ Help: Silent mode
 Category: important verbose
 See-also: verbose stderr no-progress-meter
 Category: important verbose
+Example: -s $URL
 ---
 Silent or quiet mode. Don't show progress meter or error messages.  Makes Curl
 mute. It will still output the data you ask for, potentially even to the
