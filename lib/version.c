@@ -54,7 +54,7 @@
 #include <librtmp/rtmp.h>
 #endif
 
-#ifdef HAVE_ZLIB_H
+#if defined(HAVE_ZLIB_H) && !defined(HAVE_ZLIB_NG_H)
 #include <zlib.h>
 #endif
 

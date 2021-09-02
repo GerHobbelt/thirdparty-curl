@@ -26,7 +26,7 @@
 #include <curl/curl.h>
 #include <stddef.h>
 
-#ifdef HAVE_ZLIB_H
+#if defined(HAVE_ZLIB_H) && !defined(HAVE_ZLIB_NG_H)
 #include <zlib.h>
 #endif
 #ifdef HAVE_ZLIB_NG_H
@@ -60,7 +60,7 @@
 
 /* Comment this out if zlib is always going to be at least ver. 1.2.0.4
    (doing so will reduce code size slightly). */
-#undef OLD_ZLIB_SUPPORT 
+#undef OLD_ZLIB_SUPPORT
 
 #define GZIP_MAGIC_0 0x1f
 #define GZIP_MAGIC_1 0x8b
