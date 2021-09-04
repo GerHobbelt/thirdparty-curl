@@ -1023,7 +1023,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
         err = str2unum(&config->localport, n_a);
 		free(n_a);
-		
+
         if(err || (config->localport > 65535))
           return PARAM_BAD_USE;
         if(!rc)
@@ -2329,7 +2329,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 }
 
 ParameterError parse_args(struct GlobalConfig *global, int argc,
-                          const char* argv[])
+                          const char** argv)
 {
   int i;
   bool stillflags;

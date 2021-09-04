@@ -2503,7 +2503,7 @@ static CURLcode run_all_transfers(struct GlobalConfig *global,
   return result;
 }
 
-CURLcode operate(struct GlobalConfig *global, int argc, const char* argv[])
+CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
 {
   CURLcode result = CURLE_OK;
   const char *first_arg = argc > 1 ? argv[1] : NULL;

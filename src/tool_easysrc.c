@@ -52,7 +52,7 @@ static const char *const srchead[]={
   " ************************************************************************/",
   "#include <curl/curl.h>",
   "",
-  "int main(int argc, char *argv[])",
+  "int main(int argc, const char** argv)",
   "{",
   "  CURLcode ret;",
   "  CURL *hnd;",
