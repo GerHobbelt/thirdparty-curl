@@ -5,6 +5,7 @@ Category: curl
 See-also: no-progress-meter
 Category: curl
 Example: --show-error --silent $URL
+Added: 5.9
 ---
 When used with --silent, it makes curl show an error message if it fails.
 
