@@ -103,6 +103,8 @@ CURLcode Curl_win32_init(long flags)
   }
 
 #if 0 // [GHo] moved to timeval.c
+  /* curlx_verify_windows_version must be called during init at least once
+     because it has its own initialization routine. */
   if(curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
                                   VERSION_GREATER_THAN_EQUAL)) {
     Curl_isVistaOrGreater = TRUE;
@@ -115,6 +117,11 @@ CURLcode Curl_win32_init(long flags)
   // [GHo]
   // Curl_now() + Curl_timediff() have been processed to be used independently of the rest of curl,
   // hence also independent from this curl lib init function here.
+
+  /* curlx_verify_windows_version must be called during init at least once
+     because it has its own initialization routine. */
+  (void)curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
+                                  VERSION_GREATER_THAN_EQUAL);
 #endif
   return CURLE_OK;
 }

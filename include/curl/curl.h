@@ -46,8 +46,8 @@
 #include <stdio.h>
 #include <limits.h>
 
-#if defined(__FreeBSD__) && (__FreeBSD__ >= 2)
-/* Needed for __FreeBSD_version symbol definition */
+#if (defined(__FreeBSD__) && (__FreeBSD__ >= 2)) || defined(__MidnightBSD__)
+/* Needed for __FreeBSD_version or __MidnightBSD_version symbol definition */
 #include <osreldate.h>
 #endif
 
@@ -75,6 +75,7 @@
     defined(ANDROID) || defined(__ANDROID__) || defined(__OpenBSD__) || \
     defined(__CYGWIN__) || defined(AMIGA) || defined(__NuttX__) || \
    (defined(__FreeBSD_version) && (__FreeBSD_version < 800000)) || \
+   (defined(__MidnightBSD_version) && (__MidnightBSD_version < 100000)) || \
     defined(__VXWORKS__)
 #include <sys/select.h>
 #endif
@@ -2066,7 +2067,8 @@ typedef enum {
   /* alt-svc cache file name to possibly read from/write to */
   CURLOPT(CURLOPT_ALTSVC, CURLOPTTYPE_STRINGPOINT, 287),
 
-  /* maximum age of a connection to consider it for reuse (in seconds) */
+  /* maximum age (idle time) of a connection to consider it for reuse
+   * (in seconds) */
   CURLOPT(CURLOPT_MAXAGE_CONN, CURLOPTTYPE_LONG, 288),
 
   /* SASL authorisation identity */
@@ -2135,11 +2137,15 @@ typedef enum {
   /* Data passed to the CURLOPT_PREREQFUNCTION callback */
   CURLOPT(CURLOPT_PREREQDATA, CURLOPTTYPE_CBPOINT, 313),
 
+  /* maximum age (since creation) of a connection to consider it for reuse
+   * (in seconds) */
+  CURLOPT(CURLOPT_MAXLIFETIME_CONN, CURLOPTTYPE_LONG, 314),
+
   /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 314),
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 315),
 
   /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
-  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 315),
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 316),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
