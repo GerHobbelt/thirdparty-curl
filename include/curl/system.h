@@ -479,8 +479,7 @@
 #include <stddef.h>
 /* for the base type etc */
 #include "portmacro.h"
-#define curl_fd_set_typedefed
-typedef SocketSet_t curl_fd_set;
+#define curl_fd_set SocketSet_t
 #define curl_struct_sockaddr freertos_sockaddr
 #define curl_setsockopt(a,b,c,d,e) FreeRTOS_setsockopt(a,b,c,d,e)
 #define curl_connect(a,b,c) FreeRTOS_connect(a,b,c)
@@ -500,8 +499,7 @@ typedef SocketSet_t curl_fd_set;
 typedef _size_t size_t;
 typedef _time_t time_t;
 
-#define curl_fd_set_typedefed
-typedef struct fd_set curl_fd_set;
+#define curl_fd_set struct fd_set
 
 #endif
 
@@ -561,9 +559,8 @@ typedef struct fd_set curl_fd_set;
 #ifndef curl_struct_sockaddr
 #define curl_struct_sockaddr sockaddr
 #endif
-#ifndef curl_fd_set_typedefed
-#define curl_fd_set_typedefed
-typedef fd_set curl_fd_set;
+#ifndef curl_fd_set
+#define curl_fd_set fd_set
 #endif
 #ifndef curl_pollfd
 #define curl_pollfd pollfd
