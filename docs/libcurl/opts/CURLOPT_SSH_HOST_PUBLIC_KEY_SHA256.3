@@ -19,23 +19,42 @@
 .\" * KIND, either express or implied.
 .\" *
 .\" **************************************************************************
-.TH curl_easy_strerror 3 "26 Apr 2004" "libcurl 7.12" "libcurl Manual"
+.\"
+.TH CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 3 "27 Aug 2021" "libcurl 7.80.0" "curl_easy_setopt options"
 .SH NAME
-curl_easy_strerror - return string describing error code
+CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 \- SHA256 hash of SSH server public key
 .SH SYNOPSIS
+.nf
 #include <curl/curl.h>
 
-const char *curl_easy_strerror(CURLcode errornum);
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256,
+                          char *sha256);
 .SH DESCRIPTION
-The \fIcurl_easy_strerror(3)\fP function returns a string describing the
-CURLcode error code passed in the argument \fIerrornum\fP.
+Pass a char * pointing to a string containing a Base64-encoded SHA256
+hash of the remote host's public key.
+The transfer will fail if the given hash doesn't match the hash the
+remote host provides.
 
-Typically applications also appreciate \fICURLOPT_ERRORBUFFER(3)\fP for more
-specific error descriptions generated at run-time.
+.SH DEFAULT
+NULL
+.SH PROTOCOLS
+SCP and SFTP
+.SH EXAMPLE
+.nf
+CURL *curl = curl_easy_init();
+if(curl) {
+  curl_easy_setopt(curl, CURLOPT_URL, "sftp://example.com/file");
+  curl_easy_setopt(curl, CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256,
+                   "NDVkMTQxMGQ1ODdmMjQ3MjczYjAyOTY5MmRkMjVmNDQ=");
+  ret = curl_easy_perform(curl);
+  curl_easy_cleanup(curl);
+}
+.fi
 .SH AVAILABILITY
-This function was added in libcurl 7.12.0
+Added in 7.80.0
+Requires the libssh2 back-end.
 .SH RETURN VALUE
-A pointer to a null-terminated string.
+Returns CURLE_OK if the option is supported, CURLE_UNKNOWN_OPTION if not, or
+CURLE_OUT_OF_MEMORY if there was insufficient heap space.
 .SH "SEE ALSO"
-.BR libcurl-errors "(3), " curl_multi_strerror "(3), "
-.BR curl_share_strerror "(3), " curl_url_strerror "(3)"
+.BR CURLOPT_SSH_PUBLIC_KEYFILE "(3), " CURLOPT_SSH_AUTH_TYPES "(3), "
