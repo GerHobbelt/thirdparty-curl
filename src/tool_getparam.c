@@ -2093,7 +2093,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         if(!config->range)
           return PARAM_NO_MEM;
       }
-      {
+      else {
         /* byte range requested */
         const char *tmp_range = nextarg;
         while(*tmp_range != '\0') {
@@ -2106,7 +2106,6 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           }
           tmp_range++;
         }
-        /* byte range requested */
         GetStr(&config->range, nextarg);
       }
       break;
