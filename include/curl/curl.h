@@ -2138,6 +2138,9 @@ typedef enum {
   /* Connection timeout per address attempt in milliseconds */
   CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 314),
 
+  /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 315),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
