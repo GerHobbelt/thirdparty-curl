@@ -868,7 +868,24 @@ typedef int
                           const struct curl_khkey *knownkey, /* known */
                           const struct curl_khkey *foundkey, /* found */
                           enum curl_khmatch, /* libcurl's view on the keys */
-                          void *clientp); /* custom pointer passed from app */
+                          void *clientp); /* custom pointer passed with CURLOPT_SSH_KEYDATA */
+
+/* this is the set of return values expected from the curl_sshhostkeycallback
+   callback */
+enum curl_khcheck {
+  CURLKHCHECK_UNKNOWN,
+  CURLKHCHECK_FINE,   /* accept the connection */
+  CURLKHCHECK_REJECT, /* reject the connection, return an error */
+  CURLKHCHECK_LAST    /* not for use, only a marker for last-in-list */
+};
+
+typedef int
+  (*curl_sshhostkeycallback) (void *clientp,/* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
+                          int keytype, /* CURLKHTYPE */
+                          const char *key, /*hostkey to check*/
+                          size_t keylen); /*length of the key*/
+                          /*return CURLE_OK to accept or something else to refuse*/
+
 
 /* parameter for the CURLOPT_USE_SSL option */
 typedef enum {
@@ -2131,6 +2148,13 @@ typedef enum {
   /* maximum age (since creation) of a connection to consider it for reuse
    * (in seconds) */
   CURLOPT(CURLOPT_MAXLIFETIME_CONN, CURLOPTTYPE_LONG, 314),
+
+  /* set the SSH host key callback, must point to a curl_sshkeycallback
+     function */
+  CURLOPT(CURLOPT_SSH_HOSTKEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 315),
+
+  /* set the SSH host key callback custom pointer */
+  CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 316),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;

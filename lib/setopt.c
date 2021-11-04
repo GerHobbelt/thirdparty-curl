@@ -2494,6 +2494,18 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
                             va_arg(param, char *));
     break;
 
+  case CURLOPT_SSH_HOSTKEYFUNCTION:
+    /* the callback to check the hostkey without the knownhost file */
+    data->set.ssh_hostkeyfunc = va_arg(param, curl_sshhostkeycallback);
+    break;
+
+  case CURLOPT_SSH_HOSTKEYDATA:
+    /*
+     * Custom client data to pass to the SSH keyfunc callback
+     */
+    data->set.ssh_hostkeyfunc_userp = va_arg(param, void *);
+    break;
+
   case CURLOPT_SSH_KEYFUNCTION:
     /* setting to NULL is fine since the ssh.c functions themselves will
        then revert to use the internal default */
