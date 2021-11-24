@@ -2158,18 +2158,21 @@ typedef enum {
    * (in seconds) */
   CURLOPT(CURLOPT_MAXLIFETIME_CONN, CURLOPTTYPE_LONG, 314),
 
+  /* Set MIME option flags. */
+  CURLOPT(CURLOPT_MIME_OPTIONS, CURLOPTTYPE_LONG, 315),
+
   /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 315),
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 316),
 
   /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
-  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 316),
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 317),
   
   /* set the SSH host key callback, must point to a curl_sshkeycallback
      function */
-  CURLOPT(CURLOPT_SSH_HOSTKEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 317),
+  CURLOPT(CURLOPT_SSH_HOSTKEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 318),
 
   /* set the SSH host key callback custom pointer */
-  CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 318),
+  CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 319),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
@@ -2329,6 +2332,9 @@ CURL_EXTERN int curl_strnequal(const char *s1, const char *s2, size_t n);
 /* Mime/form handling support. */
 typedef struct curl_mime      curl_mime;      /* Mime context. */
 typedef struct curl_mimepart  curl_mimepart;  /* Mime part context. */
+
+/* CURLMIMEOPT_ defines are for the CURLOPT_MIME_OPTIONS option. */
+#define CURLMIMEOPT_FORMESCAPE  (1<<0) /* Use backslash-escaping for forms. */
 
 /*
  * NAME curl_mime_init()

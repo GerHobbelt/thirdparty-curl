@@ -138,7 +138,7 @@ static const struct LongShort aliases[]= {
   {"$h", "retry-delay",              ARG_STRING},
   {"$i", "retry-max-time",           ARG_STRING},
   {"$k", "proxy-negotiate",          ARG_BOOL},
-  {"$l", "tcp-maxseg",               ARG_STRING},
+  {"$l", "form-escape",              ARG_BOOL},
   {"$m", "ftp-account",              ARG_STRING},
   {"$n", "proxy-anyauth",            ARG_BOOL},
   {"$o", "trace-time",               ARG_BOOL},
@@ -338,6 +338,7 @@ static const struct LongShort aliases[]= {
   {"Zb", "parallel-max",             ARG_STRING},
   {"Zc", "parallel-immediate",       ARG_BOOL},
   {"#",  "progress-bar",             ARG_BOOL},
+  {"#l", "tcp-maxseg",               ARG_STRING},
   {"#m", "progress-meter",           ARG_BOOL},
   {":",  "next",                     ARG_NONE},
 };
@@ -989,11 +990,12 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           return PARAM_LIBCURL_DOESNT_SUPPORT;
         break;
 
-      case 'l': /* --tcp-maxseg */
-        err = str2unummax(&config->tcp_maxseg, nextarg, 65535);
-        if(err)
-          return err;
+      case 'l': /* --form-escape */
+        config->mime_options &= ~CURLMIMEOPT_FORMESCAPE;
+        if(toggle)
+          config->mime_options |= CURLMIMEOPT_FORMESCAPE;
         break;
+
       case 'm': /* --ftp-account */
         GetStr(&config->ftp_account, nextarg);
         break;
@@ -1222,6 +1224,11 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       break;
     case '#':
       switch(subletter) {
+      case 'l': /* --tcp-maxseg */
+        err = str2unummax(&config->tcp_maxseg, nextarg, 65535);
+        if(err)
+          return err;
+        break;
       case 'm': /* --progress-meter */
         global->noprogress = !toggle;
         break;
