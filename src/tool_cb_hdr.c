@@ -172,12 +172,12 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         outs->filename = filename;
         outs->alloc_filename = TRUE;
         hdrcbdata->honor_cd_filename = FALSE; /* done now! */
-        if(!tool_create_output_file(outs, per->config))
+        if(!tool_create_output_file(outs, per))
           return failure;
       }
       break;
     }
-    if(!outs->stream && !tool_create_output_file(outs, per->config))
+    if(!outs->stream && !tool_create_output_file(outs, per))
       return failure;
   }
   if(hdrcbdata->config->writeout) {
@@ -197,7 +197,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
     /* bold headers only for selected protocols */
     char *value = NULL;
 
-    if(!outs->stream && !tool_create_output_file(outs, per->config))
+    if(!outs->stream && !tool_create_output_file(outs, per))
       return failure;
 
     if(hdrcbdata->global->isatty && hdrcbdata->global->styled_output)
@@ -279,7 +279,8 @@ static char *parse_filename(const char *ptr, size_t len)
   if(copy != p)
     memmove(copy, p, strlen(p) + 1);
 
-#if defined(MSDOS) || defined(WIN32)
+  // Sanitize the filename for *all* OSes: do not accept *? wildcards and other hacky characters *anywhere*: 
+//#if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
     SANITIZEcode sc = sanitize_file_name(&sanitized, copy, 0);
@@ -288,7 +289,7 @@ static char *parse_filename(const char *ptr, size_t len)
       return NULL;
     copy = sanitized;
   }
-#endif /* MSDOS || WIN32 */
+//#endif /* MSDOS || WIN32 */
 
   /* in case we built debug enabled, we allow an environment variable
    * named CURL_TESTDIR to prefix the given file name to put it into a

@@ -2906,6 +2906,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
   case CURLOPT_PATH_AS_IS:
     data->set.path_as_is = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
+  case CURLOPT_NOCLOBBER_OUTPUT_FILE:
+	data->set.noclobber_output_file = (0 != va_arg(param, long)) ? TRUE : FALSE;
+    break;
   case CURLOPT_PIPEWAIT:
     data->set.pipewait = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;

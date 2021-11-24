@@ -51,23 +51,35 @@
 
 /* create a local file for writing, return TRUE on success */
 bool tool_create_output_file(struct OutStruct *outs,
-                             struct OperationConfig *config)
+                             struct per_transfer *per)
 {
   struct GlobalConfig *global;
+  struct OperationConfig *config;
   FILE *file = NULL;
+  bool noclobber;
+  bool overwrite;
+  int duplicate = 1;
+  char* name;
+  char* aname = NULL;
+  size_t fn_ext_pos = 0;
+  char* fn_ext = NULL;
+
   DEBUGASSERT(outs);
+  DEBUGASSERT(per);
+  config = per->config;
   DEBUGASSERT(config);
+
   global = config->global;
   if(!outs->filename || !*outs->filename) {
     warnf(global, "Remote filename has no length!\n");
     return FALSE;
   }
 
+  name = outs->filename;
+  noclobber = config->noclobber_output_file;
+
   if(outs->is_cd_filename) {
-    /* don't overwrite existing files */
-    int fd;
-    char *name = outs->filename;
-    char *aname = NULL;
+    /* default behaviour: don't overwrite existing files */
     if(config->output_dir) {
       aname = aprintf("%s/%s", config->output_dir, name);
       if(!aname) {
@@ -76,23 +88,66 @@ bool tool_create_output_file(struct OutStruct *outs,
       }
       name = aname;
     }
-    fd = open(name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
-    if(fd != -1) {
-      file = fdopen(fd, "wb");
-      if(!file)
-        close(fd);
-    }
-    free(aname);
+	overwrite = FALSE;
   }
-  else
-    /* open file for writing */
-    file = fopen(outs->filename, "wb");
+  else {
+	/* default behaviour: open file for writing (overwrite!) *UNLESS* --noclobber is set */
+	overwrite = !noclobber;
+  }
+
+  if (noclobber) {
+	  const char *p = strrchr(name, '.');
+	  if (!p || strchr(p, '/')) {
+		  /* filename has no extension */
+		  fn_ext_pos = strlen(name);
+	  }
+	  else {
+		  fn_ext_pos = p - name;
+	  }
+	  fn_ext = strdup(name + fn_ext_pos);
+  }
+
+  for (;;) {
+	  if (!overwrite) {
+		  /* do not overwrite existing file */
+		  int fd = open(name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+		  if (fd != -1) {
+			  file = fdopen(fd, "wb");
+			  if (!file)
+				  close(fd);
+			  break;
+		  }
+
+		  if (!noclobber)
+			  break;
+
+		  /* when we get here, we've got a collision with an existing file and want to use a unique output name for our file */
+		  {
+			  char* newname = aprintf("%.*s-%04d%s", (int)fn_ext_pos, name, duplicate, fn_ext);
+			  duplicate++;
+			  free(aname);
+			  aname = NULL;
+			  DEBUGASSERT(outs->filename == per->outfile);
+			  free(per->outfile);
+			  /* aname = */ name = outs->filename = per->outfile = newname;
+		  }
+	  }
+	  else {
+		  file = fopen(name, "wb");
+		  break;
+	  }
+  }
+  free(fn_ext);
 
   if(!file) {
     warnf(global, "Failed to create the file %s: %s\n", outs->filename,
           strerror(errno));
-    return FALSE;
+	free(aname);
+	return FALSE;
   }
+
+  free(aname);
+
   outs->s_isreg = TRUE;
   outs->fopened = TRUE;
   outs->stream = file;
@@ -179,7 +234,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
   }
 #endif
 
-  if(!outs->stream && !tool_create_output_file(outs, per->config))
+  if(!outs->stream && !tool_create_output_file(outs, per))
     return failure;
 
   if(is_tty && (outs->bytes < 2000) && !config->terminal_binary_ok) {

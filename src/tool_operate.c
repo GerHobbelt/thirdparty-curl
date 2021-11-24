@@ -397,7 +397,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
     /* do not create (or even overwrite) the file in case we get no
        data because of unmet condition */
     curl_easy_getinfo(curl, CURLINFO_CONDITION_UNMET, &cond_unmet);
-    if(!cond_unmet && !tool_create_output_file(outs, config))
+    if(!cond_unmet && !tool_create_output_file(outs, per))
       result = CURLE_WRITE_ERROR;
   }
 

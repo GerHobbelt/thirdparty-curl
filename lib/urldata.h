@@ -1858,6 +1858,7 @@ struct UserDefined {
   BIT(ssl_enable_npn); /* TLS NPN extension? */
   BIT(ssl_enable_alpn);/* TLS ALPN extension? */
   BIT(path_as_is);     /* allow dotdots? */
+  BIT(noclobber_output_file); /* don't overwrite any existing output file but use a renaming scheme instead */
   BIT(pipewait);       /* wait for multiplex status before starting a new
                           connection */
   BIT(suppress_connect_headers); /* suppress proxy CONNECT response headers

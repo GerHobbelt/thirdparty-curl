@@ -280,6 +280,7 @@ struct OperationConfig {
   bool abstract_unix_socket;      /* path to an abstract Unix domain socket */
   bool falsestart;
   bool path_as_is;
+  bool noclobber_output_file;     /* don't overwrite any existing output file but use a renaming scheme instead */
   double expect100timeout;
   bool suppress_connect_headers;  /* suppress proxy CONNECT response headers
                                      from user callbacks */
