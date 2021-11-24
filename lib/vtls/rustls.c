@@ -27,7 +27,7 @@
 #include "curl_printf.h"
 
 #include <errno.h>
-#include <crustls.h>
+#include <rustls.h>
 
 #include "inet_pton.h"
 #include "urldata.h"
@@ -161,23 +161,20 @@ cr_recv(struct Curl_easy *data, int sockindex,
       (uint8_t *)plainbuf + plain_bytes_copied,
       plainlen - plain_bytes_copied,
       &n);
-    if(rresult == RUSTLS_RESULT_ALERT_CLOSE_NOTIFY) {
-      *err = CURLE_OK;
-      return 0;
+    if(rresult == RUSTLS_RESULT_PLAINTEXT_EMPTY) {
+      infof(data, "cr_recv got 0 bytes of plaintext");
+      backend->data_pending = FALSE;
+      break;
     }
     else if(rresult != RUSTLS_RESULT_OK) {
-      failf(data, "error in rustls_connection_read");
+      /* n always equals 0 in this case, don't need to check it */
+      failf(data, "error in rustls_connection_read: %d", rresult);
       *err = CURLE_READ_ERROR;
       return -1;
     }
     else if(n == 0) {
-      /* rustls returns 0 from connection_read to mean "all currently
-        available data has been read." If we bring in more ciphertext with
-        read_tls, more plaintext will become available. So don't tell curl
-        this is an EOF. Instead, say "come back later." */
-      infof(data, "cr_recv got 0 bytes of plaintext");
-      backend->data_pending = FALSE;
-      break;
+      *err = CURLE_OK;
+      return 0;
     }
     else {
       infof(data, "cr_recv copied out %ld bytes of plaintext", n);
@@ -309,10 +306,10 @@ cr_init_backend(struct Curl_easy *data, struct connectdata *conn,
   config_builder = rustls_client_config_builder_new();
 #ifdef USE_HTTP2
   infof(data, "offering ALPN for HTTP/1.1 and HTTP/2");
-  rustls_client_config_builder_set_protocols(config_builder, alpn, 2);
+  rustls_client_config_builder_set_alpn_protocols(config_builder, alpn, 2);
 #else
   infof(data, "offering ALPN for HTTP/1.1 only");
-  rustls_client_config_builder_set_protocols(config_builder, alpn, 1);
+  rustls_client_config_builder_set_alpn_protocols(config_builder, alpn, 1);
 #endif
   if(!verifypeer) {
     rustls_client_config_builder_dangerous_set_certificate_verifier(
@@ -543,6 +540,12 @@ cr_close(struct Curl_easy *data, struct connectdata *conn,
   }
 }
 
+static size_t cr_version(char *buffer, size_t size)
+{
+  struct rustls_str ver = rustls_version();
+  return msnprintf(buffer, size, "%.*s", (int)ver.len, ver.data);
+}
+
 const struct Curl_ssl Curl_ssl_rustls = {
   { CURLSSLBACKEND_RUSTLS, "rustls" },
   SSLSUPP_TLS13_CIPHERSUITES,      /* supports */
@@ -550,7 +553,7 @@ const struct Curl_ssl Curl_ssl_rustls = {
 
   Curl_none_init,                  /* init */
   Curl_none_cleanup,               /* cleanup */
-  rustls_version,                  /* version */
+  cr_version,                      /* version */
   Curl_none_check_cxn,             /* check_cxn */
   Curl_none_shutdown,              /* shutdown */
   cr_data_pending,                 /* data_pending */
