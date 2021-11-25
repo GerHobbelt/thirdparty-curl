@@ -40,6 +40,10 @@
 
 #include "memdebug.h" /* keep this as LAST include */
 
+#ifdef _WIN32
+#include <direct.h>
+#endif
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -48,6 +52,26 @@
 #else
 #define OPENMODE S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 #endif
+
+static void create_necessary_directories(const char* path)
+{
+	char* p = strdup(path);
+	char* e;
+
+	for (e = strchr(p, '/'); e; e = strchr(e + 1, '/')) {
+		*e = 0;
+
+#ifdef _WIN32
+		_mkdir(p);
+#else
+		mkdir(p);
+#endif
+
+		*e = '/';
+	}
+
+	free(p);
+}
 
 /* create a local file for writing, return TRUE on success */
 bool tool_create_output_file(struct OutStruct *outs,
@@ -107,6 +131,8 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  fn_ext = strdup(name + fn_ext_pos);
   }
 
+  create_necessary_directories(name);
+
   for (;;) {
 	  if (!overwrite) {
 		  /* do not overwrite existing file */
@@ -121,15 +147,29 @@ bool tool_create_output_file(struct OutStruct *outs,
 		  if (!noclobber)
 			  break;
 
+		  /* check if we can open the file at all, i.e. if it actually exists. If not, we've got an invalid destination path.
+		  
+		     Of course, this will arrive at a possibly incorrect conclusion in the **fringe case** where *only* the existing file is inaccessible-for-reading due to strict user access limitations, but then one should not download new data while pointing at such a specifically protected file anyway.
+           */
+		  fd = open(name, O_RDONLY | O_BINARY, OPENMODE);
+		  if (fd == -1) {
+			  break;
+		  }
+		  close(fd);
+
 		  /* when we get here, we've got a collision with an existing file and want to use a unique output name for our file */
 		  {
 			  char* newname = aprintf("%.*s-%04d%s", (int)fn_ext_pos, name, duplicate, fn_ext);
 			  duplicate++;
 			  free(aname);
 			  aname = NULL;
-			  DEBUGASSERT(outs->filename == per->outfile);
+			  if (outs->alloc_filename) {
+				free(outs->filename);
+			  }
 			  free(per->outfile);
-			  /* aname = */ name = outs->filename = per->outfile = newname;
+			  outs->alloc_filename = TRUE;
+			  /* aname = */ name = outs->filename = newname;
+			  per->outfile = strdup(newname);
 		  }
 	  }
 	  else {
