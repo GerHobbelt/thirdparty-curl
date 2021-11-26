@@ -1838,7 +1838,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       }
       break;
     case 'F':
-      /* "form data" simulation, this is a little advanced so lets do our best
+      /* "form data" simulation, this is a little advanced so let's do our best
          to sort this out slowly and carefully */
       if(formparse(config,
                    nextarg,
@@ -1915,11 +1915,11 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           return err;
       }
       break;
-    case 'i':
+    case 'i': /* --include */
       config->show_headers = toggle; /* show the headers as well in the
                                         general output stream */
       break;
-    case 'j':
+    case 'j': /* --junk-session-cookies */
       config->cookiesession = toggle;
       break;
     case 'I': /* --head */
