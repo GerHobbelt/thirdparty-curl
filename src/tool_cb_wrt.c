@@ -113,6 +113,17 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  fn_ext = strdup(name + fn_ext_pos);
   }
 
+  if (config->create_dirs) {
+	  CURLcode result = create_dir_hierarchy(name, global->errors);
+	  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
+	  if (result) {
+		  warnf(global, "Failed to create the path directories to file %s: %s\n", name,
+			  strerror(errno));
+		  free(aname);
+		  return FALSE;
+	  }
+  }
+
   for (;;) {
 	  if (!overwrite) {
 		  /* do not overwrite existing file */

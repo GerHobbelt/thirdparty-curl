@@ -102,11 +102,11 @@ static void show_dir_errno(FILE *errors, const char *name)
 CURLcode create_dir_hierarchy(const char *outfile, FILE *errors)
 {
   char *tempdir;
-  char *tempdir2;
   char *outdup;
   char *dirbuildup;
   CURLcode result = CURLE_OK;
   size_t outlen;
+  size_t chunksize;
 
   outlen = strlen(outfile);
   outdup = strdup(outfile);
@@ -120,18 +120,19 @@ CURLcode create_dir_hierarchy(const char *outfile, FILE *errors)
   }
   dirbuildup[0] = '\0';
 
-  /* Allow strtok() here since this isn't used threaded */
-  /* !checksrc! disable BANNEDFUNC 2 */
-  tempdir = strtok(outdup, PATH_DELIMITERS);
+  tempdir = outdup;
 
   while(tempdir != NULL) {
     bool skip = false;
-    tempdir2 = strtok(NULL, PATH_DELIMITERS);
-    /* since strtok returns a token for the last word even
+
+	chunksize = strcspn(tempdir, PATH_DELIMITERS);
+
+	/* since strtok returns a token for the last word even
        if not ending with DIR_CHAR, we need to prune it */
-    if(tempdir2 != NULL) {
+    if(tempdir[chunksize] != 0) {
       size_t dlen = strlen(dirbuildup);
-      if(dlen)
+	  tempdir[chunksize] = 0;
+	  if(dlen)
         msnprintf(&dirbuildup[dlen], outlen - dlen, "%s%s", DIR_CHAR, tempdir);
       else {
         if(outdup == tempdir) {
@@ -140,7 +141,7 @@ CURLcode create_dir_hierarchy(const char *outfile, FILE *errors)
              It may seem as though that would harmlessly fail but it could be
              a corner case if X: did not exist, since we would be creating it
              erroneously.
-             eg if outfile is X:\foo\bar\filename then don't mkdir X:
+             e.g. if outfile is X:\foo\bar\filename then don't mkdir X:
              This logic takes into account unsupported drives !:, 1:, etc. */
           char *p = strchr(tempdir, ':');
           if(p && !p[1])
@@ -159,8 +160,13 @@ CURLcode create_dir_hierarchy(const char *outfile, FILE *errors)
         result = CURLE_WRITE_ERROR;
         break; /* get out of loop */
       }
-    }
-    tempdir = tempdir2;
+	  //tempdir[chunksize] = DIR_CHAR;
+	  tempdir += chunksize + 1;
+	  tempdir += strspn(tempdir, PATH_DELIMITERS);
+	}
+	else {
+	  tempdir = NULL;
+	}
   }
 
   Curl_safefree(dirbuildup);
