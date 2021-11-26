@@ -52,6 +52,8 @@ void Curl_failf(struct Curl_easy *, const char *fmt, ...);
 CURLcode Curl_client_write(struct Curl_easy *data, int type, char *ptr,
                            size_t len) WARN_UNUSED_RESULT;
 
+struct connectdata;
+
 bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex);
 
 /* internal read-function, does plain socket only */

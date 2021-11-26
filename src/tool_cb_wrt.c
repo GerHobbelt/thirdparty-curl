@@ -35,8 +35,10 @@
 #include "tool_cfgable.h"
 #include "tool_msgs.h"
 #include "tool_cb_wrt.h"
+#include "tool_dirhie.h"
 #include "tool_getenv.h"
 #include "tool_operate.h"
+#include "sendf.h" /* for infof function prototype */
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -52,26 +54,6 @@
 #else
 #define OPENMODE S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 #endif
-
-static void create_necessary_directories(const char* path)
-{
-	char* p = strdup(path);
-	char* e;
-
-	for (e = strchr(p, '/'); e; e = strchr(e + 1, '/')) {
-		*e = 0;
-
-#ifdef _WIN32
-		_mkdir(p);
-#else
-		mkdir(p);
-#endif
-
-		*e = '/';
-	}
-
-	free(p);
-}
 
 /* create a local file for writing, return TRUE on success */
 bool tool_create_output_file(struct OutStruct *outs,
@@ -131,8 +113,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  fn_ext = strdup(name + fn_ext_pos);
   }
 
-  create_necessary_directories(name);
-
   for (;;) {
 	  if (!overwrite) {
 		  /* do not overwrite existing file */
@@ -187,6 +167,8 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   free(aname);
+
+  Curl_infof(per->curl, "Data will be written to output file: %s", per->outfile);
 
   outs->s_isreg = TRUE;
   outs->fopened = TRUE;

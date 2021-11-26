@@ -34,6 +34,7 @@
 #include "tool_cb_hdr.h"
 #include "tool_cb_wrt.h"
 #include "tool_operate.h"
+#include "sendf.h"
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -172,6 +173,9 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         outs->filename = filename;
         outs->alloc_filename = TRUE;
         hdrcbdata->honor_cd_filename = FALSE; /* done now! */
+
+		Curl_infof(per->curl, "Filename obtained from server Content-disposition response header: \"%s\"", filename);
+
         if(!tool_create_output_file(outs, per))
           return failure;
       }

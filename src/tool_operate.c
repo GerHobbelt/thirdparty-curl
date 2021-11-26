@@ -82,6 +82,7 @@
 #include "tool_hugehelp.h"
 #include "tool_progress.h"
 #include "dynbuf.h"
+#include "sendf.h" /* for infof function prototype */
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -888,6 +889,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               return CURLE_OK;
             }
             else {
+              Curl_infof(per->curl, "E-Tag data will be written to etags file: %s", config->etag_save_file);
+
               etag_save->filename = config->etag_save_file;
               etag_save->s_isreg = TRUE;
               etag_save->fopened = TRUE;
@@ -941,6 +944,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
             }
             else {
+              Curl_infof(per->curl, "Header data will be written to header file: %s", config->headerfile);
+
               heads->filename = config->headerfile;
               heads->s_isreg = TRUE;
               heads->fopened = TRUE;
@@ -1077,7 +1082,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               result = CURLE_WRITE_ERROR;
               break;
             }
-            outs->fopened = TRUE;
+
+			Curl_infof(per->curl, "Resuming: data will be written (appended) to output file: %s", per->outfile);
+
+			outs->fopened = TRUE;
             outs->stream = file;
             outs->init = config->resume_from;
           }

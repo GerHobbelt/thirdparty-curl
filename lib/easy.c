@@ -593,9 +593,14 @@ static CURLcode easy_events(struct Curl_multi *multi)
 
 static CURLcode easy_transfer(struct Curl_multi *multi)
 {
+  struct Curl_easy *data;
   bool done = FALSE;
   CURLMcode mcode = CURLM_OK;
   CURLcode result = CURLE_OK;
+
+  data = multi->easyp;
+
+  Curl_infof(data, "Processing URL: %s", data->state.url);
 
   while(!done && !mcode) {
     int still_running = 0;
