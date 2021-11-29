@@ -24,9 +24,12 @@
 .SH NAME
 CURLOPT_CONNECTTIMEOUT_MS \- timeout for the connect phase
 .SH SYNOPSIS
+.nf
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_CONNECTTIMEOUT_MS, long timeout);
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_CONNECTTIMEOUT_MS,
+                          long timeout);
+.fi
 .SH DESCRIPTION
 Pass a long. It should contain the maximum time in milliseconds that you allow
 the connection phase to the server to take.  This only limits the connection
