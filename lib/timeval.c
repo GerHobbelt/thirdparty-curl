@@ -47,7 +47,7 @@ struct curltime Curl_now(void)
 
   if (!timer_initialized)
   {
-	  if (curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
+	  if (curlx_verify_windows_version(6, 0, 0, PLATFORM_WINNT,
 		  VERSION_GREATER_THAN_EQUAL))
 	  {
 		  Curl_isVistaOrGreater = TRUE;
