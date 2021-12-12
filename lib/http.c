@@ -2028,8 +2028,10 @@ void Curl_http_method(struct Curl_easy *data, struct connectdata *conn,
      data->set.upload)
     httpreq = HTTPREQ_PUT;
 
-  /* Now set the 'request' pointer to the proper request string */
-  if(data->set.str[STRING_CUSTOMREQUEST])
+  /* Now set the 'request' pointer to the proper request string if
+     it isn't a redirect with redirect_clears_method set */
+  if(data->set.str[STRING_CUSTOMREQUEST] &&
+     (!data->state.this_is_a_follow || !data->set.redirect_clears_method))
     request = data->set.str[STRING_CUSTOMREQUEST];
   else {
     if(data->set.opt_no_body)

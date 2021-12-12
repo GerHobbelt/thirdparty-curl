@@ -60,6 +60,11 @@ possibly confuse the remote server badly. Use \fICURLOPT_POST(3)\fP and
 to replace or extend the set of headers sent by libcurl. Use
 \fICURLOPT_HTTP_VERSION(3)\fP to change HTTP version.
 
+If this option used together with \fICURLOPT_FOLLOWLOCATION(3)\fP, the custom
+set method will override the method libcurl could otherwise change to. You can
+fine-tune that decision by using the \fICURLFOLLOW_IGNORE_CUSTOM\fP bit to
+\fICURLOPT_FOLLOWLOCATION(3)\fP to make redirects ignore the custom method.
+
 .IP FTP
 Instead of LIST and NLST when performing FTP directory listings.
 .IP IMAP
