@@ -61,6 +61,7 @@
 #include "tool_doswin.h"
 #include "tool_easysrc.h"
 #include "tool_filetime.h"
+#include "tool_getenv.h"
 #include "tool_getparam.h"
 #include "tool_helpers.h"
 #include "tool_findfile.h"
