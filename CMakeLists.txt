@@ -46,6 +46,7 @@ include(CMakeDependentOption)
 include(CheckCCompilerFlag)
 
 project(CURL C)
+include(flags OPTIONAL)
 
 file(STRINGS ${CURL_SOURCE_DIR}/include/curl/curlver.h CURL_VERSION_H_CONTENTS REGEX "#define LIBCURL_VERSION( |_NUM )")
 string(REGEX MATCH "#define LIBCURL_VERSION \"[^\"]*"
@@ -149,8 +150,15 @@ endif()
 set(CURL_LIBS "")
 
 if(ENABLE_ARES)
+  option(FIND_ARES_MODULE_PATH "Find c-ares in CMAKE_MODULE_PATH" OFF)
+  mark_as_advanced(FIND_ARES_MODULE_PATH)
   set(USE_ARES 1)
-  find_package(CARES REQUIRED)
+  if(FIND_ARES_MODULE_PATH)
+    find_package(usexp-CARES REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+    set(CARES_LIBRARY ${CARES_LIBRARIES})
+  else()
+    find_package(CARES REQUIRED)
+  endif()
   list(APPEND CURL_LIBS ${CARES_LIBRARY})
 endif()
 
@@ -429,7 +437,13 @@ if(use_core_foundation)
 endif()
 
 if(CMAKE_USE_OPENSSL)
-  find_package(OpenSSL REQUIRED)
+  option(CMAKE_USE_OPENSSL_MODULE_PATH "Find OpenSSL in CMAKE_MODULE_PATH." OFF)
+  mark_as_advanced(CMAKE_USE_OPENSSL_MODULE_PATH)
+  if(CMAKE_USE_OPENSSL_MODULE_PATH)
+    find_package(usexp-OpenSSL REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+  else()
+    find_package(OpenSSL REQUIRED)
+  endif()
   set(SSL_ENABLED ON)
   set(USE_OPENSSL ON)
 
@@ -437,7 +451,13 @@ if(CMAKE_USE_OPENSSL)
   # version of CMake.  This allows our dependents to get our dependencies
   # transitively.
   if(NOT CMAKE_VERSION VERSION_LESS 3.4)
-    list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+    if(TARGET xpro::ssl AND TARGET xpro::crypto)
+      list(APPEND CURL_LIBS xpro::ssl xpro::crypto)
+    elseif(TARGET OpenSSL::SSL AND TARGET OpenSSL::Crypto)
+      list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+    else()
+      message(AUTHOR_WARNING "TARGET OpenSSL not found")
+    endif()
   else()
     list(APPEND CURL_LIBS ${OPENSSL_LIBRARIES})
     include_directories(${OPENSSL_INCLUDE_DIR})
@@ -682,7 +702,13 @@ check_library_exists("${CURL_LIBS}" dlopen "" HAVE_DLOPEN)
 set(HAVE_LIBZ OFF)
 set(HAVE_ZLIB_H OFF)
 set(USE_ZLIB OFF)
-optional_dependency(ZLIB)
+option(CURL_ZLIB_MODULE_PATH "Find zlib in CMAKE_MODULE_PATH." OFF)
+mark_as_advanced(CURL_ZLIB_MODULE_PATH)
+if(CURL_ZLIB_MODULE_PATH)
+  find_package(usexp-ZLIB REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+else()
+  optional_dependency(ZLIB)
+endif()
 if(ZLIB_FOUND)
   set(HAVE_ZLIB_H ON)
   set(HAVE_LIBZ ON)
@@ -692,7 +718,13 @@ if(ZLIB_FOUND)
   # version of CMake.  This allows our dependents to get our dependencies
   # transitively.
   if(NOT CMAKE_VERSION VERSION_LESS 3.4)
-    list(APPEND CURL_LIBS ZLIB::ZLIB)
+    if(TARGET xpro::zlibstatic)
+      list(APPEND CURL_LIBS xpro::zlibstatic)
+    elseif(TARGET ZLIB::ZLIB)
+      list(APPEND CURL_LIBS ZLIB::ZLIB)
+    else()
+      message(AUTHOR_WARNING "TARGET ZLIB not found")
+    endif()
   else()
     list(APPEND CURL_LIBS ${ZLIB_LIBRARIES})
     include_directories(${ZLIB_INCLUDE_DIRS})
@@ -736,7 +768,16 @@ set(HAVE_LIBSSH2 OFF)
 set(HAVE_LIBSSH2_H OFF)
 
 if(CMAKE_USE_LIBSSH2)
-  find_package(LibSSH2)
+  option(CMAKE_USE_LIBSSH2_MODULE_PATH "Find libssh2 in CMAKE_MODULE_PATH." OFF)
+  mark_as_advanced(CMAKE_USE_LIBSSH2_MODULE_PATH)
+  if(CMAKE_USE_LIBSSH2_MODULE_PATH)
+    find_package(usexp-LibSSH2 REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+    get_target_property(LIBSSH2_INCLUDE_DIR ${LIBSSH2_LIBRARIES} INTERFACE_INCLUDE_DIRECTORIES)
+    list(FILTER LIBSSH2_INCLUDE_DIR INCLUDE REGEX "/libssh2$") # include dir ending with /libssh2
+    set(LIBSSH2_LIBRARY ${LIBSSH2_LIBRARIES})
+  else()
+    find_package(LibSSH2)
+  endif()
   if(LIBSSH2_FOUND)
     list(APPEND CURL_LIBS ${LIBSSH2_LIBRARY})
     set(CMAKE_REQUIRED_LIBRARIES ${LIBSSH2_LIBRARY})
@@ -1343,9 +1384,23 @@ function(transform_makefile_inc INPUT_FILE OUTPUT_FILE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${INPUT_FILE}")
 endfunction()
 
+if(NOT DEFINED CURL_VER)
+  set(CURL_VER ${CURL_VERSION})
+elseif(NOT CURL_VER STREQUAL CURL_VERSION)
+  message(AUTHOR_WARNING "version passed in (${CURL_VER}) doesn't match internal version (${CURL_VERSION})")
+endif()
+if(XP_INSTALL_DIRS)
+  set(_ver _${CURL_VER})
+endif()
+if(DEFINED XP_NAMESPACE)
+  set(nameSpace ${XP_NAMESPACE}::)
+else()
+  set(nameSpace ${PROJECT_NAME}::)
+endif()
+
 include(GNUInstallDirs)
 
-set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}${_ver})
 set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
@@ -1530,24 +1585,31 @@ set(REQUIRE_LIB_DEPS        "no")
 # SUPPORT_PROTOCOLS
 set(VERSIONNUM              "${CURL_VERSION_NUM}")
 
+option(INSTALL_CURL_CONFIG "Set to ON to install cURL config." ON)
+mark_as_advanced(INSTALL_CURL_CONFIG)
+
 # Finally generate a "curl-config" matching this config
 # Use:
 # * ENABLE_SHARED
 # * ENABLE_STATIC
 configure_file("${CURL_SOURCE_DIR}/curl-config.in"
                "${CURL_BINARY_DIR}/curl-config" @ONLY)
+if(INSTALL_CURL_CONFIG)
 install(FILES "${CURL_BINARY_DIR}/curl-config"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS
           OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE
           WORLD_READ WORLD_EXECUTE)
+endif()
 
 # Finally generate a pkg-config file matching this config
 configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
                "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
+if(INSTALL_CURL_CONFIG)
 install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
 
 # install headers
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/curl"
@@ -1572,15 +1634,17 @@ configure_package_config_file(CMake/curl-config.cmake.in
 if(CURL_ENABLE_EXPORT_TARGET)
   install(
           EXPORT "${TARGETS_EXPORT_NAME}"
-          NAMESPACE "${PROJECT_NAME}::"
+          NAMESPACE "${nameSpace}"
           DESTINATION ${CURL_INSTALL_CMAKE_DIR}
   )
 endif()
 
+if(INSTALL_CURL_CONFIG)
 install(
         FILES ${version_config} ${project_config}
         DESTINATION ${CURL_INSTALL_CMAKE_DIR}
 )
+endif()
 
 # Workaround for MSVS10 to avoid the Dialog Hell
 # FIXME: This could be removed with future version of CMake.

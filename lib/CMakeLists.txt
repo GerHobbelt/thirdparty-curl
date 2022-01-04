@@ -113,6 +113,9 @@ endif()
 set_target_properties(${LIB_NAME} PROPERTIES PREFIX "")
 set_target_properties(${LIB_NAME} PROPERTIES IMPORT_PREFIX "")
 
+# embed version number in the library filename, if _ver defined
+set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME}${_ver})
+
 if(CURL_HAS_LTO)
   set_target_properties(${LIB_NAME} PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
@@ -142,5 +145,5 @@ install(TARGETS ${LIB_NAME}
 
 export(TARGETS ${LIB_NAME}
        APPEND FILE ${PROJECT_BINARY_DIR}/libcurl-target.cmake
-       NAMESPACE ${PROJECT_NAME}::
+       NAMESPACE ${nameSpace}
 )

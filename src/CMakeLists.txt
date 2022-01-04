@@ -105,10 +105,13 @@ target_link_libraries(${EXE_NAME} libcurl ${CURL_LIBS})
 #SET_TARGET_PROPERTIES(${EXE_NAME} RUNTIME_OUTPUT_DIRECTORY "blah blah blah")
 #SET_TARGET_PROPERTIES(${EXE_NAME} LIBRARY_OUTPUT_DIRECTORY "blah blah blah")
 
+# embed version number in the executable filename, if _ver defined
+set_target_properties(${EXE_NAME} PROPERTIES OUTPUT_NAME ${EXE_NAME}${_ver})
+
 #INCLUDE(ModuleInstall OPTIONAL)
 
 install(TARGETS ${EXE_NAME} EXPORT ${TARGETS_EXPORT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
 export(TARGETS ${EXE_NAME}
        APPEND FILE ${PROJECT_BINARY_DIR}/curl-target.cmake
-       NAMESPACE ${PROJECT_NAME}::
+       NAMESPACE ${nameSpace}
 )
