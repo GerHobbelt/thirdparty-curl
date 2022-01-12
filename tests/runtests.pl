@@ -3763,7 +3763,9 @@ sub singletest {
 
     # save the new version
     open(D, ">$otest");
-    print D @entiretest;
+    foreach my $bytes (@entiretest) {
+        print D pack('a*', $bytes) or die "Failed to print '$bytes': $!";
+    }
     close(D);
 
     # in case the process changed the file, reload it
@@ -3976,6 +3978,20 @@ sub singletest {
                 return -1;
             }
             my $fileContent = join('', @inputfile);
+
+            # make directories if needed
+            my $path = $filename;
+            # cut off the file name part
+            $path =~ s/^(.*)\/[^\/]*/$1/;
+            my @parts = split(/\//, $path);
+            if($parts[0] eq "log") {
+                # the file is in log/
+                my $d = shift @parts;
+                for(@parts) {
+                    $d .= "/$_";
+                    mkdir $d; # 0777
+                }
+            }
             open(OUTFILE, ">$filename");
             if($filemode eq "text") {
                 $fileContent =~ s/\n/\r\n/g;

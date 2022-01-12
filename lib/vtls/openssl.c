@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -3953,9 +3953,20 @@ static CURLcode servercert(struct Curl_easy *data,
 
     /* e.g. match issuer name with provided issuer certificate */
     if(SSL_CONN_CONFIG(issuercert) || SSL_CONN_CONFIG(issuercert_blob)) {
-      if(SSL_CONN_CONFIG(issuercert_blob))
+      if(SSL_CONN_CONFIG(issuercert_blob)) {
         fp = BIO_new_mem_buf(SSL_CONN_CONFIG(issuercert_blob)->data,
                              (int)SSL_CONN_CONFIG(issuercert_blob)->len);
+        if(!fp) {
+          failf(data,
+                "BIO_new_mem_buf NULL, " OSSL_PACKAGE
+                " error %s",
+                ossl_strerror(ERR_get_error(), error_buffer,
+                              sizeof(error_buffer)) );
+          X509_free(backend->server_cert);
+          backend->server_cert = NULL;
+          return CURLE_OUT_OF_MEMORY;
+        }
+      }
       else {
         fp = BIO_new(BIO_s_file());
         if(!fp) {
