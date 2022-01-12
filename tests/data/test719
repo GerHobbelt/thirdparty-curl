@@ -30,6 +30,10 @@ Funny-head: yesyes
 #
 # Client-side
 <client>
+<features>
+ipv6
+proxy
+</features>
 <server>
 http
 socks5
