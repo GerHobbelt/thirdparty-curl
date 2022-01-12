@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -120,6 +120,9 @@ CURLcode create_dir_hierarchy(const char *outfile, FILE *errors)
   }
   dirbuildup[0] = '\0';
 
+  /* [GHo] DO NOT allow strtok() here since this MAY be used threaded as in:
+     multiple cURL library/API invocations being executed in a multithreaded 
+	 master application. */
   tempdir = outdup;
 
   while(tempdir != NULL) {
