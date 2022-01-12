@@ -402,6 +402,7 @@ Features testable here are:
 - `parsedate`
 - `proxy`
 - `PSL`
+- `rustls`
 - `Schannel`
 - `sectransp`
 - `shuffle-dns`
@@ -421,6 +422,7 @@ Features testable here are:
 - `wakeup`
 - `win32`
 - `wolfssh`
+- `wolfssl`
 
 as well as each protocol that curl supports.  A protocol only needs to be
 specified if it is different from the server (useful when the server
