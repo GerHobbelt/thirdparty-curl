@@ -287,7 +287,6 @@ my $has_sectransp;  # built with Secure Transport
 my $has_boringssl;  # built with BoringSSL
 my $has_libressl;   # built with libressl
 my $has_mbedtls;    # built with mbedTLS
-my $has_mesalink;   # built with MesaLink
 
 my $has_sslpinning; # built with a TLS backend that supports pinning
 
@@ -3033,9 +3032,6 @@ sub checksystem {
                $has_cares=1;
                $resolver="c-ares";
            }
-           if ($libcurl =~ /mesalink/i) {
-               $has_mesalink=1;
-           }
            if ($libcurl =~ /Hyper/i) {
                $has_hyper=1;
            }
@@ -3889,6 +3885,13 @@ sub singletest {
     else {
         # check against the data section
         @reply = getpart("reply", "data");
+        if(@reply) {
+            my %hash = getpartattr("reply", "data");
+            if($hash{'nonewline'}) {
+                # cut off the final newline from the final line of the data
+                chomp($reply[$#reply]);
+            }
+        }
         # get the mode attribute
         my $filemode=$replyattr{'mode'};
         if($filemode && ($filemode eq "text") && $has_textaware) {
