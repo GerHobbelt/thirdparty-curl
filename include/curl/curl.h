@@ -85,13 +85,9 @@
 #include <sys/socket.h>
 #endif
 
-#if !defined(CURL_WIN32) && !defined(__WATCOMC__) && !defined(__VXWORKS__) && \
+#if !defined(CURL_WIN32) && !defined(__VXWORKS__) && \
   !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
-#endif
-
-#ifdef __BEOS__
-#include <support/SupportDefs.h>
 #endif
 
 /* Compatibility for non-Clang compilers */
