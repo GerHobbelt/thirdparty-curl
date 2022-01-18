@@ -174,7 +174,7 @@ typedef enum {
 
 /* Follow redirects, and don't use the custom method for anything but the
    initial request if the response code says so. */
-#define CURLFOLLOW_NO_CUSTOMREQUEST (1<<1)
+#define CURLFOLLOW_NO_CUSTOMMETHOD (1<<1)
 
 struct curl_httppost {
   struct curl_httppost *next;       /* next entry in the list */

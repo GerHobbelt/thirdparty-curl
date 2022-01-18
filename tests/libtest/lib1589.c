@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -44,7 +44,7 @@ int test(char *URL)
   test_setopt(curl, CURLOPT_URL, URL);
   test_setopt(curl, CURLOPT_POSTFIELDS, "moo");
   test_setopt(curl, CURLOPT_CUSTOMREQUEST, "IGLOO");
-  test_setopt(curl, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_NO_CUSTOMREQUEST);
+  test_setopt(curl, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_NO_CUSTOMMETHOD);
 
   res = curl_easy_perform(curl);
 
