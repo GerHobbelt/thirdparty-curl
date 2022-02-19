@@ -36,6 +36,8 @@
 #include "connect.h"
 #include "strerror.h"
 #include "vquic.h"
+#include "transfer.h"
+#include "h2h3.h"
 #include "vtls/openssl.h"
 #include "vtls/keylog.h"
 
@@ -592,7 +594,7 @@ static int cb_each_header(uint8_t *name, size_t name_len,
   struct h3h1header *headers = (struct h3h1header *)argp;
   size_t olen = 0;
 
-  if((name_len == 7) && !strncmp(H3_PSEUDO_STATUS, (char *)name, 7)) {
+  if((name_len == 7) && !strncmp(H2H3_PSEUDO_STATUS, (char *)name, 7)) {
     msnprintf(headers->dest,
               headers->destlen, "HTTP/3 %.*s\n",
               (int) value_len, value);
@@ -797,235 +799,61 @@ void Curl_quic_ver(char *p, size_t len)
 #define AUTHORITY_DST_IDX 3
 
 static CURLcode http_request(struct Curl_easy *data, const void *mem,
-                             size_t len, ssize_t *written)
+                             size_t len)
 {
-  /*
-   */
   struct connectdata *conn = data->conn;
   struct HTTP *stream = data->req.p.http;
   size_t nheader;
-  size_t i;
-  size_t authority_idx;
-  size_t upload_left;
-  char *hdbuf = (char *)mem;
-  char *end, *line_end;
   int64_t stream3_id;
   quiche_h3_header *nva = NULL;
   struct quicsocket *qs = conn->quic;
   CURLcode result = CURLE_OK;
+  struct h2h3req *hreq = NULL;
 
   stream->h3req = TRUE; /* senf off! */
 
-  /* Calculate number of headers contained in [mem, mem + len). Assumes a
-     correctly generated HTTP header field block. */
-  nheader = 0;
-  for(i = 1; i < len; ++i) {
-    if(hdbuf[i] == '\n' && hdbuf[i - 1] == '\r') {
-      ++nheader;
-      if(i >= 3 && hdbuf[i - 2] == '\n' && hdbuf[i - 3] == '\r') {
-        break;
-      }
-      ++i;
-    }
-  }
-  if(nheader < 2) {
-    result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
+  result = Curl_pseudo_headers(data, mem, len, &hreq);
+  if(result)
     goto fail;
-  }
+  nheader = hreq->entries;
 
-  /* We counted additional 2 \r\n in the first and last line. We need 3
-     new headers: :method, :path and :scheme. Therefore we need one
-     more space. */
-  nheader += 1;
   nva = malloc(sizeof(quiche_h3_header) * nheader);
   if(!nva) {
     result = CURLE_OUT_OF_MEMORY;
     goto fail;
   }
-
-  /* Extract :method, :path from request line
-     We do line endings with CRLF so checking for CR is enough */
-  line_end = memchr(hdbuf, '\r', len);
-  if(!line_end) {
-    result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-    goto fail;
-  }
-
-  /* Method does not contain spaces */
-  end = memchr(hdbuf, ' ', line_end - hdbuf);
-  if(!end || end == hdbuf) {
-    result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-    goto fail;
-  }
-  nva[0].name = (unsigned char *)H3_PSEUDO_METHOD;
-  nva[0].name_len = sizeof(H3_PSEUDO_METHOD) - 1;
-  nva[0].value = (unsigned char *)hdbuf;
-  nva[0].value_len = (size_t)(end - hdbuf);
-
-  hdbuf = end + 1;
-
-  /* Path may contain spaces so scan backwards */
-  end = NULL;
-  for(i = (size_t)(line_end - hdbuf); i; --i) {
-    if(hdbuf[i - 1] == ' ') {
-      end = &hdbuf[i - 1];
-      break;
+  else {
+    unsigned int i;
+    for(i = 0; i < nheader; i++) {
+      nva[i].name = (unsigned char *)hreq->header[i].name;
+      nva[i].name_len = hreq->header[i].namelen;
+      nva[i].value = (unsigned char *)hreq->header[i].value;
+      nva[i].value_len = hreq->header[i].valuelen;
     }
   }
-  if(!end || end == hdbuf) {
-    result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-    goto fail;
-  }
-  nva[1].name = (unsigned char *)H3_PSEUDO_PATH;
-  nva[1].name_len = sizeof(H3_PSEUDO_PATH) - 1;
-  nva[1].value = (unsigned char *)hdbuf;
-  nva[1].value_len = (size_t)(end - hdbuf);
-
-  nva[2].name = (unsigned char *)H3_PSEUDO_SCHEME;
-  nva[2].name_len = sizeof(H3_PSEUDO_SCHEME) - 1;
-  if(conn->handler->flags & PROTOPT_SSL)
-    nva[2].value = (unsigned char *)"https";
-  else
-    nva[2].value = (unsigned char *)"http";
-  nva[2].value_len = strlen((char *)nva[2].value);
-
-  authority_idx = 0;
-  i = 3;
-  while(i < nheader) {
-    size_t hlen;
-
-    hdbuf = line_end + 2;
-
-    /* check for next CR, but only within the piece of data left in the given
-       buffer */
-    line_end = memchr(hdbuf, '\r', len - (hdbuf - (char *)mem));
-    if(!line_end || (line_end == hdbuf)) {
-      result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-      goto fail;
-    }
-
-    /* header continuation lines are not supported */
-    if(*hdbuf == ' ' || *hdbuf == '\t') {
-      result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-      goto fail;
-    }
-
-    for(end = hdbuf; end < line_end && *end != ':'; ++end)
-      ;
-    if(end == hdbuf || end == line_end) {
-      result = CURLE_BAD_FUNCTION_ARGUMENT; /* internal error */
-      goto fail;
-    }
-    hlen = end - hdbuf;
-
-    if(hlen == 4 && strncasecompare("host", hdbuf, 4)) {
-      authority_idx = i;
-      nva[i].name = (unsigned char *)H3_PSEUDO_AUTHORITY;
-      nva[i].name_len = sizeof(H3_PSEUDO_AUTHORITY) - 1;
-    }
-    else {
-      nva[i].name_len = (size_t)(end - hdbuf);
-      /* Lower case the header name for HTTP/3 */
-      Curl_strntolower((char *)hdbuf, hdbuf, nva[i].name_len);
-      nva[i].name = (unsigned char *)hdbuf;
-    }
-    hdbuf = end + 1;
-    while(*hdbuf == ' ' || *hdbuf == '\t')
-      ++hdbuf;
-    end = line_end;
-
-#if 0 /* This should probably go in more or less like this */
-    switch(inspect_header((const char *)nva[i].name, nva[i].namelen, hdbuf,
-                          end - hdbuf)) {
-    case HEADERINST_IGNORE:
-      /* skip header fields prohibited by HTTP/2 specification. */
-      --nheader;
-      continue;
-    case HEADERINST_TE_TRAILERS:
-      nva[i].value = (uint8_t*)"trailers";
-      nva[i].value_len = sizeof("trailers") - 1;
-      break;
-    default:
-      nva[i].value = (unsigned char *)hdbuf;
-      nva[i].value_len = (size_t)(end - hdbuf);
-    }
-#endif
-    nva[i].value = (unsigned char *)hdbuf;
-    nva[i].value_len = (size_t)(end - hdbuf);
-
-    ++i;
-  }
-
-  hdbuf += nva[i - 1].value_len + 4;
-
-  /* :authority must come before non-pseudo header fields */
-  if(authority_idx && authority_idx != AUTHORITY_DST_IDX) {
-    quiche_h3_header authority = nva[authority_idx];
-    for(i = authority_idx; i > AUTHORITY_DST_IDX; --i) {
-      nva[i] = nva[i - 1];
-    }
-    nva[i] = authority;
-  }
-
-  /* Warn stream may be rejected if cumulative length of headers is too
-     large. */
-#define MAX_ACC 60000  /* <64KB to account for some overhead */
-  {
-    size_t acc = 0;
-
-    for(i = 0; i < nheader; ++i) {
-      acc += nva[i].name_len + nva[i].value_len;
-
-      H3BUGF(infof(data, "h3 [%.*s: %.*s]",
-                   nva[i].name_len, nva[i].name,
-                   nva[i].value_len, nva[i].value));
-    }
-
-    if(acc > MAX_ACC) {
-      infof(data, "http_request: Warning: The cumulative length of all "
-            "headers exceeds %d bytes and that could cause the "
-            "stream to be rejected.", MAX_ACC);
-    }
-  }
-
-  *written = (ssize_t) len;
 
   switch(data->state.httpreq) {
   case HTTPREQ_POST:
   case HTTPREQ_POST_FORM:
   case HTTPREQ_POST_MIME:
   case HTTPREQ_PUT:
-    if(data->state.infilesize != -1) {
-      upload_left = len - ((char *)hdbuf - (char *)mem);
-      if(upload_left == 0 && data->state.infilesize > 0) {
-        upload_left = -1; /* unknown, but not zero */
-      }
-    }
-    else {
+    if(data->state.infilesize != -1)
+      stream->upload_left = data->state.infilesize;
+    else
       /* data sending without specifying the data amount up front */
-      upload_left = -1; /* unknown, but not zero */
-    }
+      stream->upload_left = -1; /* unknown, but not zero */
 
     stream3_id = quiche_h3_send_request(qs->h3c, qs->conn, nva, nheader,
-                                        upload_left ? FALSE: TRUE);
-    if(stream3_id >= 0 && data->set.postfields && upload_left > 0) {
-      bool fin = data->state.infilesize > upload_left ? FALSE : TRUE;
+                                        stream->upload_left ? FALSE: TRUE);
+    if((stream3_id >= 0) && data->set.postfields) {
       ssize_t sent = quiche_h3_send_body(qs->h3c, qs->conn, stream3_id,
                                          (uint8_t *)data->set.postfields,
-                                         upload_left, fin);
+                                         stream->upload_left, TRUE);
       if(sent <= 0) {
         failf(data, "quiche_h3_send_body failed!");
-        if(sent == QUICHE_H3_ERR_DONE) {
-          result = CURLE_AGAIN;
-          /* Then curl would try to call this function again */
-          stream->h3req = FALSE;
-        }
-        else {
-          result = CURLE_SEND_ERROR;
-        }
+        result = CURLE_SEND_ERROR;
       }
-      *written -= (ssize_t)(upload_left - sent);
-      upload_left -= sent;
+      stream->upload_left = 0; /* nothing left to send */
     }
     break;
   default:
@@ -1037,25 +865,22 @@ static CURLcode http_request(struct Curl_easy *data, const void *mem,
   Curl_safefree(nva);
 
   if(stream3_id < 0) {
-    if(stream3_id == QUICHE_H3_ERR_STREAM_BLOCKED) {
-      result = CURLE_AGAIN;
-      /* Then curl would try to call this function again */
-      stream->h3req = FALSE;
-    }
-    else {
-      result = CURLE_SEND_ERROR;
-    }
-    return result;
+    H3BUGF(infof(data, "quiche_h3_send_request returned %d",
+                 stream3_id));
+    result = CURLE_SEND_ERROR;
+    goto fail;
   }
 
   infof(data, "Using HTTP/3 Stream ID: %x (easy handle %p)",
         stream3_id, (void *)data);
   stream->stream3_id = stream3_id;
 
+  Curl_pseudo_free(hreq);
   return CURLE_OK;
 
 fail:
   free(nva);
+  Curl_pseudo_free(hreq);
   return result;
 }
 

@@ -1,5 +1,5 @@
-#ifndef HEADER_CURL_VQUIC_QUIC_H
-#define HEADER_CURL_VQUIC_QUIC_H
+#ifndef HEADER_CURL_H2H3_H
+#define HEADER_CURL_H2H3_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -21,14 +21,39 @@
  * KIND, either express or implied.
  *
  ***************************************************************************/
-
 #include "curl_setup.h"
 
-#ifdef ENABLE_QUIC
-CURLcode Curl_qlogdir(struct Curl_easy *data,
-                      unsigned char *scid,
-                      size_t scidlen,
-                      int *qlogfdp);
-#endif
+#define H2H3_PSEUDO_METHOD ":method"
+#define H2H3_PSEUDO_SCHEME ":scheme"
+#define H2H3_PSEUDO_AUTHORITY ":authority"
+#define H2H3_PSEUDO_PATH ":path"
+#define H2H3_PSEUDO_STATUS ":status"
 
-#endif /* HEADER_CURL_VQUIC_QUIC_H */
+struct h2h3pseudo {
+  const char *name;
+  size_t namelen;
+  const char *value;
+  size_t valuelen;
+};
+
+struct h2h3req {
+  size_t entries;
+  struct h2h3pseudo header[1]; /* the array is allocated to contain entries */
+};
+
+/*
+ * Curl_pseudo_headers() creates the array with pseudo headers to be
+ * used in a HTTP/2 or HTTP/3 request. Returns an allocated struct.
+ * Free it with Curl_pseudo_free().
+ */
+CURLcode Curl_pseudo_headers(struct Curl_easy *data,
+                             const char *request,
+                             size_t len,
+                             struct h2h3req **hp);
+
+/*
+ * Curl_pseudo_free() frees a h2h3req struct.
+ */
+void Curl_pseudo_free(struct h2h3req *hp);
+
+#endif /* HEADER_CURL_H2H3_H */
