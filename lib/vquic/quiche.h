@@ -48,6 +48,7 @@ struct quicsocket {
   ssize_t egress_buflen;
   SSL_CTX *sslctx;
   SSL *ssl;
+  bool h3_recving; /* TRUE when in h3-body-reading state */
 };
 
 #endif

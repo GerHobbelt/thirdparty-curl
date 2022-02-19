@@ -244,7 +244,7 @@ static CURLcode CONNECT_host(struct Curl_easy *data,
   if(!hostheader)
     return CURLE_OUT_OF_MEMORY;
 
-  if(!Curl_checkProxyheaders(data, conn, "Host")) {
+  if(!Curl_checkProxyheaders(data, conn, STRCONST("Host"))) {
     host = aprintf("Host: %s\r\n", hostheader);
     if(!host) {
       free(hostheader);
@@ -323,20 +323,23 @@ static CURLcode CONNECT(struct Curl_easy *data,
                         data->state.aptr.proxyuserpwd?
                         data->state.aptr.proxyuserpwd:"");
 
-        if(!result && !Curl_checkProxyheaders(data, conn, "User-Agent") &&
+        if(!result && !Curl_checkProxyheaders(data,
+                                              conn, STRCONST("User-Agent")) &&
            data->set.str[STRING_USERAGENT])
           result = Curl_dyn_addf(req, "User-Agent: %s\r\n",
                                  data->set.str[STRING_USERAGENT]);
 
-        if(!result && !Curl_checkProxyheaders(data, conn, "Proxy-Connection"))
-          result = Curl_dyn_add(req, "Proxy-Connection: Keep-Alive\r\n");
+        if(!result && !Curl_checkProxyheaders(data, conn,
+                                              STRCONST("Proxy-Connection")))
+          result = Curl_dyn_addn(req,
+                                 STRCONST("Proxy-Connection: Keep-Alive\r\n"));
 
         if(!result)
           result = Curl_add_custom_headers(data, TRUE, req);
 
         if(!result)
           /* CRLF terminate the request */
-          result = Curl_dyn_add(req, "\r\n");
+          result = Curl_dyn_addn(req, STRCONST("\r\n"));
 
         if(!result) {
           /* Send the connect request to the proxy */
@@ -874,7 +877,7 @@ static CURLcode CONNECT(struct Curl_easy *data,
           goto error;
       }
 
-      if(!Curl_checkProxyheaders(data, conn, "User-Agent") &&
+      if(!Curl_checkProxyheaders(data, conn, STRCONST("User-Agent")) &&
          data->set.str[STRING_USERAGENT]) {
         struct dynbuf ua;
         Curl_dyn_init(&ua, DYN_HTTP_REQUEST);
@@ -888,7 +891,7 @@ static CURLcode CONNECT(struct Curl_easy *data,
         Curl_dyn_free(&ua);
       }
 
-      if(!Curl_checkProxyheaders(data, conn, "Proxy-Connection")) {
+      if(!Curl_checkProxyheaders(data, conn, STRCONST("Proxy-Connection"))) {
         result = Curl_hyper_header(data, headers,
                                    "Proxy-Connection: Keep-Alive");
         if(result)

@@ -640,8 +640,22 @@ static ssize_t h3_stream_recv(struct Curl_easy *data,
     return -1;
   }
 
+  if(qs->h3_recving) {
+    /* body receiving state */
+    rcode = quiche_h3_recv_body(qs->h3c, qs->conn, stream->stream3_id,
+                                (unsigned char *)buf, buffersize);
+    if(rcode <= 0) {
+      recvd = -1;
+      qs->h3_recving = FALSE;
+      /* fall through into the while loop below */
+    }
+    else
+      recvd = rcode;
+  }
+
   while(recvd < 0) {
     int64_t s = quiche_h3_conn_poll(qs->h3c, qs->conn, &ev);
+    infof(data, "quiche_h3_conn_poll: %ld", s);
     if(s < 0)
       /* nothing more to do */
       break;
@@ -681,6 +695,7 @@ static ssize_t h3_stream_recv(struct Curl_easy *data,
         recvd = -1;
         break;
       }
+      qs->h3_recving = TRUE;
       recvd += rcode;
       break;
 

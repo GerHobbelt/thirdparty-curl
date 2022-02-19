@@ -1880,6 +1880,7 @@ CURLcode Curl_uc_to_curlcode(CURLUcode uc)
   }
 }
 
+#ifdef ENABLE_IPV6
 /*
  * If the URL was set with an IPv6 numerical address with a zone id part, set
  * the scope_id based on that!
@@ -1929,6 +1930,9 @@ static void zonefrom_url(CURLU *uh, struct Curl_easy *data,
     free(zoneid);
   }
 }
+#else
+#define zonefrom_url(a,b,c) Curl_nop_stmt
+#endif
 
 /*
  * Parse URL and fill in the relevant members of the connection struct.

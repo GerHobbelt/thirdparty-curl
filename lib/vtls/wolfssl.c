@@ -917,13 +917,16 @@ static ssize_t wolfssl_recv(struct Curl_easy *data,
 
   nread = SSL_read(backend->handle, buf, buffsize);
 
-  if(nread < 0) {
+  if(nread <= 0) {
     int err = SSL_get_error(backend->handle, nread);
 
     switch(err) {
     case SSL_ERROR_ZERO_RETURN: /* no more data */
       break;
+    case SSL_ERROR_NONE:
+      /* FALLTHROUGH */
     case SSL_ERROR_WANT_READ:
+      /* FALLTHROUGH */
     case SSL_ERROR_WANT_WRITE:
       /* there's data pending, re-invoke SSL_read() */
       *curlcode = CURLE_AGAIN;
