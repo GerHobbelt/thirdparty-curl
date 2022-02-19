@@ -2424,6 +2424,8 @@ set_ssl_version_min_max(SSL_CTX *ctx, struct connectdata *conn)
 
 #ifdef OPENSSL_IS_BORINGSSL
 typedef uint32_t ctx_option_t;
+#elif OPENSSL_VERSION_NUMBER >= 0x30000000L
+typedef uint64_t ctx_option_t;
 #else
 typedef long ctx_option_t;
 #endif
@@ -3244,19 +3246,11 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
      (0 == Curl_inet_pton(AF_INET6, hostname, &addr)) &&
 #endif
      sni) {
-    size_t nlen = strlen(hostname);
-    if((long)nlen >= data->set.buffer_size)
-      /* this is seriously messed up */
+    char *snihost = Curl_ssl_snihost(data, hostname, NULL);
+    if(!snihost || !SSL_set_tlsext_host_name(backend->handle, snihost)) {
+      failf(data, "Failed set SNI");
       return CURLE_SSL_CONNECT_ERROR;
-
-    /* RFC 6066 section 3 says the SNI field is case insensitive, but browsers
-       send the data lowercase and subsequently there are now numerous servers
-       out there that don't work unless the name is lowercased */
-    Curl_strntolower(data->state.buffer, hostname, nlen);
-    data->state.buffer[nlen] = 0;
-    if(!SSL_set_tlsext_host_name(backend->handle, data->state.buffer))
-      infof(data, "WARNING: failed to configure server name indication (SNI) "
-            "TLS extension");
+    }
   }
 #endif
 

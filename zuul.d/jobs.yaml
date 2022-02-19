@@ -380,19 +380,6 @@
         T: events
 
 - job:
-    name: curl-distcheck
-    parent: curl-base
-    vars:
-      curl_apt_packages:
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-      curl_env:
-        CC: gcc-8
-        CXX: g++-8
-        T: distcheck
-
-- job:
     name: curl-fuzzer
     parent: curl-base
     vars:
@@ -424,26 +411,6 @@
         CXX: clang++-9
         T: tidy
         C: --with-openssl
-
-- job:
-    name: curl-scan-build
-    parent: curl-base
-    vars:
-      curl_apt_packages:
-        - clang-tools-10
-        - clang-9
-        - libssl-dev
-        - libssh2-1-dev
-        - libpsl-dev
-        - libbrotli-dev
-        - libzstd-dev
-      curl_env:
-        CC: clang-9
-        CXX: clang++-9
-        T: scan-build
-        C: >-
-          --with-openssl
-          --with-libssh2
 
 - job:
     name: curl-debug-clang-with-openssl-dl-ubsan
@@ -495,9 +462,7 @@
       - curl-cmake-ngtcp2
       - curl-torture
       - curl-events
-      - curl-distcheck
       - curl-fuzzer
       - curl-tidy
-      - curl-scan-build
       - curl-debug-clang-with-openssl-dl-ubsan
 ...
