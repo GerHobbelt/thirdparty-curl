@@ -851,8 +851,8 @@ static void conn_free(struct connectdata *conn)
  *
  */
 
-CURLcode Curl_disconnect(struct Curl_easy *data,
-                         struct connectdata *conn, bool dead_connection)
+void Curl_disconnect(struct Curl_easy *data,
+                     struct connectdata *conn, bool dead_connection)
 {
   /* there must be a connection to close */
   DEBUGASSERT(conn);
@@ -872,7 +872,7 @@ CURLcode Curl_disconnect(struct Curl_easy *data,
    */
   if(CONN_INUSE(conn) && !dead_connection) {
     DEBUGF(infof(data, "Curl_disconnect when inuse: %zu", CONN_INUSE(conn)));
-    return CURLE_OK;
+    return;
   }
 
   if(conn->dns_entry) {
@@ -904,7 +904,6 @@ CURLcode Curl_disconnect(struct Curl_easy *data,
   Curl_detach_connnection(data);
 
   conn_free(conn);
-  return CURLE_OK;
 }
 
 /*
@@ -1126,7 +1125,7 @@ static void prune_dead_connections(struct Curl_easy *data)
       Curl_conncache_remove_conn(data, prune.extracted, TRUE);
 
       /* disconnect it */
-      (void)Curl_disconnect(data, prune.extracted, TRUE);
+      Curl_disconnect(data, prune.extracted, TRUE);
     }
     CONNCACHE_LOCK(data);
     data->state.conn_cache->last_cleanup = now;
@@ -1230,7 +1229,7 @@ ConnectionExists(struct Curl_easy *data,
 
       if(extract_if_dead(check, data)) {
         /* disconnect it */
-        (void)Curl_disconnect(data, check, TRUE);
+        Curl_disconnect(data, check, TRUE);
         continue;
       }
 
@@ -3989,7 +3988,7 @@ static CURLcode create_conn(struct Curl_easy *data,
         CONNCACHE_UNLOCK(data);
 
         if(conn_candidate)
-          (void)Curl_disconnect(data, conn_candidate, FALSE);
+          Curl_disconnect(data, conn_candidate, FALSE);
         else {
           infof(data, "No more connections allowed to host %s: %zu",
                 bundlehost, max_host_connections);
@@ -4009,7 +4008,7 @@ static CURLcode create_conn(struct Curl_easy *data,
       /* The cache is full. Let's see if we can kill a connection. */
       conn_candidate = Curl_conncache_extract_oldest(data);
       if(conn_candidate)
-        (void)Curl_disconnect(data, conn_candidate, FALSE);
+        Curl_disconnect(data, conn_candidate, FALSE);
       else {
         infof(data, "No connections available in cache");
         connections_available = FALSE;
