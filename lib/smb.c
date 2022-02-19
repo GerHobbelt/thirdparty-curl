@@ -262,7 +262,7 @@ static CURLcode smb_connect(struct Curl_easy *data, bool *done)
   (void) done;
 
   /* Check we have a username and password to authenticate with */
-  if(!conn->bits.user_passwd)
+  if(!data->state.aptr.user)
     return CURLE_LOGIN_DENIED;
 
   /* Initialize the connection state */
@@ -464,12 +464,8 @@ static CURLcode smb_send_setup(struct Curl_easy *data)
 
   Curl_ntlm_core_mk_lm_hash(conn->passwd, lm_hash);
   Curl_ntlm_core_lm_resp(lm_hash, smbc->challenge, lm);
-#ifdef USE_NTRESPONSES
   Curl_ntlm_core_mk_nt_hash(conn->passwd, nt_hash);
   Curl_ntlm_core_lm_resp(nt_hash, smbc->challenge, nt);
-#else
-  memset(nt, 0, sizeof(nt));
-#endif
 
   memset(&msg, 0, sizeof(msg));
   msg.word_count = SMB_WC_SETUP_ANDX;
