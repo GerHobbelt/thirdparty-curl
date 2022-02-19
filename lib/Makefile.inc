@@ -168,7 +168,6 @@ LIB_CFILES =         \
   mqtt.c             \
   multi.c            \
   netrc.c            \
-  non-ascii.c        \
   nonblock.c         \
   openldap.c         \
   openlock.c         \
@@ -289,7 +288,6 @@ LIB_HFILES =         \
   multihandle.h      \
   multiif.h          \
   netrc.h            \
-  non-ascii.h        \
   nonblock.h         \
   openlock.h         \
   parsedate.h        \

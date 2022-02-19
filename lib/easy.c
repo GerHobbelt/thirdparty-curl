@@ -68,7 +68,6 @@
 #include "slist.h"
 #include "mime.h"
 #include "amigaos.h"
-#include "non-ascii.h"
 #include "warnless.h"
 #include "multiif.h"
 #include "sigpipe.h"
@@ -931,8 +930,6 @@ struct Curl_easy *curl_easy_duphandle(struct Curl_easy *data)
       goto fail;
   }
 #endif /* USE_ARES */
-
-  Curl_convert_setup(outcurl);
 
   Curl_initinfo(outcurl);
 
