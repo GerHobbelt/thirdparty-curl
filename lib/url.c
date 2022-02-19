@@ -2130,9 +2130,11 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
     return CURLE_OUT_OF_MEMORY;
   conn->host.name = conn->host.rawalloc;
 
+#ifdef ENABLE_IPV6
   if(data->set.scope_id)
     /* Override any scope that was set above.  */
     conn->scope_id = data->set.scope_id;
+#endif
 
   return CURLE_OK;
 }

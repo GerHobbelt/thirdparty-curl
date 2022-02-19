@@ -53,11 +53,46 @@ commands:
           command: |
             sudo apt-get update && sudo apt-get install -y libc-ares-dev
 
+  install-libssh:
+    steps:
+      - run:
+          command: |
+            sudo apt-get update && sudo apt-get install -y libssh-dev
+
   install-deps:
     steps:
       - run:
           command: |
             sudo apt-get update && sudo apt-get install -y libpsl-dev libbrotli-dev libzstd-dev zlib1g-dev
+
+  configure-libssh:
+    steps:
+      - run:
+          command: |
+            ./buildconf
+            ./configure --enable-warnings --enable-werror --with-openssl --with-libssh
+
+  install-wolfssl:
+    steps:
+      - run:
+          command: |
+            curl -LO https://github.com/wolfSSL/wolfssl/archive/v5.1.1-stable.tar.gz
+            tar -xzf v5.1.1-stable.tar.gz
+            cd wolfssl-5.1.1-stable
+            ./autogen.sh
+            ./configure --enable-tls13 --enable-all --enable-harden --prefix=$HOME/wssl
+            make && make install
+
+  install-wolfssh:
+    steps:
+      - run:
+          command: |
+            curl -LO https://github.com/wolfSSL/wolfssh/archive/v1.4.8-stable.tar.gz
+            tar -xzf v1.4.8-stable.tar.gz
+            cd wolfssh-1.4.8-stable
+            ./autogen.sh
+            ./configure --with-wolfssl=$HOME/wssl --prefix=$HOME/wssh --enable-scp --enable-sftp --disable-examples
+            make && make install
 
   configure-cares:
     steps:
@@ -65,6 +100,13 @@ commands:
           command: |
             ./buildconf
             ./configure --enable-warnings --enable-werror --with-openssl --enable-ares
+
+  configure-wolfssh:
+    steps:
+      - run:
+          command: |
+            ./buildconf
+            LDFLAGS="-Wl,-rpath,$HOME/wssh/lib" ./configure --enable-warnings --enable-werror --with-wolfssl=$HOME/wssl --with-wolfssh=$HOME/wssh
 
   configure-cares-debug:
     steps:
@@ -104,6 +146,16 @@ jobs:
       - configure-openssl-no-verbose
       - build
 
+  wolfssh:
+    executor: ubuntu
+    steps:
+      - checkout
+      - install-deps
+      - install-wolfssl
+      - install-wolfssh
+      - configure-wolfssh
+      - build
+
   no-proxy:
     executor: ubuntu
     steps:
@@ -119,6 +171,15 @@ jobs:
       - checkout
       - install-cares
       - configure-cares
+      - build
+      - test
+
+  libssh:
+    executor: ubuntu
+    steps:
+      - checkout
+      - install-libssh
+      - configure-libssh
       - build
       - test
 
@@ -152,6 +213,10 @@ workflows:
     jobs:
       - cares
 
+  openssl-libssh:
+    jobs:
+      - libssh
+
   openssl-no-proxy:
     jobs:
       - no-proxy
@@ -159,6 +224,10 @@ workflows:
   openssl-no-verbose:
     jobs:
       - no-verbose
+
+  wolfssl-wolfssh:
+    jobs:
+      - wolfssh
 
   arm-openssl:
     jobs:
