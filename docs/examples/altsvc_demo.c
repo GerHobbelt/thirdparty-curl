@@ -20,11 +20,16 @@
  *
  ***************************************************************************/
 /* <DESC>
- * Use getinfo to get content-type after completed transfer.
+ * HTTP with Alt-Svc support
  * </DESC>
  */
 #include <stdio.h>
 #include <curl/curl.h>
+
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_altsvc_main()
+#endif
 
 int main(void)
 {
@@ -33,17 +38,21 @@ int main(void)
 
   curl = curl_easy_init();
   if(curl) {
-    curl_easy_setopt(curl, CURLOPT_URL, "https://www.example.com/");
+    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com");
+
+    /* cache the alternatives in this file */
+    curl_easy_setopt(curl, CURLOPT_ALTSVC, "altsvc.txt");
+
+    /* restrict which HTTP versions to use alternatives */
+    curl_easy_setopt(curl, CURLOPT_ALTSVC_CTRL, (long)
+                     CURLALTSVC_H1|CURLALTSVC_H2|CURLALTSVC_H3);
+
+    /* Perform the request, res will get the return code */
     res = curl_easy_perform(curl);
-
-    if(CURLE_OK == res) {
-      char *ct;
-      /* ask for the content-type */
-      res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
-
-      if((CURLE_OK == res) && ct)
-        printf("We received Content-Type: %s\n", ct);
-    }
+    /* Check for errors */
+    if(res != CURLE_OK)
+      fprintf(stderr, "curl_easy_perform() failed: %s\n",
+              curl_easy_strerror(res));
 
     /* always cleanup */
     curl_easy_cleanup(curl);
