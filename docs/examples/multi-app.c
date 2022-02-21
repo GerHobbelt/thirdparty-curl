@@ -25,15 +25,20 @@
  * </DESC>
  */
 
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <string.h>
 
 /* somewhat unix-specific */
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
+#endif
+#if !defined(CURL_WIN32)
 #include <unistd.h>
+#endif
 
 /* curl stuff */
-#include <curl/curl.h>
 
 /*
  * Download a HTTP file and upload an FTP file simultaneously.
@@ -42,6 +47,11 @@
 #define HANDLECOUNT 2   /* Number of simultaneous transfers */
 #define HTTP_HANDLE 0   /* Index for the HTTP transfer */
 #define FTP_HANDLE 1    /* Index for the FTP transfer */
+
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_multi_app_main()
+#endif
 
 int main(void)
 {

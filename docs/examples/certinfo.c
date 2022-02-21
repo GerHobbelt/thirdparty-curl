@@ -34,6 +34,11 @@ static size_t wrfu(void *ptr,  size_t  size,  size_t  nmemb,  void *stream)
   return size * nmemb;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_certinfo_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

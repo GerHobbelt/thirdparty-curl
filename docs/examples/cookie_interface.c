@@ -60,8 +60,12 @@ print_cookies(CURL *curl)
   curl_slist_free_all(cookies);
 }
 
-int
-main(void)
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_cookie_interface_main()
+#endif
+
+int main(void)
 {
   CURL *curl;
   CURLcode res;

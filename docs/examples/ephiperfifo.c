@@ -57,6 +57,10 @@ callback.
 
 */
 
+#include <curl/curl.h>
+
+#if !defined(CURL_WIN32)
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -70,8 +74,6 @@ callback.
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <curl/curl.h>
 
 #define MSG_OUT stdout /* Send info to stdout, change to stderr if you want */
 
@@ -543,3 +545,5 @@ int main(int argc, char **argv)
   clean_fifo(&g);
   return 0;
 }
+
+#endif

@@ -38,7 +38,13 @@ write_response(void *ptr, size_t size, size_t nmemb, void *data)
 #define FTPBODY "ftp-list"
 #define FTPHEADERS "ftp-responses"
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_get_resp_main()
+#endif
+
 int main(void)
+
 {
   CURL *curl;
   CURLcode res;

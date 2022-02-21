@@ -23,19 +23,30 @@
  * multi interface code doing two parallel HTTP transfers
  * </DESC>
  */
+
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <string.h>
 
 /* somewhat unix-specific */
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
+#endif
+#if !defined(CURL_WIN32)
 #include <unistd.h>
+#endif
 
 /* curl stuff */
-#include <curl/curl.h>
 
 /*
  * Simply download two HTTP files!
  */
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_multi_double_main()
+#endif
+
 int main(void)
 {
   CURL *http_handle;

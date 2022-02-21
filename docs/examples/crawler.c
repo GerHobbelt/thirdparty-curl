@@ -146,6 +146,11 @@ int is_html(char *ctype)
   return ctype != NULL && strlen(ctype) > 10 && strstr(ctype, "text/html");
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_crawler_main()
+#endif
+
 int main(void)
 {
   signal(SIGINT, sighandler);

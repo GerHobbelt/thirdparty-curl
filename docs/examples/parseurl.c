@@ -30,6 +30,11 @@
 #error "this example requires curl 7.62.0 or later"
 #endif
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_parse_url_main()
+#endif
+
 int main(void)
 {
   CURLU *h;

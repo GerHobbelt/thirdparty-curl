@@ -88,6 +88,11 @@ static int sockopt_callback(void *clientp, curl_socket_t curlfd,
   return CURL_SOCKOPT_ALREADY_CONNECTED;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_external_socket_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

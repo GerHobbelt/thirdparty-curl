@@ -23,16 +23,22 @@
  * HTTP/2 server push
  * </DESC>
  */
+
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* somewhat unix-specific */
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
+#endif
+#if !defined(CURL_WIN32)
 #include <unistd.h>
+#endif
 
 /* curl stuff */
-#include <curl/curl.h>
 
 #ifndef CURLPIPE_MULTIPLEX
 #error "too old libcurl, cannot do HTTP/2 server push!"
@@ -209,6 +215,11 @@ static int server_push_callback(CURL *parent,
 /*
  * Download a file over HTTP/2, take care of server push.
  */
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_http2_server_push_main()
+#endif
+
 int main(void)
 {
   CURL *easy;

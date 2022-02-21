@@ -102,6 +102,11 @@ static void add_transfer(CURLM *cm, int i)
   curl_multi_add_handle(cm, eh);
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_10_at_a_time_main()
+#endif
+
 int main(void)
 {
   CURLM *cm;

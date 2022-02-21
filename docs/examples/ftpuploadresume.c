@@ -144,7 +144,13 @@ static int upload(CURL *curlhandle, const char *remotepath,
   }
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_upload_resume_main()
+#endif
+
 int main(void)
+
 {
   CURL *curlhandle = NULL;
 

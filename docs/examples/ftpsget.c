@@ -48,6 +48,10 @@ static size_t my_fwrite(void *buffer, size_t size, size_t nmemb,
 }
 
 
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_sget_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

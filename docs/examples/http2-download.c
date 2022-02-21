@@ -23,17 +23,23 @@
  * Multiplexed HTTP/2 downloads over a single connection
  * </DESC>
  */
+
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 /* somewhat unix-specific */
-#include <sys/time.h>
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#  include <sys/time.h>
+#endif
+#if !defined(CURL_WIN32)
 #include <unistd.h>
+#endif
 
 /* curl stuff */
-#include <curl/curl.h>
 #include <curl/mprintf.h>
 
 #ifndef CURLPIPE_MULTIPLEX

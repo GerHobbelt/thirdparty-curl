@@ -118,6 +118,11 @@ static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm)
   return rv;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_cacert_in_mem_main()
+#endif
+
 int main(void)
 {
   CURL *ch;

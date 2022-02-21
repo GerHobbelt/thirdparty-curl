@@ -64,6 +64,11 @@ static size_t read_callback(char *ptr, size_t size, size_t nmemb, void *stream)
   return retcode;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_upload_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

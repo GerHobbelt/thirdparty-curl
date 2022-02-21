@@ -38,6 +38,11 @@ static size_t throw_away(void *ptr, size_t size, size_t nmemb, void *data)
   return (size_t)(size * nmemb);
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_get_info_main()
+#endif
+
 int main(void)
 {
   char ftpurl[] = "ftp://ftp.example.com/gnu/binutils/binutils-2.19.1.tar.bz2";

@@ -121,6 +121,11 @@ int my_trace(CURL *handle, curl_infotype type,
   return 0;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_debug_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

@@ -26,6 +26,11 @@
 #include <stdio.h>
 #include <curl/curl.h>
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_http3_present_main()
+#endif
+
 int main(void)
 {
   curl_version_info_data *ver;

@@ -26,6 +26,11 @@
 #include <stdio.h>
 #include <curl/curl.h>
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_get_redirect_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

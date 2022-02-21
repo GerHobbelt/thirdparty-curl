@@ -47,15 +47,15 @@
  * </DESC>
  */
 
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <string.h>
-#ifndef WIN32
-#  include <sys/time.h>
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#include <sys/time.h>
 #endif
 #include <stdlib.h>
 #include <errno.h>
-
-#include <curl/curl.h>
 
 enum fcurl_type_e {
   CFTYPE_NONE = 0,

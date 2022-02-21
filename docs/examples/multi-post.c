@@ -24,11 +24,18 @@
  * </DESC>
  */
 
+#include <curl/curl.h>
+
 #include <stdio.h>
 #include <string.h>
+#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
+#endif
 
-#include <curl/curl.h>
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_multi_post_main()
+#endif
 
 int main(void)
 {

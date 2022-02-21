@@ -57,6 +57,10 @@ callback.
 
 */
 
+#include <curl/curl.h>
+
+#if !defined(CURL_WIN32)
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -64,7 +68,6 @@ callback.
 #include <time.h>
 #include <unistd.h>
 #include <sys/poll.h>
-#include <curl/curl.h>
 #include <event2/event.h>
 #include <event2/event_struct.h>
 #include <fcntl.h>
@@ -460,3 +463,5 @@ int main(int argc, char **argv)
   curl_multi_cleanup(g.multi);
   return 0;
 }
+
+#endif

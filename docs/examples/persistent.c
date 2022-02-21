@@ -27,6 +27,11 @@
 #include <unistd.h>
 #include <curl/curl.h>
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_persistent_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

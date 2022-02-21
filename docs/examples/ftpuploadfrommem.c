@@ -64,6 +64,11 @@ static size_t read_callback(char *ptr, size_t size, size_t nmemb, void *userp)
   return 0;                          /* no more data left to deliver */
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_ftp_upload_from_mem_main()
+#endif
+
 int main(void)
 {
   CURL *curl;

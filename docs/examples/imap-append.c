@@ -82,6 +82,11 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
   return 0;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      curl_example_imap_append_main()
+#endif
+
 int main(void)
 {
   CURL *curl;
