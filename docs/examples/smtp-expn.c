@@ -37,6 +37,11 @@
  * 2) Not all email servers support this command.
  */
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_smtp_expn_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

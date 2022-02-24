@@ -247,7 +247,12 @@ static void setup(struct input *i, int num, const char *upload)
 /*
  * Upload all files over HTTP/2, using the same physical connection!
  */
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_http2_upload_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   struct input trans[NUM_HANDLES];
   CURLM *multi_handle;

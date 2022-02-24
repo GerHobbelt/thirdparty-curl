@@ -28,7 +28,7 @@
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_get_referrer_main()
+#define main(void)      curl_example_get_referrer_main(void)
 #endif
 
 int main(void)

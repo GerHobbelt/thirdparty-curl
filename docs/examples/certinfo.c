@@ -36,7 +36,7 @@ static size_t wrfu(void *ptr,  size_t  size,  size_t  nmemb,  void *stream)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_certinfo_main()
+#define main(void)      curl_example_certinfo_main(void)
 #endif
 
 int main(void)

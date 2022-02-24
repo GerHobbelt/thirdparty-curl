@@ -422,7 +422,12 @@ static int init_fifo(GlobalInfo *g)
   return (0);
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_evhiperfifo_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   GlobalInfo g;
   (void)argc;

@@ -110,6 +110,11 @@ static size_t parseStreamCallback(void *contents, size_t length, size_t nmemb,
   return real_size;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_xml_stream_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl_handle;

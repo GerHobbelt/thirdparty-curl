@@ -30,6 +30,11 @@
 #error "this example requires curl 7.80.0 or later"
 #endif
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_url_api_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

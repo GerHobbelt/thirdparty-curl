@@ -254,7 +254,12 @@ int conf_init(conf_t *conf)
   return 1;
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_sync_time_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL    *curl;
   conf_t  conf[1];

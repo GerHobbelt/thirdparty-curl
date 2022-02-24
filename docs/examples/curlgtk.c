@@ -70,7 +70,12 @@ static void *my_thread(void *ptr)
   return NULL;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_gtk_gui_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   GtkWidget *Window, *Frame, *Frame2;
   GtkAdjustment *adj;

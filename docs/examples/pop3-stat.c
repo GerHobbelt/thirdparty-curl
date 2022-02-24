@@ -34,6 +34,11 @@
  * Note that this example requires libcurl 7.26.0 or above.
  */
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_pop3_stat_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

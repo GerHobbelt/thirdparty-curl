@@ -65,6 +65,11 @@ static int xferinfo(void *p,
   return 0;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_progress_func_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

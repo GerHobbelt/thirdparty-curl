@@ -66,7 +66,7 @@ static size_t read_callback(char *ptr, size_t size, size_t nmemb, void *stream)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_ftp_upload_main()
+#define main(void)      curl_example_ftp_upload_main(void)
 #endif
 
 int main(void)

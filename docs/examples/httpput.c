@@ -56,15 +56,20 @@ static size_t read_callback(char *ptr, size_t size, size_t nmemb, void *stream)
   return retcode;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_http_put_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL *curl;
   CURLcode res;
   FILE * hd_src;
   struct stat file_info;
 
-  char *file;
-  char *url;
+  const char *file;
+  const char *url;
 
   if(argc < 3)
     return 1;

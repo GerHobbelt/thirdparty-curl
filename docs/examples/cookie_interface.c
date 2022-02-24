@@ -62,7 +62,7 @@ print_cookies(CURL *curl)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_cookie_interface_main()
+#define main(void)      curl_example_cookie_interface_main(void)
 #endif
 
 int main(void)

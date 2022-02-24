@@ -172,6 +172,11 @@ static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm)
   return CURLE_OK;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_user_cert_in_memory_main(void)
+#endif
+
 int main(void)
 {
   CURL *ch;

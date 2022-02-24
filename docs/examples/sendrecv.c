@@ -56,6 +56,11 @@ static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
   return res;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_send_recv_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

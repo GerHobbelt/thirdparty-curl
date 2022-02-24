@@ -40,7 +40,7 @@ static size_t throw_away(void *ptr, size_t size, size_t nmemb, void *data)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_ftp_get_info_main()
+#define main(void)      curl_example_ftp_get_info_main(void)
 #endif
 
 int main(void)

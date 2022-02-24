@@ -190,7 +190,12 @@ static void setup(struct transfer *t, int num)
 /*
  * Download many transfers over HTTP/2, using the same connection!
  */
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_http2_download_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   struct transfer trans[NUM_HANDLES];
   CURLM *multi_handle;

@@ -25,7 +25,9 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 
 #include <curl/curl.h>
 
@@ -35,7 +37,12 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
   return written;
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_url2file_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL *curl_handle;
   static const char *pagefilename = "page.out";

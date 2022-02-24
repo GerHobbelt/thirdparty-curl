@@ -162,7 +162,12 @@ static gboolean cb_delete(GtkWidget *window, gpointer data)
   return FALSE;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_smotth_gtk_thread_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   GtkWidget *top_window, *outside_frame, *inside_frame, *progress_bar;
 

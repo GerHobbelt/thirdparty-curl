@@ -123,7 +123,7 @@ int my_trace(CURL *handle, curl_infotype type,
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_debug_main()
+#define main(void)      curl_example_debug_main(void)
 #endif
 
 int main(void)

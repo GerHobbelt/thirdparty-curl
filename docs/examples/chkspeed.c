@@ -40,6 +40,13 @@
 
 #include <curl/curl.h>
 
+#if defined(_MSC_VER)
+static int strncasecmp(const char* a, const char* b, size_t n)
+{
+	return strnicmp(a, b, n);
+}
+#endif
+
 #define URL_BASE "http://speedtest.your.domain/"
 #define URL_1M   URL_BASE "file_1M.bin"
 #define URL_2M   URL_BASE "file_2M.bin"
@@ -60,13 +67,18 @@ static size_t WriteCallback(void *ptr, size_t size, size_t nmemb, void *data)
   return (size_t)(size * nmemb);
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_check_speed_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL *curl_handle;
   CURLcode res;
   int prtall = 0, prtsep = 0, prttime = 0;
   const char *url = URL_1M;
-  char *appname = argv[0];
+  const char *appname = argv[0];
 
   if(argc > 1) {
     /* parse input parameters */

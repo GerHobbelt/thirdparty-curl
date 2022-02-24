@@ -452,7 +452,12 @@ void url_rewind(URL_FILE *file)
 /* Small main program to retrieve from a url using fgets and fread saving the
  * output to two test files (note the fgets method will corrupt binary files if
  * they contain 0 chars */
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_fopen_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   URL_FILE *handle;
   FILE *outf;

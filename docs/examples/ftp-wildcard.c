@@ -39,7 +39,12 @@ static long file_is_downloaded(struct callback_data *data);
 static size_t write_it(char *buff, size_t size, size_t nmemb,
                        void *cb_data);
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_ftp_wildcard_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   /* curl easy handle */
   CURL *handle;

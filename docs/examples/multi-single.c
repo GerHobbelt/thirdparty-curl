@@ -44,7 +44,7 @@
  */
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_multi_single_main()
+#define main(void)      curl_example_multi_single_main(void)
 #endif
 
 int main(void)

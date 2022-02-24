@@ -217,7 +217,7 @@ static int server_push_callback(CURL *parent,
  */
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_http2_server_push_main()
+#define main(void)      curl_example_http2_server_push_main(void)
 #endif
 
 int main(void)

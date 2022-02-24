@@ -66,6 +66,10 @@ static const char inline_html[] =
   "</body></html>\r\n";
 
 
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_smtp_mime_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

@@ -206,7 +206,12 @@ static int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp,
   return 0;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_multi_event_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   if(argc <= 1)
     return 0;

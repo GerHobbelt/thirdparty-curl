@@ -267,7 +267,12 @@ static CURLcode sslctxfun(CURL *curl, void *sslctx, void *parm)
 
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_x_gui_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   BIO* in = NULL;
   BIO* out = NULL;

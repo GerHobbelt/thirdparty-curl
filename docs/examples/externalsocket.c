@@ -90,7 +90,7 @@ static int sockopt_callback(void *clientp, curl_socket_t curlfd,
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_external_socket_main()
+#define main(void)      curl_example_external_socket_main(void)
 #endif
 
 int main(void)

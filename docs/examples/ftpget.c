@@ -47,7 +47,7 @@ static size_t my_fwrite(void *buffer, size_t size, size_t nmemb, void *stream)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_ftp_get_main()
+#define main(void)      curl_example_ftp_get_main(void)
 #endif
 
 int main(void)

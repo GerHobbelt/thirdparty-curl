@@ -432,7 +432,12 @@ static void clean_fifo(GlobalInfo *g)
     unlink(fifo);
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_hipeer_fifo_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   GlobalInfo g;
   (void)argc;

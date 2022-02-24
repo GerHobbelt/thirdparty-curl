@@ -40,7 +40,7 @@ write_response(void *ptr, size_t size, size_t nmemb, void *data)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_ftp_get_resp_main()
+#define main(void)      curl_example_ftp_get_resp_main(void)
 #endif
 
 int main(void)

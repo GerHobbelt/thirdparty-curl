@@ -44,6 +44,11 @@ static void my_unlock(CURL *handle, curl_lock_data data, void *useptr)
   fprintf(stderr, "<- Mutex unlock\n");
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_shared_connection_cache_main(void)
+#endif
+
 int main(void)
 {
   CURLSH *share;

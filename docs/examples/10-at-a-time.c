@@ -104,7 +104,7 @@ static void add_transfer(CURLM *cm, int i)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_10_at_a_time_main()
+#define main(void)      curl_example_10_at_a_time_main(void)
 #endif
 
 int main(void)

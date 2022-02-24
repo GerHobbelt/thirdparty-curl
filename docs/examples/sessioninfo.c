@@ -84,6 +84,11 @@ static size_t wrfu(void *ptr, size_t size, size_t nmemb, void *stream)
   return size * nmemb;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_session_info_main(void)
+#endif
+
 int main(void)
 {
   curl_global_init(CURL_GLOBAL_DEFAULT);

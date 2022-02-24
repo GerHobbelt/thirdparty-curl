@@ -84,6 +84,11 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
   return 0;
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_smtp_tls_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

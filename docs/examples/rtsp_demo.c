@@ -182,7 +182,12 @@ static void get_media_control_attribute(const char *sdp_filename,
 
 
 /* main app */
-int main(int argc, char * const argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_rtsp_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
 #if 1
   const char *transport = "RTP/AVP;unicast;client_port=1234-1235";  /* UDP */
@@ -192,7 +197,7 @@ int main(int argc, char * const argv[])
 #endif
   const char *range = "0.000-";
   int rc = EXIT_SUCCESS;
-  char *base_name = NULL;
+  const char *base_name = NULL;
 
   printf("\nRTSP request %s\n", VERSION_STR);
   printf("    Project website: "

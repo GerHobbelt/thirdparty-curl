@@ -131,7 +131,12 @@ static void *pull_one_url(void *url)
   return NULL;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_threaded_ssl_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   pthread_t tid[NUMT];
   int i;

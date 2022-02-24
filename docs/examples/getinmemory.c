@@ -59,7 +59,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_get_in_memory_main()
+#define main(void)      curl_example_get_in_memory_main(void)
 #endif
 
 int main(void)

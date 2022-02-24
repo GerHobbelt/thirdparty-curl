@@ -115,6 +115,11 @@ static int sftpResumeUpload(CURL *curlhandle, const char *remotepath,
   }
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_sftp_upload_resume_main(void)
+#endif
+
 int main(void)
 {
   const char *remote = "sftp://user:pass@example.com/path/filename";

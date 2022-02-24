@@ -27,6 +27,11 @@
 #include <string.h>
 #include <curl/curl.h>
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      curl_example_simple_post_main(void)
+#endif
+
 int main(void)
 {
   CURL *curl;

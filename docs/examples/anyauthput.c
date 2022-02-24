@@ -31,12 +31,22 @@
 
 #include <curl/curl.h>
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 #  include <io.h>
 #  define READ_3RD_ARG unsigned int
 #else
 #  include <unistd.h>
 #  define READ_3RD_ARG size_t
+#endif
+
+#ifndef _SSIZE_T_DEFINED
+#  if defined(_WIN64) || defined(WIN64)
+#    define _SSIZE_T_DEFINED
+#    define ssize_t __int64
+#  else
+#    define _SSIZE_T_DEFINED
+#    define ssize_t int
+#  endif
 #endif
 
 #if LIBCURL_VERSION_NUM < 0x070c03
@@ -96,15 +106,20 @@ static size_t read_callback(char *ptr, size_t size, size_t nmemb, void *stream)
   return retcode;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_any_auth_put_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL *curl;
   CURLcode res;
   int hd;
   struct stat file_info;
 
-  char *file;
-  char *url;
+  const char *file;
+  const char *url;
 
   if(argc < 3)
     return 1;

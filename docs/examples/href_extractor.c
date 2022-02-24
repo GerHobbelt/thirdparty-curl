@@ -50,7 +50,12 @@ static size_t write_callback(void *buffer, size_t size, size_t nmemb,
   return realsize;
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_href_extractor_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   char tag[1], attr[4], val[128];
   CURL *curl;

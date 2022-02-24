@@ -23,13 +23,17 @@
  * re-using handles to do HTTP persistent connections
  * </DESC>
  */
+
 #include <stdio.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
+
 #include <curl/curl.h>
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main()      curl_example_persistent_main()
+#define main(void)      curl_example_persistent_main(void)
 #endif
 
 int main(void)

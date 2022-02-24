@@ -41,7 +41,12 @@
 
 #include <curl/curl.h>
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_postit2_form_add_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   CURL *curl;
   CURLcode res;

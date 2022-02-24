@@ -54,6 +54,8 @@
 
 */
 
+#if !defined(_MSC_VER)
+
 #include <glib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -409,7 +411,12 @@ int init_fifo(void)
   return socket;
 }
 
-int main(int argc, char **argv)
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_ghiper_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   GlobalInfo *g;
   GMainLoop*gmain;
@@ -434,3 +441,5 @@ int main(int argc, char **argv)
   curl_multi_cleanup(g->multi);
   return 0;
 }
+
+#endif

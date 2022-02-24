@@ -72,7 +72,11 @@ void dumpNode(TidyDoc doc, TidyNode tnod, int indent)
 }
 
 
-int main(int argc, char **argv)
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_example_htmltidy_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   if(argc == 2) {
     CURL *curl;
