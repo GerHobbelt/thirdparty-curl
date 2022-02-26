@@ -655,7 +655,6 @@ static ssize_t h3_stream_recv(struct Curl_easy *data,
 
   while(recvd < 0) {
     int64_t s = quiche_h3_conn_poll(qs->h3c, qs->conn, &ev);
-    infof(data, "quiche_h3_conn_poll: %ld", s);
     if(s < 0)
       /* nothing more to do */
       break;
