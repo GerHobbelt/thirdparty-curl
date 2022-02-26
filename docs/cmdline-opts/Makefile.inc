@@ -203,7 +203,7 @@ DPAGES = \
   remote-name-all.d \
   remote-name.d \
   remote-time.d \
-  remove-partial.d \
+  remove-on-error.d \
   request-target.d \
   request.d \
   resolve.d \

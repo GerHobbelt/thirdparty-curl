@@ -574,7 +574,7 @@ const struct helptxt helptext[] = {
   {"-R, --remote-time",
    "Set the remote file's time on the local output",
    CURLHELP_OUTPUT},
-  {"    --remove-partial",
+  {"    --remove-on-error",
    "Remove output file on errors",
    CURLHELP_CURL},
   {"-X, --request <method>",

@@ -284,7 +284,7 @@ static const struct LongShort aliases[]= {
   {"fb", "styled-output",            ARG_BOOL},
   {"fc", "mail-rcpt-allowfails",     ARG_BOOL},
   {"fd", "fail-with-body",           ARG_BOOL},
-  {"fe", "remove-partial",           ARG_BOOL},
+  {"fe", "remove-on-error",          ARG_BOOL},
   {"F",  "form",                     ARG_STRING},
   {"Fs", "form-string",              ARG_STRING},
   {"g",  "globoff",                  ARG_BOOL},
@@ -1846,7 +1846,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'd': /* --fail-with-body */
         config->failwithbody = toggle;
         break;
-      case 'e': /* --remove-partial */
+      case 'e': /* --remove-on-error */
         config->rm_partial = toggle;
         break;
        default: /* --fail (hard on errors)  */
