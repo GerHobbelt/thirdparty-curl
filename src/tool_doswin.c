@@ -690,6 +690,8 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
                          curl_sslbackend backend,
                          const TCHAR *bundle_file)
 {
+  CURLcode result = CURLE_OK;
+
   /* Search and set cert file only if libcurl supports SSL.
    *
    * If Schannel is the selected SSL backend then these locations are
@@ -711,19 +713,26 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
       return CURLE_OUT_OF_MEMORY;
 
     written = SearchPath(NULL, bundle_file, NULL, res_len, buf, NULL);
-    if(written && written < res_len) {
-      char *mstr = curlx_convert_tchar_to_UTF8(buf);
-      Curl_safefree(config->cacert);
-      if(mstr)
-        config->cacert = strdup(mstr);
-      curlx_unicodefree(mstr);
-      if(!config->cacert)
+    if(written) {
+      if (written >= res_len) {
+        // unexpected fault!
+        DEBUGASSERT(!"Unexpected fault in SearchPath API usage");
         result = CURLE_OUT_OF_MEMORY;
+      }
+      else {
+        char *mstr = curlx_convert_tchar_to_UTF8(buf);
+        Curl_safefree(config->cacert);
+        if(mstr)
+          config->cacert = strdup(mstr);
+        curlx_unicodefree(mstr);
+        if(!config->cacert)
+          result = CURLE_OUT_OF_MEMORY;
+      }
     }
     Curl_safefree(buf);
   }
 
-  return CURLE_OK;
+  return result;
 }
 
 
