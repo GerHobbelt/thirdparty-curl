@@ -25,10 +25,12 @@
  * </DESC>
  */
 
+#if !defined(_MSC_VER)
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <event2/event.h>
 #include <curl/curl.h>
+#include <event2/event.h>
 
 struct event_base *base;
 CURLM *curl_handle;
@@ -243,3 +245,5 @@ int main(int argc, const char** argv)
 
   return 0;
 }
+
+#endif

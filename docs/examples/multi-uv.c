@@ -32,10 +32,12 @@
    See https://nikhilm.github.io/uvbook/ for more information on libuv.
 */
 
+#if !defined(_MSC_VER)
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <uv.h>
 #include <curl/curl.h>
+#include <uv.h>
 
 uv_loop_t *loop;
 CURLM *curl_handle;
@@ -238,3 +240,5 @@ int main(int argc, const char** argv)
 
   return 0;
 }
+
+#endif

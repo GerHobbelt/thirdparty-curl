@@ -25,6 +25,7 @@
  */
 
 #include <curl/curl.h>
+#include "timeval.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,12 +120,12 @@ int my_trace(CURL *handle, curl_infotype type,
   int num = i->num;
   static time_t epoch_offset;
   static int    known_offset;
-  struct timeval tv;
+  struct curltime tv;
   time_t secs;
   struct tm *now;
   (void)handle; /* prevent compiler warning */
 
-  gettimeofday(&tv, NULL);
+  tv = Curl_now();
   if(!known_offset) {
     epoch_offset = time(NULL) - tv.tv_sec;
     known_offset = 1;
@@ -178,7 +179,7 @@ static void setup(struct input *i, int num, const char *upload)
   FILE *out;
   char url[256];
   char filename[128];
-  struct stat file_info;
+  struct_stat file_info;
   curl_off_t uploadsize;
   CURL *hnd;
 

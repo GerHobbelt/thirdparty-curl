@@ -103,7 +103,7 @@ static void kill_locks(void)
 
 GCRY_THREAD_OPTION_PTHREAD_IMPL;
 
-void init_locks(void)
+static void init_locks(void)
 {
   gcry_control(GCRYCTL_SET_THREAD_CBS);
 }
@@ -112,8 +112,18 @@ void init_locks(void)
 
 #endif
 
+#if !defined(USE_OPENSSL) && !defined(USE_GNUTLS)
+
+#pragma message("You should double-check the proper operation of docs/examples/threaded-ssl as no SSL locks are provided.")
+
+#define init_locks()
+#define kill_locks()
+
+#endif
+
+
 /* List of URLs to fetch.*/
-const char * const urls[]= {
+static const char * const urls[] = {
   "https://www.example.com/",
   "https://www2.example.com/",
   "https://www3.example.com/",
