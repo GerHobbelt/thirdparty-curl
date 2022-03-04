@@ -12,6 +12,8 @@
  * </DESC>
  */
 
+#if !defined(_MSC_VER)
+
 #include <stdio.h>
 #include <gtk/gtk.h>
 
@@ -108,3 +110,5 @@ int main(int argc, const char** argv)
   gdk_threads_leave();
   return 0;
 }
+
+#endif

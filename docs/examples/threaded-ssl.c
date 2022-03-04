@@ -34,7 +34,7 @@
  *   https://gnupg.org/documentation/manuals/gcrypt/Multi_002dThreading.html
  */
 
-#define USE_OPENSSL /* or USE_GNUTLS accordingly */
+// #define USE_OPENSSL /* or USE_GNUTLS accordingly */
 
 #include <stdio.h>
 #include <pthread.h>
@@ -46,7 +46,9 @@
 static pthread_mutex_t *lockarray;
 
 #ifdef USE_OPENSSL
+
 #include <openssl/crypto.h>
+
 static void lock_callback(int mode, int type, char *file, int line)
 {
   (void)file;
@@ -91,9 +93,11 @@ static void kill_locks(void)
 
   OPENSSL_free(lockarray);
 }
+
 #endif
 
 #ifdef USE_GNUTLS
+
 #include <gcrypt.h>
 #include <errno.h>
 
@@ -105,6 +109,7 @@ void init_locks(void)
 }
 
 #define kill_locks()
+
 #endif
 
 /* List of URLs to fetch.*/

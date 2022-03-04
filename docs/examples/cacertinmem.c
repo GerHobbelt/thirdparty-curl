@@ -24,10 +24,13 @@
  * </DESC>
  */
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <curl/curl.h>
 #include <stdio.h>
+
+#if defined(USE_OPENSSL)
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 static size_t writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -184,3 +187,5 @@ int main(void)
   curl_global_cleanup();
   return rv;
 }
+
+#endif

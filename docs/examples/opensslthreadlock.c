@@ -31,7 +31,11 @@
  */
 
 #include <stdio.h>
+#include <curl/curl.h>
 #include <pthread.h>
+
+#if defined(USE_OPENSSL)
+
 #include <openssl/err.h>
 
 #define MUTEX_TYPE       pthread_mutex_t
@@ -93,3 +97,5 @@ int thread_cleanup(void)
   mutex_buf = NULL;
   return 1;
 }
+
+#endif

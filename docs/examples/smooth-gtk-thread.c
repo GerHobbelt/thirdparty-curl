@@ -33,6 +33,8 @@
  *   -lgthread-2.0 -dl  smooth-gtk-thread.c -o smooth-gtk-thread
  */
 
+#if !defined(_MSC_VER)
+
 #include <stdio.h>
 #include <gtk/gtk.h>
 #include <glib.h>
@@ -164,7 +166,7 @@ static gboolean cb_delete(GtkWidget *window, gpointer data)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      curl_example_smotth_gtk_thread_main(cnt, arr)
+#define main(cnt, arr)      curl_example_smooth_gtk_thread_main(cnt, arr)
 #endif
 
 int main(int argc, const char** argv)
@@ -219,3 +221,5 @@ int main(int argc, const char** argv)
 
   return 0;
 }
+
+#endif

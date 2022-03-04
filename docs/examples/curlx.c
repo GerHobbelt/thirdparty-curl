@@ -86,6 +86,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+
+#if defined(USE_OPENSSL)
+
 #include <openssl/x509v3.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/crypto.h>
@@ -577,3 +580,5 @@ fail:
   err: BIO_printf(p.errorbio, "error");
   exit(1);
 }
+
+#endif

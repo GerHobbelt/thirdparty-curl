@@ -29,11 +29,14 @@
  * must be used in real circumstances when a secure connection is required.
  */
 
+#include <curl/curl.h>
+#include <stdio.h>
+
+#if defined(USE_OPENSSL)
+
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
-#include <curl/curl.h>
-#include <stdio.h>
 
 static size_t writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -229,3 +232,5 @@ int main(void)
   curl_global_cleanup();
   return rv;
 }
+
+#endif
