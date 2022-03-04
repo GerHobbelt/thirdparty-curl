@@ -706,16 +706,15 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
        terminator, which was also written */
     res_len = SearchPath(NULL, bundle_file, NULL, res_len, buf, NULL);
     if(res_len > 0) {
+      char *mstr = curlx_convert_tchar_to_UTF8(buf);
       Curl_safefree(config->cacert);
-#ifdef UNICODE
-      config->cacert = curlx_convert_wchar_to_UTF8(buf);
-      Curl_safefree(buf);
+      if(mstr)
+        config->cacert = strdup(mstr);
+      curlx_unicodefree(mstr);
       if(!config->cacert)
-        return CURLE_OUT_OF_MEMORY;
-#else
-      config->cacert = buf;
-#endif
+        result = CURLE_OUT_OF_MEMORY;
     }
+    Curl_safefree(buf);
   }
 
   return CURLE_OK;
