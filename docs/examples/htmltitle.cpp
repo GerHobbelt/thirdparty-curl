@@ -84,7 +84,7 @@ static int writer(char *data, size_t size, size_t nmemb,
 //  libcurl connection initialization
 //
 
-static bool init(CURL *&conn, char *url)
+static bool init(CURL *&conn, const char *url)
 {
   CURLcode code;
 
@@ -138,7 +138,7 @@ static void StartElement(void *voidContext,
 {
   Context *context = static_cast<Context *>(voidContext);
 
-  if(COMPARE(reinterpret_cast<char *>(name), "TITLE")) {
+  if(COMPARE(reinterpret_cast<const char *>(name), "TITLE")) {
     context->title = "";
     context->addTitle = true;
   }
@@ -154,7 +154,7 @@ static void EndElement(void *voidContext,
 {
   Context *context = static_cast<Context *>(voidContext);
 
-  if(COMPARE(reinterpret_cast<char *>(name), "TITLE"))
+  if(COMPARE(reinterpret_cast<const char *>(name), "TITLE"))
     context->addTitle = false;
 }
 
@@ -167,7 +167,7 @@ static void handleCharacters(Context *context,
                              int length)
 {
   if(context->addTitle)
-    context->title.append(reinterpret_cast<char *>(chars), length);
+    context->title.append(reinterpret_cast<const char *>(chars), length);
 }
 
 //
