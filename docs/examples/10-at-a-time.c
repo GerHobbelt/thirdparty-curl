@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(WIN32)
 #  include <unistd.h>
 #endif
 #include <curl/curl.h>
