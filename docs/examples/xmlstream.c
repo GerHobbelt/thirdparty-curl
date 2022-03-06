@@ -88,7 +88,7 @@ static void endElement(void *userData, const XML_Char *name)
   struct ParserStruct *state = (struct ParserStruct *) userData;
   state->depth--;
 
-  printf("%5lu   %10lu   " CURL_FORMAT_XML_CHAR "\n", state->depth, state->characters.size, name);
+  printf("%5zu   %10zu   " EXPAT_FORMAT_XML_CHAR "\n", state->depth, state->characters.size, name);
 }
 
 static size_t parseStreamCallback(void *contents, size_t length, size_t nmemb,
@@ -102,7 +102,7 @@ static size_t parseStreamCallback(void *contents, size_t length, size_t nmemb,
   if(state->ok && XML_Parse(parser, contents, real_size, 0) == 0) {
     int error_code = XML_GetErrorCode(parser);
     fprintf(stderr, "Parsing response buffer of length %lu failed"
-            " with error code %d (" CURL_FORMAT_XML_LCHAR  ").\n",
+            " with error code %d (" EXPAT_FORMAT_XML_LCHAR  ").\n",
             real_size, error_code, XML_ErrorString(error_code));
     state->ok = 0;
   }
@@ -152,7 +152,7 @@ int main(void)
     /* Expat requires one final call to finalize parsing. */
     if(XML_Parse(parser, NULL, 0, 1) == 0) {
       int error_code = XML_GetErrorCode(parser);
-      fprintf(stderr, "Finalizing parsing failed with error code %d (" CURL_FORMAT_XML_LCHAR ").\n",
+      fprintf(stderr, "Finalizing parsing failed with error code %d (" EXPAT_FORMAT_XML_LCHAR ").\n",
               error_code, XML_ErrorString(error_code));
     }
     else {
