@@ -47,13 +47,17 @@
  * Don't include unneeded stuff in Windows headers to avoid compiler
  * warnings and macro clashes.
  * Make sure to define this macro before including any Windows headers.
+ *
+ * [Edit:] Do NOT do this as it'll collide badly with other libraries and
+ * applications which include both cURL and MSWindows' headers in the same
+ * *GUI* source files!
  */
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#  endif
-#  ifndef NOGDI
-#    define NOGDI
-#  endif
+//#  ifndef WIN32_LEAN_AND_MEAN
+//#    define WIN32_LEAN_AND_MEAN
+//#  endif
+//#  ifndef NOGDI
+//#    define NOGDI
+//#  endif
 /* Detect Windows App environment which has a restricted access
  * to the Win32 APIs. */
 # if (defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0602)) || \
