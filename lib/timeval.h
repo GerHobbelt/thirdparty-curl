@@ -24,6 +24,10 @@
 
 #include "curl_setup.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Use a larger type even for 32 bit time_t systems so that we can keep
    microsecond accuracy in it */
 typedef curl_off_t timediff_t;
@@ -64,5 +68,9 @@ timediff_t Curl_timediff_us(struct curltime newer, struct curltime older);
  *    tv with converted fields = ms > 0 (eg. >0ms timeout -> waiting select)
  */
 struct timeval *curlx_mstotv(struct timeval *tv, timediff_t ms);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HEADER_CURL_TIMEVAL_H */
