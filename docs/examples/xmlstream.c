@@ -101,7 +101,7 @@ static size_t parseStreamCallback(void *contents, size_t length, size_t nmemb,
   /* Only parse if we are not already in a failure state. */
   if(state->ok && XML_Parse(parser, contents, real_size, 0) == 0) {
     int error_code = XML_GetErrorCode(parser);
-    fprintf(stderr, "Parsing response buffer of length %lu failed"
+    fprintf(stderr, "Parsing response buffer of length %zu failed"
             " with error code %d (" EXPAT_FORMAT_XML_LCHAR  ").\n",
             real_size, error_code, XML_ErrorString(error_code));
     state->ok = 0;
@@ -157,7 +157,7 @@ int main(void)
     }
     else {
       printf("                     --------------\n");
-      printf("                     %lu tags total\n", state.tags);
+      printf("                     %zu tags total\n", state.tags);
     }
   }
 
