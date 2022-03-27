@@ -606,7 +606,9 @@ Vista
 #endif
 
 /* Define to use Unix sockets. */
+#if !defined(USE_UNIX_SOCKETS)
 #define USE_UNIX_SOCKETS
+#endif
 
 /* ---------------------------------------------------------------- */
 /*                       ADDITIONAL DEFINITIONS                     */
