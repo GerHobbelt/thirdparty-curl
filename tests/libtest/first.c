@@ -184,5 +184,10 @@ int main(int argc, char **argv)
     PR_Cleanup();
 #endif
 
+#ifdef WIN32
+  /* flush buffers of all streams regardless of mode */
+  _flushall();
+#endif
+
   return result;
 }

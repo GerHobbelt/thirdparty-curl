@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -55,7 +55,7 @@
 #define OPENMODE S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 #endif
 
-/* create a local file for writing, return TRUE on success */
+/* create/open a local file for writing, return TRUE on success */
 bool tool_create_output_file(struct OutStruct *outs,
                              struct per_transfer *per)
 {
@@ -65,7 +65,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   bool noclobber;
   bool overwrite;
   int duplicate = 1;
-  char* name;
+  char* name = outs->filename;
   char* aname = NULL;
   size_t fn_ext_pos = 0;
   char* fn_ext = NULL;
@@ -76,24 +76,21 @@ bool tool_create_output_file(struct OutStruct *outs,
   DEBUGASSERT(config);
 
   global = config->global;
-  if(!outs->filename || !*outs->filename) {
+  if(!name || !*name) {
     warnf(global, "Remote filename has no length!\n");
     return FALSE;
   }
 
-  name = outs->filename;
   noclobber = config->noclobber_output_file;
 
-  if(outs->is_cd_filename) {
+  if(config->output_dir && outs->is_cd_filename) {
     /* default behaviour: don't overwrite existing files */
-    if(config->output_dir) {
-      aname = aprintf("%s/%s", config->output_dir, name);
-      if(!aname) {
-        errorf(global, "out of memory\n");
-        return FALSE;
-      }
-      name = aname;
+    aname = aprintf("%s/%s", config->output_dir, name);
+    if(!aname) {
+      errorf(global, "out of memory\n");
+      return FALSE;
     }
+    name = aname;
 	overwrite = FALSE;
   }
   else {
@@ -124,6 +121,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  }
   }
 
+#if 0
   for (;;) {
 	  if (!overwrite) {
 		  /* do not overwrite existing file */
@@ -168,10 +166,63 @@ bool tool_create_output_file(struct OutStruct *outs,
 		  break;
 	  }
   }
+
+#else
+
+  if(config->file_clobber_mode == CLOBBER_ALWAYS ||
+     (config->file_clobber_mode == CLOBBER_DEFAULT &&
+      !outs->is_cd_filename)) {
+    /* open file for writing */
+    file = fopen(name, "wb");
+  }
+  else {
+    int fd;
+    do {
+      fd = open(name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+      /* Keep retrying in the hope that it isn't interrupted sometime */
+    } while(fd == -1 && errno == EINTR);
+    if(config->file_clobber_mode == CLOBBER_NEVER && fd == -1) {
+      int next_num = 1;
+      size_t len = strlen(name);
+      char *newname = malloc(len + 13); /* nul + 1-11 digits + dot */
+      if(!newname) {
+        errorf(global, "out of memory\n");
+        free(aname);
+        return FALSE;
+      }
+      memcpy(newname, name, len);
+      newname[len] = '.';
+      while(fd == -1 && /* haven't sucessfully opened a file */
+            (errno == EEXIST || errno == EISDIR) &&
+            /* because we keep having files that already exist */
+            next_num < 100 /* and we haven't reached the retry limit */ ) {
+        curlx_msnprintf(newname + len + 1, 12, "%d", next_num);
+        next_num++;
+        do {
+          fd = open(newname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+          /* Keep retrying in the hope that it isn't interrupted sometime */
+        } while(fd == -1 && errno == EINTR);
+      }
+      outs->filename = newname; /* remember the new one */
+      outs->alloc_filename = TRUE;
+    }
+    /* An else statement to not overwrite existing files and not retry with
+       new numbered names (which would cover
+       config->file_clobber_mode == CLOBBER_DEFAULT && outs->is_cd_filename)
+       is not needed because we would have failed earlier, in the while loop
+       and `fd` would now be -1 */
+    if(fd != -1) {
+      file = fdopen(fd, "wb");
+      if(!file)
+        close(fd);
+    }
+  }
+#endif
+
   free(fn_ext);
 
   if(!file) {
-    warnf(global, "Failed to create the file %s: %s\n", outs->filename,
+    warnf(global, "Failed to open the file %s: %s\n", outs->filename,
           strerror(errno));
 	free(aname);
 	return FALSE;
