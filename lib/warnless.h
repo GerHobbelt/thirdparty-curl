@@ -22,6 +22,8 @@
  *
  ***************************************************************************/
 
+#include "curl_setup.h"
+
 #ifdef USE_WINSOCK
 #include <curl/curl.h> /* for curl_socket_t */
 #endif
@@ -78,7 +80,7 @@ ssize_t curlx_write(int fd, const void *buf, size_t count);
 #  define write(fd, buf, count) curlx_write(fd, buf, count)
 #endif
 
-#endif /* WIN32 || _WIN32 */
+#endif /* WIN32 */
 
 #if defined(__INTEL_COMPILER) && defined(__unix__)
 
