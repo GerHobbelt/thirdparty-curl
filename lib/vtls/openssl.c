@@ -2851,14 +2851,14 @@ static CURLcode ossl_connect_step1(struct Curl_easy *data,
 
       memcpy(&protocols[cur], ALPN_H2, ALPN_H2_LENGTH);
       cur += ALPN_H2_LENGTH;
-      infof(data, "ALPN, offering %s", ALPN_H2);
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
     }
 #endif
 
     protocols[cur++] = ALPN_HTTP_1_1_LENGTH;
     memcpy(&protocols[cur], ALPN_HTTP_1_1, ALPN_HTTP_1_1_LENGTH);
     cur += ALPN_HTTP_1_1_LENGTH;
-    infof(data, "ALPN, offering %s", ALPN_HTTP_1_1);
+    infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
 
     /* expects length prefixed preference ordered list of protocols in wire
      * format
@@ -3457,7 +3457,7 @@ static CURLcode ossl_connect_step2(struct Curl_easy *data,
       unsigned int len;
       SSL_get0_alpn_selected(backend->handle, &neg_protocol, &len);
       if(len) {
-        infof(data, "ALPN, server accepted to use %.*s", len, neg_protocol);
+        infof(data, VTLS_INFOF_ALPN_ACCEPTED_LEN_1STR, len, neg_protocol);
 
 #ifdef USE_HTTP2
         if(len == ALPN_H2_LENGTH &&
@@ -3472,7 +3472,7 @@ static CURLcode ossl_connect_step2(struct Curl_easy *data,
         }
       }
       else
-        infof(data, "ALPN, server did not agree to a protocol");
+        infof(data, VTLS_INFOF_NO_ALPN);
 
       Curl_multiuse_state(data, conn->negnpn == CURL_HTTP_VERSION_2 ?
                           BUNDLE_MULTIPLEX : BUNDLE_NO_MULTIUSE);

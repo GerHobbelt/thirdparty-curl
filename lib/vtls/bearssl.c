@@ -698,12 +698,12 @@ static CURLcode bearssl_connect_step1(struct Curl_easy *data,
 #endif
       ) {
       backend->protocols[cur++] = ALPN_H2;
-      infof(data, "ALPN, offering %s", ALPN_H2);
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
     }
 #endif
 
     backend->protocols[cur++] = ALPN_HTTP_1_1;
-    infof(data, "ALPN, offering %s", ALPN_HTTP_1_1);
+    infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
 
     br_ssl_engine_set_protocol_names(&backend->ctx.eng,
                                      backend->protocols, cur);
@@ -869,7 +869,7 @@ static CURLcode bearssl_connect_step3(struct Curl_easy *data,
 
     protocol = br_ssl_engine_get_selected_protocol(&backend->ctx.eng);
     if(protocol) {
-      infof(data, "ALPN, server accepted to use %s", protocol);
+      infof(data, VTLS_INFOF_ALPN_ACCEPTED_1STR, protocol);
 
 #ifdef USE_HTTP2
       if(!strcmp(protocol, ALPN_H2))
@@ -884,7 +884,7 @@ static CURLcode bearssl_connect_step3(struct Curl_easy *data,
                           BUNDLE_MULTIPLEX : BUNDLE_NO_MULTIUSE);
     }
     else
-      infof(data, "ALPN, server did not agree to a protocol");
+      infof(data, VTLS_INFOF_NO_ALPN);
   }
 
   if(SSL_SET_OPTION(primary.sessionid)) {

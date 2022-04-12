@@ -2929,7 +2929,7 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
       /* The resume point is at the end of file, consider this fine even if it
          doesn't allow resume from here. */
       infof(data, "The entire document is already downloaded");
-      connclose(conn, "already downloaded");
+      streamclose(conn, "already downloaded");
       /* Abort download */
       k->keepon &= ~KEEP_RECV;
       *done = TRUE;
@@ -2957,7 +2957,7 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
       infof(data, "Simulate a HTTP 304 response!");
       /* we abort the transfer before it is completed == we ruin the
          re-use ability. Close the connection */
-      connclose(conn, "Simulated 304 handling");
+      streamclose(conn, "Simulated 304 handling");
       return CURLE_OK;
     }
   } /* we have a time condition */
@@ -3794,7 +3794,7 @@ static CURLcode verify_header(struct Curl_easy *data)
   ptr = memchr(header, ':', hlen);
   if(!ptr) {
     /* this is bad, bail out */
-    failf(data, "Header without semicolon");
+    failf(data, "Header without colon");
     return CURLE_WEIRD_SERVER_REPLY;
   }
   return CURLE_OK;
@@ -4230,10 +4230,10 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
           switch(httpversion) {
           case 10:
           case 11:
-#if defined(USE_NGHTTP2) || defined(USE_HYPER)
+#ifdef USE_HTTP2
           case 20:
 #endif
-#if defined(ENABLE_QUIC)
+#ifdef ENABLE_QUIC
           case 30:
 #endif
             conn->httpversion = (unsigned char)httpversion;

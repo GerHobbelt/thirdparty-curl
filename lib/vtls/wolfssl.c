@@ -526,12 +526,12 @@ wolfssl_connect_step1(struct Curl_easy *data, struct connectdata *conn,
 #ifdef USE_HTTP2
     if(data->state.httpwant >= CURL_HTTP_VERSION_2) {
       strcpy(protocols + strlen(protocols), ALPN_H2 ",");
-      infof(data, "ALPN, offering %s", ALPN_H2);
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
     }
 #endif
 
     strcpy(protocols + strlen(protocols), ALPN_HTTP_1_1);
-    infof(data, "ALPN, offering %s", ALPN_HTTP_1_1);
+    infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
 
     if(wolfSSL_UseALPN(backend->handle, protocols,
                        (unsigned)strlen(protocols),
@@ -757,8 +757,7 @@ wolfssl_connect_step2(struct Curl_easy *data, struct connectdata *conn,
     rc = wolfSSL_ALPN_GetProtocol(backend->handle, &protocol, &protocol_len);
 
     if(rc == SSL_SUCCESS) {
-      infof(data, "ALPN, server accepted to use %.*s", protocol_len,
-            protocol);
+      infof(data, VTLS_INFOF_ALPN_ACCEPTED_LEN_1STR, protocol_len, protocol);
 
       if(protocol_len == ALPN_HTTP_1_1_LENGTH &&
          !memcmp(protocol, ALPN_HTTP_1_1, ALPN_HTTP_1_1_LENGTH))
@@ -776,7 +775,7 @@ wolfssl_connect_step2(struct Curl_easy *data, struct connectdata *conn,
                           BUNDLE_MULTIPLEX : BUNDLE_NO_MULTIUSE);
     }
     else if(rc == SSL_ALPN_NOT_FOUND)
-      infof(data, "ALPN, server did not agree to a protocol");
+      infof(data, VTLS_INFOF_NO_ALPN);
     else {
       failf(data, "ALPN, failure getting protocol, error %d", rc);
       return CURLE_SSL_CONNECT_ERROR;

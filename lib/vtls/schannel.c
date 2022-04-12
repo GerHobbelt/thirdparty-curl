@@ -912,14 +912,14 @@ schannel_connect_step1(struct Curl_easy *data, struct connectdata *conn,
       alpn_buffer[cur++] = ALPN_H2_LENGTH;
       memcpy(&alpn_buffer[cur], ALPN_H2, ALPN_H2_LENGTH);
       cur += ALPN_H2_LENGTH;
-      infof(data, "schannel: ALPN, offering %s", ALPN_H2);
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
     }
 #endif
 
     alpn_buffer[cur++] = ALPN_HTTP_1_1_LENGTH;
     memcpy(&alpn_buffer[cur], ALPN_HTTP_1_1, ALPN_HTTP_1_1_LENGTH);
     cur += ALPN_HTTP_1_1_LENGTH;
-    infof(data, "schannel: ALPN, offering %s", ALPN_HTTP_1_1);
+    infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
 
     *list_len = curlx_uitous(cur - list_start_index);
     *extension_len = *list_len + sizeof(unsigned int) + sizeof(unsigned short);
@@ -1420,7 +1420,7 @@ schannel_connect_step3(struct Curl_easy *data, struct connectdata *conn,
     if(alpn_result.ProtoNegoStatus ==
        SecApplicationProtocolNegotiationStatus_Success) {
 
-      infof(data, "schannel: ALPN, server accepted to use %.*s",
+      infof(data, VTLS_INFOF_ALPN_ACCEPTED_LEN_1STR,
             alpn_result.ProtocolIdSize, alpn_result.ProtocolId);
 
 #ifdef USE_HTTP2
@@ -1437,7 +1437,7 @@ schannel_connect_step3(struct Curl_easy *data, struct connectdata *conn,
         }
     }
     else
-      infof(data, "ALPN, server did not agree to a protocol");
+      infof(data, VTLS_INFOF_NO_ALPN);
     Curl_multiuse_state(data, conn->negnpn == CURL_HTTP_VERSION_2 ?
                         BUNDLE_MULTIPLEX : BUNDLE_NO_MULTIUSE);
   }

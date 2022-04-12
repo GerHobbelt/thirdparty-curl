@@ -544,15 +544,14 @@ static CURLcode readwrite_data(struct Curl_easy *data,
 
     if(
 #ifdef USE_NGHTTP2
-       /* For HTTP/2, read data without caring about the content
-          length. This is safe because body in HTTP/2 is always
-          segmented thanks to its framing layer. Meanwhile, we have to
-          call Curl_read to ensure that http2_handle_stream_close is
-          called when we read all incoming bytes for a particular
-          stream. */
-       !is_http2 &&
+      /* For HTTP/2, read data without caring about the content length. This
+         is safe because body in HTTP/2 is always segmented thanks to its
+         framing layer. Meanwhile, we have to call Curl_read to ensure that
+         http2_handle_stream_close is called when we read all incoming bytes
+         for a particular stream. */
+      !is_http2 &&
 #endif
-       k->size != -1 && !k->header) {
+      k->size != -1 && !k->header) {
       /* make sure we don't read too much */
       curl_off_t totalleft = k->size - k->bytecount;
       if(totalleft < (curl_off_t)bytestoread)

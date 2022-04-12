@@ -862,11 +862,11 @@ static void HandshakeCallback(PRFileDesc *sock, void *arg)
 #endif
     case SSL_NEXT_PROTO_NO_SUPPORT:
     case SSL_NEXT_PROTO_NO_OVERLAP:
-      infof(data, "ALPN/NPN, server did not agree to a protocol");
+      infof(data, VTLS_INFOF_NO_ALPN);
       return;
 #ifdef SSL_ENABLE_ALPN
     case SSL_NEXT_PROTO_SELECTED:
-      infof(data, "ALPN, server accepted to use %.*s", buflen, buf);
+      infof(data, VTLS_INFOF_ALPN_ACCEPTED_LEN_1STR, buflen, buf);
       break;
 #endif
     case SSL_NEXT_PROTO_NEGOTIATED:
@@ -874,7 +874,7 @@ static void HandshakeCallback(PRFileDesc *sock, void *arg)
       break;
     }
 
-#ifdef USE_NGHTTP2
+#ifdef USE_HTTP2
     if(buflen == ALPN_H2_LENGTH &&
        !memcmp(ALPN_H2, buf, ALPN_H2_LENGTH)) {
       conn->negnpn = CURL_HTTP_VERSION_2;
