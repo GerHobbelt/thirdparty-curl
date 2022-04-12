@@ -79,6 +79,7 @@
 #include "urlapi-int.h"
 #include "hsts.h"
 #include "setopt.h"
+#include "headers.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -1490,6 +1491,7 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
                             data->set.str[STRING_PROXYPASSWORD]);
 
   data->req.headerbytecount = 0;
+  Curl_headers_cleanup(data);
   return result;
 }
 
@@ -1534,6 +1536,8 @@ CURLcode Curl_follow(struct Curl_easy *data,
 
   DEBUGASSERT(type != FOLLOW_NONE);
 
+  if(type != FOLLOW_FAKE)
+    data->state.requests++; /* count all real follows */
   if(type == FOLLOW_REDIR) {
     if((data->set.maxredirs != -1) &&
        (data->state.followlocation >= data->set.maxredirs)) {

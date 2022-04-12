@@ -4022,9 +4022,9 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
 
       /* now, only output this if the header AND body are requested:
        */
-      writetype = CLIENTWRITE_HEADER;
-      if(data->set.include_header)
-        writetype |= CLIENTWRITE_BODY;
+      writetype = CLIENTWRITE_HEADER |
+        (data->set.include_header ? CLIENTWRITE_BODY : 0) |
+        ((k->httpcode/100 == 1) ? CLIENTWRITE_1XX : 0);
 
       headerlen = Curl_dyn_len(&data->state.headerb);
       result = Curl_client_write(data, writetype,
@@ -4177,6 +4177,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
      * Checks for special headers coming up.
      */
 
+    writetype = CLIENTWRITE_HEADER;
     if(!k->headerline++) {
       /* This is the first header, it MUST be the error code line
          or else we consider this to be the body right away! */
@@ -4301,6 +4302,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
         result = Curl_http_statusline(data, conn);
         if(result)
           return result;
+        writetype |= CLIENTWRITE_STATUS;
       }
       else {
         k->header = FALSE;   /* this is not a header line */
@@ -4319,10 +4321,10 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
     /*
      * End of header-checks. Write them to the client.
      */
-
-    writetype = CLIENTWRITE_HEADER;
     if(data->set.include_header)
       writetype |= CLIENTWRITE_BODY;
+    if(k->httpcode/100 == 1)
+      writetype |= CLIENTWRITE_1XX;
 
     Curl_debug(data, CURLINFO_HEADER_IN, headp,
                Curl_dyn_len(&data->state.headerb));
