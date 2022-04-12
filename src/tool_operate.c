@@ -1272,44 +1272,50 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->oauth_bearer)
           my_setopt_str(curl, CURLOPT_XOAUTH2_BEARER, config->oauth_bearer);
 
-        {
-          my_setopt_str(curl, CURLOPT_PROXY, config->proxy);
-          /* new in libcurl 7.5 */
-          if(config->proxy)
-            my_setopt_enum(curl, CURLOPT_PROXYTYPE, config->proxyver);
+        my_setopt_str(curl, CURLOPT_PROXY, config->proxy);
 
-          my_setopt_str(curl, CURLOPT_PROXYUSERPWD, config->proxyuserpwd);
-
-          /* new in libcurl 7.3 */
-          my_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, config->proxytunnel?1L:0L);
-
-          /* new in libcurl 7.52.0 */
-          if(config->preproxy)
-            my_setopt_str(curl, CURLOPT_PRE_PROXY, config->preproxy);
-
-          /* new in libcurl 7.10.6 */
-          if(config->proxyanyauth)
-            my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
-                              (long)CURLAUTH_ANY);
-          else if(config->proxynegotiate)
-            my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
-                              (long)CURLAUTH_GSSNEGOTIATE);
-          else if(config->proxyntlm)
-            my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
-                              (long)CURLAUTH_NTLM);
-          else if(config->proxydigest)
-            my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
-                              (long)CURLAUTH_DIGEST);
-          else if(config->proxybasic)
-            my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
-                              (long)CURLAUTH_BASIC);
-
-          /* new in libcurl 7.19.4 */
-          my_setopt_str(curl, CURLOPT_NOPROXY, config->noproxy);
-
-          my_setopt(curl, CURLOPT_SUPPRESS_CONNECT_HEADERS,
-                    config->suppress_connect_headers?1L:0L);
+        if(config->proxy && result) {
+          errorf(global, "proxy support is disabled in this libcurl\n");
+          config->synthetic_error = TRUE;
+          result = CURLE_NOT_BUILT_IN;
+          break;
         }
+
+        /* new in libcurl 7.5 */
+        if(config->proxy)
+          my_setopt_enum(curl, CURLOPT_PROXYTYPE, config->proxyver);
+
+        my_setopt_str(curl, CURLOPT_PROXYUSERPWD, config->proxyuserpwd);
+
+        /* new in libcurl 7.3 */
+        my_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, config->proxytunnel?1L:0L);
+
+        /* new in libcurl 7.52.0 */
+        if(config->preproxy)
+          my_setopt_str(curl, CURLOPT_PRE_PROXY, config->preproxy);
+
+        /* new in libcurl 7.10.6 */
+        if(config->proxyanyauth)
+          my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
+                            (long)CURLAUTH_ANY);
+        else if(config->proxynegotiate)
+          my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
+                            (long)CURLAUTH_GSSNEGOTIATE);
+        else if(config->proxyntlm)
+          my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
+                            (long)CURLAUTH_NTLM);
+        else if(config->proxydigest)
+          my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
+                            (long)CURLAUTH_DIGEST);
+        else if(config->proxybasic)
+          my_setopt_bitmask(curl, CURLOPT_PROXYAUTH,
+                            (long)CURLAUTH_BASIC);
+
+        /* new in libcurl 7.19.4 */
+        my_setopt_str(curl, CURLOPT_NOPROXY, config->noproxy);
+
+        my_setopt(curl, CURLOPT_SUPPRESS_CONNECT_HEADERS,
+                  config->suppress_connect_headers?1L:0L);
 
         my_setopt(curl, CURLOPT_FAILONERROR, config->failonerror?1L:0L);
         my_setopt(curl, CURLOPT_REQUEST_TARGET, config->request_target);
@@ -1482,8 +1488,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         }
         /* For the time being if --proxy-capath is not set then we use the
            --capath value for it, if any. See #1257 */
-        if((config->proxy_capath || config->capath) &&
-           !tool_setopt_skip(CURLOPT_PROXY_CAPATH)) {
+        if(config->proxy_capath || config->capath) {
           result = res_setopt_str(curl, CURLOPT_PROXY_CAPATH,
                                   (config->proxy_capath ?
                                    config->proxy_capath :
@@ -1678,8 +1683,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           my_setopt_enum(curl, CURLOPT_SSLVERSION,
                          config->ssl_version | config->ssl_version_max);
-          my_setopt_enum(curl, CURLOPT_PROXY_SSLVERSION,
-                         config->proxy_ssl_version);
+          if(config->proxy)
+            my_setopt_enum(curl, CURLOPT_PROXY_SSLVERSION,
+                           config->proxy_ssl_version);
 
           {
             long mask =
@@ -1743,18 +1749,16 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->cookies) {
           struct dynbuf cookies;
           struct curl_slist *cl;
-          CURLcode ret;
 
           /* The maximum size needs to match MAX_NAME in cookie.h */
           Curl_dyn_init(&cookies, 4096);
           for(cl = config->cookies; cl; cl = cl->next) {
             if(cl == config->cookies)
-              ret = Curl_dyn_addf(&cookies, "%s", cl->data);
+              result = Curl_dyn_addf(&cookies, "%s", cl->data);
             else
-              ret = Curl_dyn_addf(&cookies, ";%s", cl->data);
+              result = Curl_dyn_addf(&cookies, ";%s", cl->data);
 
-            if(ret) {
-              result = CURLE_OUT_OF_MEMORY;
+            if(result) {
               break;
             }
           }
