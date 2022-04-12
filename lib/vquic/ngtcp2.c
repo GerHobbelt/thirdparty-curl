@@ -83,7 +83,7 @@ struct h3out {
 
 #define QUIC_MAX_STREAMS (256*1024)
 #define QUIC_MAX_DATA (1*1024*1024)
-#define QUIC_IDLE_TIMEOUT 60000 /* milliseconds */
+#define QUIC_IDLE_TIMEOUT (60*NGTCP2_SECONDS)
 
 #ifdef USE_OPENSSL
 #define QUIC_CIPHERS                                                          \
@@ -1123,8 +1123,7 @@ static int cb_h3_recv_header(nghttp3_conn *conn, int64_t stream_id,
   (void)flags;
   (void)user_data;
 
-  if(h3name.len == sizeof(H2H3_PSEUDO_STATUS) - 1 &&
-     !memcmp(H2H3_PSEUDO_STATUS, h3name.base, h3name.len)) {
+  if(token == NGHTTP3_QPACK_TOKEN__STATUS) {
     char line[14]; /* status line is always 13 characters long */
     size_t ncopy;
     int status = decode_status_code(h3val.base, h3val.len);
@@ -1806,7 +1805,7 @@ static CURLcode ng_flush_egress(struct Curl_easy *data,
   expiry = ngtcp2_conn_get_expiry(qs->qconn);
   if(expiry != UINT64_MAX) {
     if(expiry <= ts) {
-      timeout = NGTCP2_MILLISECONDS;
+      timeout = 0;
     }
     else {
       timeout = expiry - ts;
