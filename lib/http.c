@@ -2909,6 +2909,19 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
                               bool *done)
 {
   struct SingleRequest *k = &data->req;
+  if(data->req.ignore_cl) {
+    k->size = k->maxdownload = -1;
+  }
+  else if(k->size != -1) {
+    /* We wait until after all headers have been received to set this so that
+       we know for sure Content-Length is valid. */
+    if(data->set.max_filesize &&
+       k->size > data->set.max_filesize) {
+      failf(data, "Maximum file size exceeded");
+      return CURLE_FILESIZE_EXCEEDED;
+    }
+    Curl_pgrsSetDownloadSize(data, k->size);
+  }
 
   if(data->req.newurl) {
     if(conn->bits.close) {
@@ -3991,6 +4004,20 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
       }
       else {
         k->header = FALSE; /* no more header to parse! */
+
+        if (data->req.ignore_cl) {
+            k->size = k->maxdownload = -1;
+        }
+        else if (k->size != -1) {
+            /* We wait until after all headers have been received to set this so
+               that we know for sure Content-Length is valid. */
+            if (data->set.max_filesize &&
+                k->size > data->set.max_filesize) {
+                failf(data, "Maximum file size exceeded");
+                return CURLE_FILESIZE_EXCEEDED;
+            }
+            Curl_pgrsSetDownloadSize(data, k->size);
+        }
 
         if((k->size == -1) && !k->chunk && !conn->bits.close &&
            (conn->httpversion == 11) &&
