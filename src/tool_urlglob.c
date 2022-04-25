@@ -686,7 +686,7 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
       return CURLE_OUT_OF_MEMORY;
   }
 
-  if(curlx_dyn_addn(&dyn, "", 0))
+  if(Curl_dyn_addn(&dyn, "", 0))
     return CURLE_OUT_OF_MEMORY;
 
 #if defined(MSDOS) || defined(WIN32)
