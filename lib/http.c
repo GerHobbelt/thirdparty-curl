@@ -775,6 +775,21 @@ output_auth_headers(struct Curl_easy *data,
   return CURLE_OK;
 }
 
+/*
+ * Curl_allow_auth_to_host() tells if authentication, cookies or other
+ * "sensitive data" can (still) be sent to this host.
+ */
+bool Curl_allow_auth_to_host(struct Curl_easy *data)
+{
+  struct connectdata *conn = data->conn;
+  return (!data->state.this_is_a_follow ||
+          data->set.allow_auth_to_other_hosts ||
+          (data->state.first_host &&
+           strcasecompare(data->state.first_host, conn->host.name) &&
+           (data->state.first_remote_port == conn->remote_port) &&
+           (data->state.first_remote_protocol == conn->handler->protocol)));
+}
+
 /**
  * Curl_http_output_auth() setups the authentication headers for the
  * host/proxy and the correct authentication
@@ -847,17 +862,14 @@ Curl_http_output_auth(struct Curl_easy *data,
        with it */
     authproxy->done = TRUE;
 
-  /* To prevent the user+password to get sent to other than the original
-     host due to a location-follow, we do some weirdo checks here */
-  if(!data->state.this_is_a_follow ||
+  /* To prevent the user+password to get sent to other than the original host
+     due to a location-follow */
+  if(Curl_allow_auth_to_host(data)
 #ifndef CURL_DISABLE_NETRC
-     conn->bits.netrc ||
+     || conn->bits.netrc
 #endif
-     !data->state.first_host ||
-     data->set.allow_auth_to_other_hosts ||
-     strcasecompare(data->state.first_host, conn->host.name)) {
+    )
     result = output_auth_headers(data, conn, authhost, request, path, FALSE);
-  }
   else
     authhost->done = TRUE;
 
@@ -1767,7 +1779,7 @@ CURLcode Curl_http_compile_trailers(struct curl_slist *trailers,
         return result;
     }
     else
-      infof(handle, "Malformatted trailing header ! Skipping trailer.");
+      infof(handle, "Malformatted trailing header, skipping trailer");
     trailers = trailers->next;
   }
   result = Curl_dyn_add(b, endofline_network);
@@ -1905,10 +1917,7 @@ CURLcode Curl_add_custom_headers(struct Curl_easy *data,
                    checkprefix("Cookie:", compare)) &&
                   /* be careful of sending this potentially sensitive header to
                      other hosts */
-                  (data->state.this_is_a_follow &&
-                   data->state.first_host &&
-                   !data->set.allow_auth_to_other_hosts &&
-                   !strcasecompare(data->state.first_host, conn->host.name)))
+                  !Curl_allow_auth_to_host(data))
             ;
           else {
 #ifdef USE_HYPER
@@ -2086,6 +2095,7 @@ CURLcode Curl_http_host(struct Curl_easy *data, struct connectdata *conn)
       return CURLE_OUT_OF_MEMORY;
 
     data->state.first_remote_port = conn->remote_port;
+    data->state.first_remote_protocol = conn->handler->protocol;
   }
   Curl_safefree(data->state.aptr.host);
 
@@ -2954,7 +2964,7 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
       /* We're simulating a http 304 from server so we return
          what should have been returned from the server */
       data->info.httpcode = 304;
-      infof(data, "Simulate a HTTP 304 response!");
+      infof(data, "Simulate a HTTP 304 response");
       /* we abort the transfer before it is completed == we ruin the
          re-use ability. Close the connection */
       streamclose(conn, "Simulated 304 handling");
@@ -3387,7 +3397,7 @@ CURLcode Curl_http_header(struct Curl_easy *data, struct connectdata *conn,
         return CURLE_FILESIZE_EXCEEDED;
       }
       streamclose(conn, "overflow content-length");
-      infof(data, "Overflow Content-Length: value!");
+      infof(data, "Overflow Content-Length: value");
     }
     else {
       /* negative or just rubbish - bad HTTP */
@@ -3421,7 +3431,7 @@ CURLcode Curl_http_header(struct Curl_easy *data, struct connectdata *conn,
      * Default action for 1.0 is to close.
      */
     connkeep(conn, "Proxy-Connection keep-alive"); /* don't close */
-    infof(data, "HTTP/1.0 proxy connection set to keep alive!");
+    infof(data, "HTTP/1.0 proxy connection set to keep alive");
   }
   else if((conn->httpversion == 11) &&
           conn->bits.httpproxy &&
@@ -3433,7 +3443,7 @@ CURLcode Curl_http_header(struct Curl_easy *data, struct connectdata *conn,
      * close down after this transfer.
      */
     connclose(conn, "Proxy-Connection: asked to close after done");
-    infof(data, "HTTP/1.1 proxy connection set close!");
+    infof(data, "HTTP/1.1 proxy connection set close");
   }
 #endif
   else if((conn->httpversion == 10) &&
@@ -3447,7 +3457,7 @@ CURLcode Curl_http_header(struct Curl_easy *data, struct connectdata *conn,
      *
      * [RFC2068, section 19.7.1] */
     connkeep(conn, "Connection keep-alive");
-    infof(data, "HTTP/1.0 connection set to keep alive!");
+    infof(data, "HTTP/1.0 connection set to keep alive");
   }
   else if(Curl_compareheader(headp,
                              STRCONST("Connection:"), STRCONST("close"))) {
@@ -4121,7 +4131,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
         if(conn->bits.rewindaftersend) {
           /* We rewind after a complete send, so thus we continue
              sending now */
-          infof(data, "Keep sending data to get tossed away!");
+          infof(data, "Keep sending data to get tossed away");
           k->keepon |= KEEP_SEND;
         }
       }

@@ -2123,6 +2123,10 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       }
 
       ssh_disconnect(sshc->ssh_session);
+      /* conn->sock[FIRSTSOCKET] is closed by ssh_disconnect behind our back,
+         explicitly mark it as closed with the memdebug macro: */
+      fake_sclose(conn->sock[FIRSTSOCKET]);
+      conn->sock[FIRSTSOCKET] = CURL_SOCKET_BAD;
 
       SSH_STRING_FREE_CHAR(sshc->homedir);
       data->state.most_recent_ftp_entrypath = NULL;
@@ -2994,7 +2998,7 @@ static void sftp_quote(struct Curl_easy *data)
    */
   cp = strchr(cmd, ' ');
   if(!cp) {
-    failf(data, "Syntax error in SFTP command. Supply parameter(s)!");
+    failf(data, "Syntax error in SFTP command. Supply parameter(s)");
     state(data, SSH_SFTP_CLOSE);
     sshc->nextstate = SSH_NO_STATE;
     sshc->actualcode = CURLE_QUOTE_ERROR;

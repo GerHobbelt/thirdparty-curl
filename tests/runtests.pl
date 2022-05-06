@@ -671,7 +671,7 @@ sub torture {
     my @ttests = (1 .. $count);
     if($shallow && ($shallow < $count)) {
         my $discard = scalar(@ttests) - $shallow;
-        my $percent = sprintf("%.2f%%", $shallow * 100 / scalar(@ttests));;
+        my $percent = sprintf("%.2f%%", $shallow * 100 / scalar(@ttests));
         logmsg " $count functions found, but only fail $shallow ($percent)\n";
         while($discard) {
             my $rm;
@@ -6203,7 +6203,7 @@ if($all) {
 if($skipped && !$short) {
     my $s=0;
     # Temporary hash to print the restraints sorted by the number
-    # of their occurences
+    # of their occurrences
     my %restraints;
     logmsg "TESTINFO: $skipped tests were skipped due to these restraints:\n";
 

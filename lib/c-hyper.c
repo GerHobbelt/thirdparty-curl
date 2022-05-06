@@ -414,7 +414,7 @@ CURLcode Curl_hyper_stream(struct Curl_easy *data,
     else if(h->endtask == task) {
       /* end of transfer */
       *done = TRUE;
-      infof(data, "hyperstream is done!");
+      infof(data, "hyperstream is done");
       if(!k->bodywrites) {
         /* hyper doesn't always call the body write callback */
         bool stilldone;
@@ -804,7 +804,7 @@ static void http1xx_cb(void *arg, struct hyper_response *resp)
   }
 
   if(data->state.hresult)
-    infof(data, "ERROR in 1xx, bail out!");
+    infof(data, "ERROR in 1xx, bail out");
 }
 
 /*
@@ -904,6 +904,8 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
     hyper_clientconn_options_http2(options, 1);
     h2 = TRUE;
   }
+  hyper_clientconn_options_set_preserve_header_case(options, 1);
+  hyper_clientconn_options_set_preserve_header_order(options, 1);
 
   hyper_clientconn_options_exec(options, h->exec);
 

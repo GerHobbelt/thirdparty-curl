@@ -445,11 +445,11 @@ gtls_connect_step1(struct Curl_easy *data,
   }
 
 #ifdef USE_GNUTLS_SRP
-  if(SSL_SET_OPTION(authtype) == CURL_TLSAUTH_SRP) {
+  if((SSL_SET_OPTION(authtype) == CURL_TLSAUTH_SRP) &&
+     Curl_allow_auth_to_host(data)) {
     infof(data, "Using TLS-SRP username: %s", SSL_SET_OPTION(username));
 
-    rc = gnutls_srp_allocate_client_credentials(
-           &backend->srp_client_cred);
+    rc = gnutls_srp_allocate_client_credentials(&backend->srp_client_cred);
     if(rc != GNUTLS_E_SUCCESS) {
       failf(data, "gnutls_srp_allocate_client_cred() failed: %s",
             gnutls_strerror(rc));
@@ -1206,7 +1206,7 @@ Curl_gtls_verifyserver(struct Curl_easy *data,
   if(ptr) {
     result = pkp_pin_peer_pubkey(data, x509_cert, ptr);
     if(result != CURLE_OK) {
-      failf(data, "SSL: public key does not match pinned public key!");
+      failf(data, "SSL: public key does not match pinned public key");
       gnutls_x509_crt_deinit(x509_cert);
       return result;
     }

@@ -921,6 +921,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             result = CURLE_OUT_OF_MEMORY;
             break;
           }
+          if(SetHTTPrequest(config, HTTPREQ_PUT, &config->httpreq)) {
+            Curl_safefree(per->uploadfile);
+            curl_easy_cleanup(curl);
+            result = CURLE_FAILED_INIT;
+            break;
+          }
         }
         *added = TRUE;
         per->config = config;
@@ -2630,6 +2636,8 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
         tool_list_engines();
       else if(res == PARAM_LIBCURL_UNSUPPORTED_PROTOCOL)
         result = CURLE_UNSUPPORTED_PROTOCOL;
+      else if(res == PARAM_READ_ERROR)
+        result = CURLE_READ_ERROR;
       else
         result = CURLE_FAILED_INIT;
     }

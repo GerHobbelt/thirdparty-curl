@@ -879,6 +879,7 @@ static int ng_getsock(struct Curl_easy *data, struct connectdata *conn,
   /* we're still uploading or the HTTP/2 layer wants to send data */
   if((k->keepon & (KEEP_SEND|KEEP_SEND_PAUSE)) == KEEP_SEND &&
      (!stream->h3out || stream->h3out->used < H3_SEND_SIZE) &&
+     ngtcp2_conn_get_cwnd_left(qs->qconn) &&
      ngtcp2_conn_get_max_data_left(qs->qconn) &&
      nghttp3_conn_is_stream_writable(qs->h3conn, stream->stream3_id))
     bitmap |= GETSOCK_WRITESOCK(FIRSTSOCKET);
@@ -1418,7 +1419,7 @@ static ssize_t cb_h3_readfunction(nghttp3_conn *conn, int64_t stream_id,
   }
   if(stream->upload_done && !stream->upload_len &&
      (stream->upload_left <= 0)) {
-    H3BUGF(infof(data, "!!!!!!!!! cb_h3_readfunction sets EOF"));
+    H3BUGF(infof(data, "cb_h3_readfunction sets EOF"));
     *pflags = NGHTTP3_DATA_FLAG_EOF;
     return nread ? 1 : 0;
   }
@@ -1830,6 +1831,9 @@ static CURLcode ng_flush_egress(struct Curl_easy *data,
     }
     else {
       timeout = expiry - ts;
+      if(timeout % NGTCP2_MILLISECONDS) {
+        timeout += NGTCP2_MILLISECONDS;
+      }
     }
     Curl_expire(data, timeout / NGTCP2_MILLISECONDS, EXPIRE_QUIC);
   }

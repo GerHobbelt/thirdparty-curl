@@ -35,7 +35,7 @@ TIMEVAL = ../../lib/timeval.c ../../lib/timeval.h
 MULTIBYTE = ../../lib/curl_multibyte.c ../../lib/curl_multibyte.h
 
 # these files are used in every single test program below
-SUPPORTFILES = first.c test.h
+SUPPORTFILES = ../../lib/timediff.c ../../lib/timediff.h first.c test.h
 
 # These are all libcurl test programs
 noinst_PROGRAMS = chkhostname libauthretry libntlmconnect                \

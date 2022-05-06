@@ -43,7 +43,7 @@
 #include "urldata.h"
 #include "connect.h"
 #include "select.h"
-#include "timeval.h"
+#include "timediff.h"
 #include "warnless.h"
 
 /*
