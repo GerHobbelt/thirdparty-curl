@@ -658,16 +658,106 @@ static void single_transfer_cleanup(struct OperationConfig *config)
   }
 }
 
+static char *ipfs_gateway(void)
+{
+  char *gateway;
+  char *ipfs_path;
+  char *gateway_file_path;
+  FILE *gateway_file;
+
+  gateway = curlx_getenv("IPFS_GATEWAY");
+
+  /* Gateway is found from environment variable. */
+  if(gateway) {
+    bool add_slash = (gateway[strlen(gateway) - 1] == '/') ? FALSE : TRUE;
+    gateway = aprintf("%s%s", gateway, (add_slash) ? "/" : "");
+    return gateway;
+  }
+
+  /* Try to find the gateway in the IPFS data folder. */
+
+  ipfs_path = curlx_getenv("IPFS_PATH");
+
+  if(!ipfs_path) {
+    /* Empty path, fallback to "~/.ipfs", as that's the default location. */
+    ipfs_path = aprintf("%s/.ipfs/", curlx_getenv("HOME"));
+  }
+
+  gateway_file_path = aprintf("%sgateway", ipfs_path);
+  gateway_file = fopen(gateway_file_path, FOPEN_READTEXT);
+
+  if(gateway_file) {
+    char gateway_buffer[255];
+    if(!fgets(gateway_buffer, sizeof(gateway_buffer) - 1, gateway_file)) {
+      fclose(gateway_file);
+      return NULL;
+    }
+    fclose(gateway_file);
+
+    /* Replace the last char with \0 */
+    gateway_buffer[sizeof(gateway_buffer) - 1] = 0;
+
+    /* Replace first occurence of end of line with \0 */
+    gateway_buffer[strcspn(gateway_buffer, "\r")] = 0;
+    gateway_buffer[strcspn(gateway_buffer, "\n")] = 0;
+
+    if(strlen(gateway_buffer) > 1) {
+      bool add_slash = (gateway_buffer[strlen(gateway_buffer) - 1] == '/')
+        ? FALSE
+        : TRUE;
+
+      gateway = aprintf("%s%s", gateway_buffer, (add_slash) ? "/" : "");
+      return gateway;
+    }
+  }
+
+  return NULL;
+}
+
+/*
+ * Rewrite ipfs://<cid> and ipns://<cid> to be a normal
+ * URL that can be handled by an IPFS gateway.
+ */
+static void ipfs_url_rewrite(char **url)
+{
+  char *inner = *url;
+  char *gateway;
+  const char *protocol;
+  char *everything_after_scheme;
+  char *urlbuffer;
+
+  /* 7 is "ipfs://" and "ipns://", it needs o be at least 7 characters*/
+  if(strlen(inner) < 7) {
+    return;
+  }
+
+  /* Get IPFS gateway from environment variable */
+  gateway = ipfs_gateway();
+  protocol = (curl_strnequal(inner, "ipfs", 4)) ? "ipfs" : "ipns";
+
+  everything_after_scheme = &inner[7];
+  urlbuffer = aprintf("%s%s/%s", gateway, protocol, everything_after_scheme);
+
+  *url = urlbuffer; /* use our new URL instead! */
+}
+
 /*
  * Return the proto bit for the scheme used in the given URL
  */
-static long url_proto(char *url)
+static long url_proto(char **url, struct OperationConfig *config)
 {
   CURLU *uh = curl_url();
   long proto = 0;
+
+  /* Before we do anything, see if we need to reqrite the URL.*/
+  if(curl_strnequal(*url, "ipfs", 4) || curl_strnequal(*url, "ipns", 4)) {
+    ipfs_url_rewrite(url);
+    config->followlocation = TRUE;
+  }
+
   if(uh) {
     if(url) {
-      if(!curl_url_set(uh, CURLUPART_URL, url,
+      if(!curl_url_set(uh, CURLUPART_URL, *url,
                        CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME)) {
         char *schemep = NULL;
         if(!curl_url_get(uh, CURLUPART_SCHEME, &schemep,
@@ -1229,7 +1319,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           break;
 
         /* here */
-        use_proto = url_proto(per->this_url);
+        use_proto = url_proto(&per->this_url, config);
 #if 0
         if(!(use_proto & built_in_protos)) {
           warnf(global, "URL is '%s' but no support for the scheme\n",
