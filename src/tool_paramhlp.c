@@ -95,7 +95,7 @@ ParameterError file2memory(char **bufp, size_t *size, FILE *file)
       char buffer[4096];
       nread = fread(buffer, 1, sizeof(buffer), file);
       if(ferror(file)) {
-        curlx_dyn_free(&dyn);
+        Curl_dyn_free(&dyn);
         *size = 0;
         *bufp = NULL;
         return PARAM_READ_ERROR;
