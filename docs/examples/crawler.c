@@ -154,7 +154,7 @@ int is_html(char *ctype)
 int main(void)
 {
   signal(SIGINT, sighandler);
-  LIBXML_TEST_VERSION;
+  LIBXML_TEST_VERSION();
   curl_global_init(CURL_GLOBAL_DEFAULT);
   CURLM *multi_handle = curl_multi_init();
   curl_multi_setopt(multi_handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_con);
