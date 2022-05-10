@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -71,9 +71,9 @@ unit1330_SOURCES = unit1330.c $(UNITFILES)
 unit1330_CPPFLAGS = $(AM_CPPFLAGS)
 
 unit1394_SOURCES = unit1394.c $(UNITFILES)
-unit1394_CPPFLAGS = $(AM_CPPFLAGS) $(LIBMETALINK_CPPFLAGS)
-unit1394_LDADD = @LIBMETALINK_LIBS@ $(top_builddir)/lib/libcurl.la @LIBCURL_LIBS@
-unit1394_LDFLAGS = @LIBMETALINK_LDFLAGS@ $(top_builddir)/src/libcurltool.la
+unit1394_CPPFLAGS = $(AM_CPPFLAGS)
+unit1394_LDADD = $(top_builddir)/lib/libcurl.la @LIBCURL_LIBS@
+unit1394_LDFLAGS = $(top_builddir)/src/libcurltool.la
 unit1394_LIBS =
 
 unit1395_SOURCES = unit1395.c $(UNITFILES)
@@ -104,7 +104,7 @@ unit1603_SOURCES = unit1603.c $(UNITFILES)
 unit1603_CPPFLAGS = $(AM_CPPFLAGS)
 
 unit1604_SOURCES = unit1604.c $(UNITFILES)
-unit1604_CPPFLAGS = $(AM_CPPFLAGS) $(LIBMETALINK_CPPFLAGS)
+unit1604_CPPFLAGS = $(AM_CPPFLAGS)
 
 unit1605_SOURCES = unit1605.c $(UNITFILES)
 unit1605_CPPFLAGS = $(AM_CPPFLAGS)
@@ -135,7 +135,7 @@ unit1620_CPPFLAGS = $(AM_CPPFLAGS)
 
 unit1621_SOURCES = unit1621.c $(UNITFILES)
 unit1621_CPPFLAGS = $(AM_CPPFLAGS)
-unit1621_LDADD = $(top_builddir)/src/libcurltool.la $(top_builddir)/lib/libcurl.la
+unit1621_LDADD = $(top_builddir)/src/libcurltool.la $(top_builddir)/lib/libcurl.la @NSS_LIBS@
 
 unit1650_SOURCES = unit1650.c $(UNITFILES)
 unit1650_CPPFLAGS = $(AM_CPPFLAGS)

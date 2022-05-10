@@ -7,7 +7,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -38,15 +38,6 @@
 
 /* Define cpu-machine-OS */
 #define OS "OS/400"
-
-/* Define if you have the gethostbyaddr_r() function with 5 arguments */
-#define HAVE_GETHOSTBYADDR_R_5
-
-/* Define if you have the gethostbyaddr_r() function with 7 arguments */
-#undef HAVE_GETHOSTBYADDR_R_7
-
-/* Define if you have the gethostbyaddr_r() function with 8 arguments */
-#undef HAVE_GETHOSTBYADDR_R_8
 
 /* OS400 supports a 3-argument ASCII version of gethostbyaddr_r(), but its
  *  prototype is incompatible with the "standard" one (1st argument is not
@@ -94,26 +85,14 @@
 /* Define if you have the `closesocket' function. */
 #undef HAVE_CLOSESOCKET
 
-/* Define if you have the <crypto.h> header file. */
-#undef HAVE_CRYPTO_H
-
 /* Define if you have the <errno.h> header file. */
 #define HAVE_ERRNO_H
-
-/* Define if you have the <err.h> header file. */
-#undef HAVE_ERR_H
 
 /* Define if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H
 
 /* Define if you have the `geteuid' function. */
 #define HAVE_GETEUID
-
-/* Define if you have the `gethostbyaddr' function. */
-#define HAVE_GETHOSTBYADDR
-
-/* Define if you have the `gethostbyaddr_r' function. */
-#define HAVE_GETHOSTBYADDR_R
 
 /* Define if you have the `gethostname' function. */
 #define HAVE_GETHOSTNAME
@@ -229,9 +208,6 @@
 /* Define if you have the <pem.h> header file. */
 #undef HAVE_PEM_H
 
-/* Define if you have the `perror' function. */
-#define HAVE_PERROR
-
 /* Define if you have the <pwd.h> header file. */
 #define HAVE_PWD_H
 
@@ -244,17 +220,11 @@
 /* Define if you have the `RAND_status' function. */
 #undef HAVE_RAND_STATUS
 
-/* Define if you have the <rsa.h> header file. */
-#undef HAVE_RSA_H
-
 /* Define if you have the `select' function. */
 #define HAVE_SELECT
 
 /* Define if you have the `setvbuf' function. */
 #define HAVE_SETVBUF
-
-/* Define if you have the <sgtty.h> header file. */
-#undef HAVE_SGTTY_H
 
 /* Define if you have the `sigaction' function. */
 #define HAVE_SIGACTION
@@ -264,12 +234,6 @@
 
 /* Define if you have the <signal.h> header file. */
 #define HAVE_SIGNAL_H
-
-/* Define if sig_atomic_t is an available typedef. */
-#define HAVE_SIG_ATOMIC_T
-
-/* Define if sig_atomic_t is already defined as volatile. */
-#undef HAVE_SIG_ATOMIC_T_VOLATILE
 
 /* Define if you have the `socket' function. */
 #define HAVE_SOCKET
@@ -364,9 +328,6 @@
 /* Define if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H
 
-/* Define if you have the <winsock.h> header file. */
-#undef HAVE_WINSOCK_H
-
 /* Define if you have the <x509.h> header file. */
 #undef HAVE_X509_H
 
@@ -410,7 +371,8 @@
 /* Define if you can safely include both <sys/time.h> and <time.h>. */
 #define TIME_WITH_SYS_TIME
 
-/* Define to enable HTTP3 support (experimental, requires NGTCP2 or QUICHE) */
+/* Define to enable HTTP3 support (experimental, requires NGTCP2, QUICHE or
+   MSH3) */
 #undef ENABLE_QUIC
 
 /* Version number of package */

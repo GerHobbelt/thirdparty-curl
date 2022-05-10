@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -44,6 +44,7 @@ check_PROGRAMS = \
   getinmemory \
   getredirect \
   getreferrer \
+  headerapi \
   http-post \
   http2-download \
   http2-pushinmemory \
@@ -74,7 +75,7 @@ check_PROGRAMS = \
   multi-debugcallback \
   multi-double \
   multi-formadd \
-  multi-poll \
+  multi-legacy \
   multi-post \
   multi-single \
   parseurl \
@@ -135,7 +136,6 @@ COMPLICATED_EXAMPLES = \
   multi-uv.c \
   multithread.c \
   opensslthreadlock.c \
-  sampleconv.c \
   sessioninfo.c \
   smooth-gtk-thread.c \
   synctime.c \

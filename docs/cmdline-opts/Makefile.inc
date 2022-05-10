@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -75,6 +75,7 @@ DPAGES = \
   fail-with-body.d \
   fail.d \
   false-start.d \
+  form-escape.d \
   form-string.d \
   form.d \
   ftp-account.d \
@@ -96,6 +97,7 @@ DPAGES = \
   header.d \
   help.d \
   hostpubmd5.d \
+  hostpubsha256.d \
   hsts.d \
   http0.9.d \
   http1.0.d \
@@ -109,6 +111,7 @@ DPAGES = \
   interface.d \
   ipv4.d \
   ipv6.d \
+  json.d \
   junk-session-cookies.d \
   keepalive-time.d \
   key-type.d \
@@ -137,6 +140,7 @@ DPAGES = \
   next.d \
   no-alpn.d \
   no-buffer.d \
+  no-clobber.d \
   no-keepalive.d \
   no-npn.d \
   no-progress-meter.d \
@@ -200,6 +204,7 @@ DPAGES = \
   remote-name-all.d \
   remote-name.d \
   remote-time.d \
+  remove-on-error.d \
   request-target.d \
   request.d \
   resolve.d \

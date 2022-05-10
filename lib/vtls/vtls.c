@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -125,25 +125,35 @@ static bool blobcmp(struct curl_blob *first, struct curl_blob *second)
   return !memcmp(first->data, second->data, first->len); /* same data */
 }
 
+
 bool
 Curl_ssl_config_matches(struct ssl_primary_config *data,
                         struct ssl_primary_config *needle)
 {
   if((data->version == needle->version) &&
      (data->version_max == needle->version_max) &&
+     (data->ssl_options == needle->ssl_options) &&
      (data->verifypeer == needle->verifypeer) &&
      (data->verifyhost == needle->verifyhost) &&
      (data->verifystatus == needle->verifystatus) &&
      blobcmp(data->cert_blob, needle->cert_blob) &&
      blobcmp(data->ca_info_blob, needle->ca_info_blob) &&
-     Curl_safe_strcasecompare(data->CApath, needle->CApath) &&
-     Curl_safe_strcasecompare(data->CAfile, needle->CAfile) &&
-     Curl_safe_strcasecompare(data->clientcert, needle->clientcert) &&
-     Curl_safe_strcasecompare(data->random_file, needle->random_file) &&
-     Curl_safe_strcasecompare(data->egdsocket, needle->egdsocket) &&
+     blobcmp(data->issuercert_blob, needle->issuercert_blob) &&
+     Curl_safecmp(data->CApath, needle->CApath) &&
+     Curl_safecmp(data->CAfile, needle->CAfile) &&
+     Curl_safecmp(data->issuercert, needle->issuercert) &&
+     Curl_safecmp(data->clientcert, needle->clientcert) &&
+     Curl_safecmp(data->random_file, needle->random_file) &&
+     Curl_safecmp(data->egdsocket, needle->egdsocket) &&
+#ifdef USE_TLS_SRP
+     Curl_safecmp(data->username, needle->username) &&
+     Curl_safecmp(data->password, needle->password) &&
+     (data->authtype == needle->authtype) &&
+#endif
      Curl_safe_strcasecompare(data->cipher_list, needle->cipher_list) &&
      Curl_safe_strcasecompare(data->cipher_list13, needle->cipher_list13) &&
      Curl_safe_strcasecompare(data->curves, needle->curves) &&
+     Curl_safe_strcasecompare(data->CRLfile, needle->CRLfile) &&
      Curl_safe_strcasecompare(data->pinned_key, needle->pinned_key))
     return TRUE;
 
@@ -160,11 +170,17 @@ Curl_clone_primary_ssl_config(struct ssl_primary_config *source,
   dest->verifyhost = source->verifyhost;
   dest->verifystatus = source->verifystatus;
   dest->sessionid = source->sessionid;
+  dest->ssl_options = source->ssl_options;
+#ifdef USE_TLS_SRP
+  dest->authtype = source->authtype;
+#endif
 
   CLONE_BLOB(cert_blob);
   CLONE_BLOB(ca_info_blob);
+  CLONE_BLOB(issuercert_blob);
   CLONE_STRING(CApath);
   CLONE_STRING(CAfile);
+  CLONE_STRING(issuercert);
   CLONE_STRING(clientcert);
   CLONE_STRING(random_file);
   CLONE_STRING(egdsocket);
@@ -172,6 +188,11 @@ Curl_clone_primary_ssl_config(struct ssl_primary_config *source,
   CLONE_STRING(cipher_list13);
   CLONE_STRING(pinned_key);
   CLONE_STRING(curves);
+  CLONE_STRING(CRLfile);
+#ifdef USE_TLS_SRP
+  CLONE_STRING(username);
+  CLONE_STRING(password);
+#endif
 
   return TRUE;
 }
@@ -180,6 +201,7 @@ void Curl_free_primary_ssl_config(struct ssl_primary_config *sslc)
 {
   Curl_safefree(sslc->CApath);
   Curl_safefree(sslc->CAfile);
+  Curl_safefree(sslc->issuercert);
   Curl_safefree(sslc->clientcert);
   Curl_safefree(sslc->random_file);
   Curl_safefree(sslc->egdsocket);
@@ -188,7 +210,13 @@ void Curl_free_primary_ssl_config(struct ssl_primary_config *sslc)
   Curl_safefree(sslc->pinned_key);
   Curl_safefree(sslc->cert_blob);
   Curl_safefree(sslc->ca_info_blob);
+  Curl_safefree(sslc->issuercert_blob);
   Curl_safefree(sslc->curves);
+  Curl_safefree(sslc->CRLfile);
+#ifdef USE_TLS_SRP
+  Curl_safefree(sslc->username);
+  Curl_safefree(sslc->password);
+#endif
 }
 
 #ifdef USE_SSL
@@ -284,6 +312,8 @@ ssl_connect_init_proxy(struct connectdata *conn, int sockindex)
     pbdata = conn->proxy_ssl[sockindex].backend;
     conn->proxy_ssl[sockindex] = conn->ssl[sockindex];
 
+    DEBUGASSERT(pbdata != NULL);
+
     memset(&conn->ssl[sockindex], 0, sizeof(conn->ssl[sockindex]));
     memset(pbdata, 0, Curl_ssl->sizeof_ssl_backend_data);
 
@@ -326,7 +356,7 @@ Curl_ssl_connect(struct Curl_easy *data, struct connectdata *conn,
 
 CURLcode
 Curl_ssl_connect_nonblocking(struct Curl_easy *data, struct connectdata *conn,
-                             int sockindex, bool *done)
+                             bool isproxy, int sockindex, bool *done)
 {
   CURLcode result;
 
@@ -345,7 +375,7 @@ Curl_ssl_connect_nonblocking(struct Curl_easy *data, struct connectdata *conn,
   result = Curl_ssl->connect_nonblocking(data, conn, sockindex, done);
   if(result)
     conn->ssl[sockindex].use = FALSE;
-  else if(*done)
+  else if(*done && !isproxy)
     Curl_pgrsTime(data, TIMER_APPCONNECT); /* SSL is connected */
   return result;
 }
@@ -444,6 +474,10 @@ bool Curl_ssl_getsessionid(struct Curl_easy *data,
     }
   }
 
+  DEBUGF(infof(data, "%s Session ID in cache for %s %s://%s:%d",
+               no_match? "Didn't find": "Found",
+               isProxy ? "proxy" : "host",
+               conn->handler->scheme, name, port));
   return no_match;
 }
 
@@ -493,10 +527,11 @@ void Curl_ssl_delsessionid(struct Curl_easy *data, void *ssl_sessionid)
  */
 CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
                                struct connectdata *conn,
-                               bool isProxy,
+                               const bool isProxy,
                                void *ssl_sessionid,
                                size_t idsize,
-                               int sockindex)
+                               int sockindex,
+                               bool *added)
 {
   size_t i;
   struct Curl_ssl_session *store;
@@ -516,6 +551,10 @@ CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
   const char *hostname = conn->host.name;
 #endif
   (void)sockindex;
+
+  if(added)
+    *added = FALSE;
+
   if(!data->state.session)
     return CURLE_OK;
 
@@ -589,6 +628,12 @@ CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
     return CURLE_OUT_OF_MEMORY;
   }
 
+  if(added)
+    *added = TRUE;
+
+  DEBUGF(infof(data, "Added Session ID to cache for %s://%s:%d [%s]",
+               store->scheme, store->name, store->remote_port,
+               isProxy ? "PROXY" : "server"));
   return CURLE_OK;
 }
 
@@ -597,7 +642,8 @@ void Curl_ssl_associate_conn(struct Curl_easy *data,
 {
   if(Curl_ssl->associate_connection) {
     Curl_ssl->associate_connection(data, conn, FIRSTSOCKET);
-    if(conn->sock[SECONDARYSOCKET] && conn->bits.sock_accepted)
+    if((conn->sock[SECONDARYSOCKET] != CURL_SOCKET_BAD) &&
+       conn->bits.sock_accepted)
       Curl_ssl->associate_connection(data, conn, SECONDARYSOCKET);
   }
 }
@@ -607,7 +653,8 @@ void Curl_ssl_detach_conn(struct Curl_easy *data,
 {
   if(Curl_ssl->disassociate_connection) {
     Curl_ssl->disassociate_connection(data, FIRSTSOCKET);
-    if(conn->sock[SECONDARYSOCKET] && conn->bits.sock_accepted)
+    if((conn->sock[SECONDARYSOCKET] != CURL_SOCKET_BAD) &&
+       conn->bits.sock_accepted)
       Curl_ssl->disassociate_connection(data, SECONDARYSOCKET);
   }
 }
@@ -714,12 +761,12 @@ CURLcode Curl_ssl_initsessions(struct Curl_easy *data, size_t amount)
 
 static size_t multissl_version(char *buffer, size_t size);
 
-size_t Curl_ssl_version(char *buffer, size_t size)
+void Curl_ssl_version(char *buffer, size_t size)
 {
 #ifdef CURL_WITH_MULTI_SSL
-  return multissl_version(buffer, size);
+  (void)multissl_version(buffer, size);
 #else
-  return Curl_ssl->version(buffer, size);
+  (void)Curl_ssl->version(buffer, size);
 #endif
 }
 
@@ -841,6 +888,32 @@ CURLcode Curl_ssl_random(struct Curl_easy *data,
 }
 
 /*
+ * Curl_ssl_snihost() converts the input host name to a suitable SNI name put
+ * in data->state.buffer. Returns a pointer to the name (or NULL if a problem)
+ * and stores the new length in 'olen'.
+ *
+ * SNI fields must not have any trailing dot and while RFC 6066 section 3 says
+ * the SNI field is case insensitive, browsers always send the data lowercase
+ * and subsequently there are numerous servers out there that don't work
+ * unless the name is lowercased.
+ */
+
+char *Curl_ssl_snihost(struct Curl_easy *data, const char *host, size_t *olen)
+{
+  size_t len = strlen(host);
+  if(len && (host[len-1] == '.'))
+    len--;
+  if((long)len >= data->set.buffer_size)
+    return NULL;
+
+  Curl_strntolower(data->state.buffer, host, len);
+  data->state.buffer[len] = 0;
+  if(olen)
+    *olen = len;
+  return data->state.buffer;
+}
+
+/*
  * Public key pem to der conversion
  */
 
@@ -938,7 +1011,7 @@ CURLcode Curl_pin_peer_pubkey(struct Curl_easy *data,
     if(encode != CURLE_OK)
       return encode;
 
-    encode = Curl_base64_encode(data, (char *)sha256sumdigest,
+    encode = Curl_base64_encode((char *)sha256sumdigest,
                                 CURL_SHA256_DIGEST_LENGTH, &encoded,
                                 &encodedlen);
     Curl_safefree(sha256sumdigest);
@@ -946,7 +1019,7 @@ CURLcode Curl_pin_peer_pubkey(struct Curl_easy *data,
     if(encode)
       return encode;
 
-    infof(data, "\t public key hash: sha256//%s\n", encoded);
+    infof(data, " public key hash: sha256//%s", encoded);
 
     /* it starts with sha256//, copy so we can modify it */
     pinkeylen = strlen(pinnedpubkey) + 1;
@@ -1265,8 +1338,6 @@ const struct Curl_ssl *Curl_ssl =
   &Curl_ssl_openssl;
 #elif defined(USE_SCHANNEL)
   &Curl_ssl_schannel;
-#elif defined(USE_MESALINK)
-  &Curl_ssl_mesalink;
 #elif defined(USE_BEARSSL)
   &Curl_ssl_bearssl;
 #else
@@ -1297,9 +1368,6 @@ static const struct Curl_ssl *available_backends[] = {
 #endif
 #if defined(USE_SCHANNEL)
   &Curl_ssl_schannel,
-#endif
-#if defined(USE_MESALINK)
-  &Curl_ssl_mesalink,
 #endif
 #if defined(USE_BEARSSL)
   &Curl_ssl_bearssl,
@@ -1380,7 +1448,7 @@ static int multissl_setup(const struct Curl_ssl *backend)
     for(i = 0; available_backends[i]; i++) {
       if(strcasecompare(env, available_backends[i]->info.name)) {
         Curl_ssl = available_backends[i];
-        curl_free(env_tmp);
+        free(env_tmp);
         return 0;
       }
     }
@@ -1388,7 +1456,7 @@ static int multissl_setup(const struct Curl_ssl *backend)
 
   /* Fall back to first available backend */
   Curl_ssl = available_backends[0];
-  curl_free(env_tmp);
+  free(env_tmp);
   return 0;
 }
 

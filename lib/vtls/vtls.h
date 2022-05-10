@@ -7,7 +7,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -33,6 +33,17 @@ struct ssl_connect_data;
 #define SSLSUPP_HTTPS_PROXY  (1<<4) /* supports access via HTTPS proxies */
 #define SSLSUPP_TLS13_CIPHERSUITES (1<<5) /* supports TLS 1.3 ciphersuites */
 #define SSLSUPP_CAINFO_BLOB  (1<<6)
+
+#define ALPN_ACCEPTED "ALPN: server accepted "
+
+#define VTLS_INFOF_NO_ALPN                                      \
+  "ALPN: server did not agree on a protocol. Uses default."
+#define VTLS_INFOF_ALPN_OFFER_1STR              \
+  "ALPN: offers %s"
+#define VTLS_INFOF_ALPN_ACCEPTED_1STR           \
+  ALPN_ACCEPTED "%s"
+#define VTLS_INFOF_ALPN_ACCEPTED_LEN_1STR       \
+  ALPN_ACCEPTED "%.*s"
 
 struct Curl_ssl {
   /*
@@ -85,7 +96,7 @@ struct Curl_ssl {
   CURLcode (*sha256sum)(const unsigned char *input, size_t inputlen,
                     unsigned char *sha256sum, size_t sha256sumlen);
 
-  void (*associate_connection)(struct Curl_easy *data,
+  bool (*associate_connection)(struct Curl_easy *data,
                                struct connectdata *conn,
                                int sockindex);
   void (*disassociate_connection)(struct Curl_easy *data, int sockindex);
@@ -120,7 +131,6 @@ bool Curl_ssl_tls13_ciphersuites(void);
 #include "schannel.h"       /* Schannel SSPI version */
 #include "sectransp.h"      /* SecureTransport (Darwin) version */
 #include "mbedtls.h"        /* mbedTLS versions */
-#include "mesalink.h"       /* MesaLink versions */
 #include "bearssl.h"        /* BearSSL versions */
 #include "rustls.h"         /* rustls versions */
 
@@ -173,6 +183,7 @@ bool Curl_ssl_tls13_ciphersuites(void);
   data->set.str[STRING_SSL_PINNEDPUBLICKEY]
 #endif
 
+char *Curl_ssl_snihost(struct Curl_easy *data, const char *host, size_t *olen);
 bool Curl_ssl_config_matches(struct ssl_primary_config *data,
                              struct ssl_primary_config *needle);
 bool Curl_clone_primary_ssl_config(struct ssl_primary_config *source,
@@ -193,6 +204,7 @@ CURLcode Curl_ssl_connect(struct Curl_easy *data, struct connectdata *conn,
                           int sockindex);
 CURLcode Curl_ssl_connect_nonblocking(struct Curl_easy *data,
                                       struct connectdata *conn,
+                                      bool isproxy,
                                       int sockindex,
                                       bool *done);
 /* tell the SSL stuff to close down all open information regarding
@@ -209,7 +221,7 @@ struct curl_slist *Curl_ssl_engines_list(struct Curl_easy *data);
 
 /* init the SSL session ID cache */
 CURLcode Curl_ssl_initsessions(struct Curl_easy *, size_t);
-size_t Curl_ssl_version(char *buffer, size_t size);
+void Curl_ssl_version(char *buffer, size_t size);
 bool Curl_ssl_data_pending(const struct connectdata *conn,
                            int connindex);
 int Curl_ssl_check_cxn(struct connectdata *conn);
@@ -246,7 +258,7 @@ void Curl_ssl_sessionid_unlock(struct Curl_easy *data);
  */
 bool Curl_ssl_getsessionid(struct Curl_easy *data,
                            struct connectdata *conn,
-                           const bool isproxy,
+                           const bool isProxy,
                            void **ssl_sessionid,
                            size_t *idsize, /* set 0 if unknown */
                            int sockindex);
@@ -260,7 +272,8 @@ CURLcode Curl_ssl_addsessionid(struct Curl_easy *data,
                                const bool isProxy,
                                void *ssl_sessionid,
                                size_t idsize,
-                               int sockindex);
+                               int sockindex,
+                               bool *added);
 /* Kill a single session ID entry in the cache
  * Sessionid mutex must be locked (see Curl_ssl_sessionid_lock).
  * This will call engine-specific curlssl_session_free function, which must
@@ -313,7 +326,7 @@ void Curl_ssl_detach_conn(struct Curl_easy *data,
 #define Curl_ssl_data_pending(x,y) 0
 #define Curl_ssl_check_cxn(x) 0
 #define Curl_ssl_free_certinfo(x) Curl_nop_stmt
-#define Curl_ssl_connect_nonblocking(x,y,z,w) CURLE_NOT_BUILT_IN
+#define Curl_ssl_connect_nonblocking(x,y,z,w,a) CURLE_NOT_BUILT_IN
 #define Curl_ssl_kill_session(x) Curl_nop_stmt
 #define Curl_ssl_random(x,y,z) ((void)x, CURLE_NOT_BUILT_IN)
 #define Curl_ssl_cert_status_request() FALSE

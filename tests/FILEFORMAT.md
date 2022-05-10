@@ -56,10 +56,10 @@ For example, to insert the binary octets 0, 1 and 255 into the test file:
 ## Repeat content
 
 In the preprocess stage, a special instruction can be used to have runtests.pl
-generate a repetetive sequence of bytes.
+generate a repetitive sequence of bytes.
 
 To insert a sequence of repeat bytes, use this syntax to make the `<string>`
-get repeated `<number>` of times. The number has to be 1 or large and the
+get repeated `<number>` of times. The number has to be 1 or larger and the
 string may contain `%HH` hexadecimal codes:
 
     %repeat[<number> x <string>]%
@@ -79,7 +79,7 @@ outputs nothing, until a following else or endif clause. Like this:
     Accept-Encoding
     %endif
 
-It can also check for the inversed condition, so if the feature us *not* set by
+It can also check for the inverse condition, so if the feature is *not* set by
 the use of an exclamation mark:
 
     %if !brotli
@@ -148,6 +148,7 @@ Available substitute variables include:
 - `%SRCDIR` - Full path to the source dir
 - `%SSHPORT` - Port number of the SCP/SFTP server
 - `%SSHSRVMD5` - MD5 of SSH server's public key
+- `%SSHSRVSHA256` - SHA256 of SSH server's public key
 - `%SSH_PWD` - Current directory friendly for the SSH server
 - `%TESTNUMBER` - Number of the test case
 - `%TFTP6PORT` - IPv6 port number of the TFTP server
@@ -187,7 +188,7 @@ When using curl built with Hyper, the keywords must include HTTP or HTTPS for
 'hyper mode' to kick in and make line ending checks work for tests.
 ## `<reply>`
 
-### `<data [nocheck="yes"] [sendzero="yes"] [base64="yes"] [hex="yes"]>`
+### `<data [nocheck="yes"] [sendzero="yes"] [base64="yes"] [hex="yes"] [nonewline="yes"]>`
 
 data to be sent to the client on its request and later verified that it
 arrived safely. Set `nocheck="yes"` to prevent the test script from verifying
@@ -212,6 +213,9 @@ much sense for other sections than "data").
 
 `hex=yes` means that the data is a sequence of hex pairs. It will get decoded
 and used as "raw" data.
+
+`nonewline=yes` means that the last byte (the trailing newline character)
+should be cut off from the data before sending or comparing it.
 
 For FTP file listings, the `<data>` section will be used *only* if you make
 sure that there has been a CWD done first to a directory named `test-[num]`
@@ -241,6 +245,9 @@ a datacheck section.
 The connect section is used instead of the 'data' for all CONNECT
 requests. The remainder of the rules for the data section then apply but with
 a connect prefix.
+
+### `<socks>`
+Address type and address details as logged by the SOCKS proxy.
 
 ### `<datacheck [mode="text"] [nonewline="yes"]>`
 if the data is sent but this is what should be checked afterwards. If
@@ -369,6 +376,7 @@ SKIPPED.
 Features testable here are:
 
 - `alt-svc`
+- `bearssl`
 - `c-ares`
 - `cookies`
 - `crypto`
@@ -377,6 +385,7 @@ Features testable here are:
 - `getrlimit`
 - `GnuTLS`
 - `GSS-API`
+- `h2c`
 - `HSTS`
 - `HTTP-auth`
 - `http/2`
@@ -386,9 +395,11 @@ Features testable here are:
 - `Kerberos`
 - `large_file`
 - `ld_preload`
+- `libssh2`
+- `libssh`
+- `oldlibssh` (versions before 0.9.4)
 - `libz`
 - `manual`
-- `Metalink`
 - `Mime`
 - `netrc`
 - `NSS`
@@ -397,6 +408,7 @@ Features testable here are:
 - `parsedate`
 - `proxy`
 - `PSL`
+- `rustls`
 - `Schannel`
 - `sectransp`
 - `shuffle-dns`
@@ -415,6 +427,8 @@ Features testable here are:
 - `verbose-strings`
 - `wakeup`
 - `win32`
+- `wolfssh`
+- `wolfssl`
 
 as well as each protocol that curl supports.  A protocol only needs to be
 specified if it is different from the server (useful when the server
