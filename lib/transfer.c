@@ -444,7 +444,7 @@ static CURLcode readwrite_data(struct Curl_easy *data,
     size_t bytestoread = buffersize;
 
     /* make sure not more than the max recv speed bytes downloaded at once */
-    if(data->set.max_recv_speed && data->set.max_recv_speed < buffersize) {
+    if(data->set.max_recv_speed && data->set.max_recv_speed < (curl_off_t)buffersize) {
       const curl_off_t toread = data->set.max_recv_speed -
         (data->progress.downloaded - data->progress.dl_limit_size) %
           data->set.max_recv_speed;
