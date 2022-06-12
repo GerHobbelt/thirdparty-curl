@@ -160,7 +160,7 @@ Target
 
 		PreprocessorDefines += ["HAVE_SYS_SOCKIO_H=1", "_DARWIN_USE_64_BIT_INODE=1"]
 		{
-			!!PlatformFamily "OSX"
+			!!PlatformFamily "macOS"
 		}
 							
 		PreprocessorDefines += "CURL_CA_BUNDLE=\"/etc/ssl/certs/ca-certificates.crt\""
