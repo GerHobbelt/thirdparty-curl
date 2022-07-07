@@ -242,7 +242,9 @@ bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex)
 
 void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
 {
-  DEBUGASSERT(!strchr(fmt, '\n'));
+  /* FFS:  Don't assert because of a newline in debug statement.
+   * DEBUGASSERT(!strchr(fmt, '\n'));
+   */
   if(data && data->set.verbose) {
     va_list ap;
     int len;

@@ -266,7 +266,7 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
 
   memset(&sa, 0, sizeof(struct Curl_sockaddr_storage));
 
-  infof(data, "bind-local, addr: %s  dev: %s\n",
+  infof(data, "bind-local, addr: %s  dev: %s",
         addr, dev);
 
   /* The original code only took 'dev', which could be device name or addr.
