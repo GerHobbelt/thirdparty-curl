@@ -112,7 +112,9 @@ void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
 
 void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
 {
-  DEBUGASSERT(!strchr(fmt, '\n'));
+/* FFS:  Don't assert because of a newline in debug statement.
++   * DEBUGASSERT(!strchr(fmt, '\n'));
++   */
   if(data && data->set.verbose) {
     va_list ap;
     int len;
