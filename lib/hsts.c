@@ -406,9 +406,6 @@ CURLcode Curl_hsts_save(struct Curl_easy *data, struct hsts *h,
       i.index++;
     }
   }
-  if(out)
-    Curl_openunlock(&o);
-
   return result;
 }
 
