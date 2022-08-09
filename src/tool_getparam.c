@@ -543,7 +543,7 @@ static ParameterError GetSizeParameter(struct GlobalConfig *global,
   return PARAM_OK;
 }
 
-static void cleanarg(char *str)
+static void cleanarg(const char *str)
 {
 #ifdef HAVE_WRITABLE_ARGV
   /* now that GetStr has copied the contents of nextarg, wipe the next
@@ -560,7 +560,7 @@ static void cleanarg(char *str)
 
 ParameterError getparameter(const char *flag, /* f or -long-flag */
                             const char *nextarg,    /* NULL if unset */
-                            char *clearthis,
+                            const char *clearthis,
                             bool *usedarg,    /* set to TRUE if the arg
                                                  has been used */
                             struct GlobalConfig *global,
@@ -2455,11 +2455,10 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
         stillflags = FALSE;
       else {
         const char *nextarg = NULL;
-        char *clear = NULL;
+        const char *clear = NULL;
         if(i < (argc - 1)) {
-          nextarg = curlx_convert_tchar_to_UTF8(argv[i + 1]);
+          nextarg = argv[i + 1];
           if(!nextarg) {
-            curlx_unicodefree(orig_opt);
             return PARAM_NO_MEM;
           }
           clear = argv[i + 1];
@@ -2468,7 +2467,6 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
         result = getparameter(orig_opt, nextarg, clear, &passarg,
                               global, config);
 
-        curlx_unicodefree(nextarg);
         config = global->last;
         if(result == PARAM_NEXT_OPERATION) {
           /* Reset result as PARAM_NEXT_OPERATION is only used here and not
