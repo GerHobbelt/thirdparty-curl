@@ -636,7 +636,7 @@ Curl_cookie_add(struct Curl_easy *data,
             break;
           }
         }
-        else if(strcasecompare("domain", name)) {
+        else if(strcasecompare("domain", name) && whatptr[0]) {
           bool is_ip;
 
           /*
