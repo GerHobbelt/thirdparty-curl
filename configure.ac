@@ -118,6 +118,7 @@ AC_SUBST(libext)
 dnl figure out the libcurl version
 CURLVERSION=`$SED -ne 's/^#define LIBCURL_VERSION "\(.*\)".*/\1/p' ${srcdir}/include/curl/curlver.h`
 XC_CHECK_PROG_CC
+CURL_ATOMIC
 
 dnl for --enable-code-coverage
 CURL_COVERAGE
@@ -3445,6 +3446,7 @@ AC_CHECK_FUNCS([fnmatch \
   lockf \
   mach_absolute_time \
   pipe \
+  sched_yield \
   setlocale \
   setmode \
   setrlimit \
@@ -4255,6 +4257,23 @@ if test ${ac_cv_sizeof_curl_off_t} -gt 4; then
      "$curl_win32_file_api" = "win32_large_files"; then
     SUPPORT_FEATURES="$SUPPORT_FEATURES Largefile"
   fi
+fi
+
+if test "$tst_atomic" = "yes"; then
+  SUPPORT_FEATURES="$SUPPORT_FEATURES threadsafe-init"
+else
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([[
+      #include <windows.h>
+    ]],[[
+      #if (WINVER < 0x600) && (_WIN32_WINNT < 0x600)
+      #error
+      #endif
+    ]])
+  ],[
+     SUPPORT_FEATURES="$SUPPORT_FEATURES threadsafe-init"
+  ],[
+  ])
 fi
 
 dnl replace spaces with newlines

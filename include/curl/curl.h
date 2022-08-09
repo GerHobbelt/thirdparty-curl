@@ -2647,8 +2647,10 @@ CURL_EXTERN void curl_free(void *p);
  *
  * curl_global_init() should be invoked exactly once for each application that
  * uses libcurl and before any call of other libcurl functions.
- *
- * This function is not thread-safe!
+
+ * This function is thread-safe if CURL_VERSION_THREADSAFE_INIT is set in the
+ * curl_version_info_data.features flag (fetch by curl_version_info()).
+
  */
 CURL_EXTERN CURLcode curl_global_init(long flags);
 
@@ -3066,6 +3068,8 @@ typedef struct curl_version_info_data curl_version_info_data;
 #define CURL_VERSION_UNICODE      (1<<27) /* Unicode support on Windows */
 #define CURL_VERSION_HSTS         (1<<28) /* HSTS is supported */
 #define CURL_VERSION_GSASL        (1<<29) /* libgsasl is supported */
+#define CURL_VERSION_THREADSAFE_INIT (1<<30) /* curl_global_init/cleanup() are
+                                                thread-safe */
 
  /*
  * NAME curl_version_info()
