@@ -98,7 +98,8 @@ Example set of cookies:
 #include "curl_get_line.h"
 #include "curl_memrchr.h"
 #include "parsedate.h"
-#include "openlock.h"
+#include "rename.h"
+#include "fopen.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -480,6 +481,10 @@ Curl_cookie_add(struct Curl_easy *data,
   (void)data;
 #endif
 
+  DEBUGASSERT(MAX_SET_COOKIE_AMOUNT <= 255); /* counter is an unsigned char */
+  if(data->req.setcookies >= MAX_SET_COOKIE_AMOUNT)
+    return NULL;
+
   /* First, alloc and init a new struct for it */
   co = calloc(1, sizeof(struct Cookie));
   if(!co)
@@ -819,7 +824,7 @@ Curl_cookie_add(struct Curl_easy *data,
       freecookie(co);
       return NULL;
     }
-
+    data->req.setcookies++;
   }
   else {
     /*
@@ -1373,7 +1378,8 @@ static struct Cookie *dup_cookie(struct Cookie *src)
  *
  * It shall only return cookies that haven't expired.
  */
-struct Cookie *Curl_cookie_getlist(struct CookieInfo *c,
+struct Cookie *Curl_cookie_getlist(struct Curl_easy *data,
+                                   struct CookieInfo *c,
                                    const char *host, const char *path,
                                    bool secure)
 {
@@ -1428,6 +1434,11 @@ struct Cookie *Curl_cookie_getlist(struct CookieInfo *c,
             mainco = newco;
 
             matches++;
+            if(matches >= MAX_COOKIE_SEND_AMOUNT) {
+              infof(data, "Included max number of cookies (%u) in request!",
+                    matches);
+              break;
+            }
           }
           else
             goto fail;
@@ -1613,8 +1624,8 @@ static CURLcode cookie_output(struct Curl_easy *data,
   struct Cookie *co;
   FILE *out = NULL;
   bool use_stdout = FALSE;
+  char *tempstore = NULL;
   CURLcode error = CURLE_OK;
-  struct openlock o;
 
   if(!c)
     /* no cookie engine alive */
@@ -1629,12 +1640,9 @@ static CURLcode cookie_output(struct Curl_easy *data,
     use_stdout = TRUE;
   }
   else {
-    CURLcode result = Curl_openlock(filename, &o);
-    if(result) {
-      error = CURLE_LOCK_ERROR;
+    error = Curl_fopen(data, filename, &out, &tempstore);
+    if(error)
       goto error;
-	}
-    out = o.out;
   }
 
   fputs("# Netscape HTTP Cookie File\n"
@@ -1678,15 +1686,28 @@ static CURLcode cookie_output(struct Curl_easy *data,
     free(array);
   }
 
+  if(!use_stdout) {
+    fclose(out);
+    out = NULL;
+    if(tempstore && Curl_rename(tempstore, filename)) {
+      unlink(tempstore);
+      error = CURLE_WRITE_ERROR;
+      goto error;
+    }
+  }
+
   /*
-   * If we reach here we have successfully written a cookie file so there is
+   * If we reach here we have successfully written a cookie file so theree is
    * no need to inspect the error, any error case should have jumped into the
    * error block below.
    */
+  free(tempstore);
+  return CURLE_OK;
 
 error:
-  if(!use_stdout)
-    Curl_openunlock(&o);
+  if(out && !use_stdout)
+    fclose(out);
+  free(tempstore);
   return error;
 }
 
