@@ -5,7 +5,7 @@
 .\" *                            | (__| |_| |  _ <| |___
 .\" *                             \___|\___/|_| \_\_____|
 .\" *
-.\" * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 .\" *
 .\" * This software is licensed as described in the file COPYING, which
 .\" * you should have received as part of this distribution. The terms
@@ -20,7 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_SSH_KEYDATA 3 "4 Nov 2021" "libcurl 7.81.0" "curl_easy_setopt options"
+.TH CURLOPT_SSH_KEYDATA 3 "4 Nov 2021" "libcurl 7.84.0" "curl_easy_setopt options"
 .SH NAME
 CURLOPT_SSH_HOSTKEYDATA \- pointer to pass to the SSH hostkey callback
 .SH SYNOPSIS
@@ -38,25 +38,25 @@ NULL
 SCP and SFTP
 .SH EXAMPLE
 .nf
-int curl_sshhostkeycallback(void *clientp,/* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
-                          int keytype, /* CURLKHTYPE */
-                          const char * key, /*hostkey to check*/
-                          size_t keylen); /*length of the key*/
+int hostkeycb(void *clientp,    /* passed with CURLOPT_SSH_HOSTKEYDATA */
+              int keytype,      /* CURLKHTYPE */
+              const char * key, /*hostkey to check*/
+              size_t keylen);   /*length of the key*/
 {
   /* 'clientp' points to the callback_data struct */
   /* investigate the situation and return the correct value */
-  return CURLKHCHECK_FINE;
+  return CURLKHMATCH_OK;
 }
 {
   curl_easy_setopt(curl, CURLOPT_URL, "sftp://example.com/thisfile.txt");
-  curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYFUNCTION, curl_sshhostkeycallback);
+  curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYFUNCTION, hostkeycb);
   curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYDATA, &callback_data);
 
   curl_easy_perform(curl);
 }
 .fi
 .SH AVAILABILITY
-Added in 7.81.0
+Added in 7.84.0, works only with libssh2 backend.
 .SH RETURN VALUE
 Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"

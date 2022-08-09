@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             ___|___/|_| ______|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -365,6 +365,6 @@ struct curl_easyoption Curl_easyopts[] = {
  */
 int Curl_easyopts_check(void)
 {
-  return ((CURLOPT_LASTENTRY%10000) != (315 + 1));
+  return ((CURLOPT_LASTENTRY%10000) != (317 + 1));
 }
 #endif

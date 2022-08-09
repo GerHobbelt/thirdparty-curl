@@ -5,7 +5,7 @@
 .\" *                            | (__| |_| |  _ <| |___
 .\" *                             \___|\___/|_| \_\_____|
 .\" *
-.\" * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 .\" *
 .\" * This software is licensed as described in the file COPYING, which
 .\" * you should have received as part of this distribution. The terms
@@ -20,9 +20,9 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_SSH_HOSTKEYFUNCTION 3 "4 Nov 2021" "libcurl 7.81.0" "curl_easy_setopt options"
+.TH CURLOPT_SSH_HOSTKEYFUNCTION 3 "4 Nov 2021" "libcurl 7.84.0" "curl_easy_setopt options"
 .SH NAME
-CURLOPT_SSH_HOSTKEYFUNCTION \- callback to check hostkey (to overwrite the functionality known_host file)
+CURLOPT_SSH_HOSTKEYFUNCTION \- callback to check hostkey
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
@@ -37,17 +37,21 @@ CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSH_HOSTKEYFUNCTION,
 .fi
 .SH DESCRIPTION
 Pass a pointer to your callback function, which should match the prototype
-shown above. It overrides CURLOPT_SSH_KNOWNHOSTS.
+shown above. It overrides \fICURLOPT_SSH_KNOWNHOSTS(3)\fP.
 
-It gets called to act and decide for libcurl how to proceed.
+This callback gets called when the verification of the SSH hostkey is needed.
 
-This callback function gets passed a custom pointer (set with 
-\fICURLOPT_SSH_HOSTKEYDATA(3)\fP, the libcurl keytype, the hostkey,
-the length of the key.
-It MUST return one of the following return codes to tell libcurl how to act:
-.IP CURLKHCHECK_FINE
+\fBkey\fP is \fBkeylen\fP bytes long and is the key to check. \fBkeytype\fP
+says what type it is, from the \fBCURLKHTYPE_*\fP series in the curl_khtype
+enum.
+
+\fBclientp\fP is a custom pointer set with \fICURLOPT_SSH_HOSTKEYDATA(3)\fP.
+
+The callback MUST return one of the following return codes to tell libcurl how
+to act:
+.IP CURLKHMATCH_OK
 The hostkey is accepted, the connexion should continue.
-.IP CURLKHCHECK_REJECT
+.IP CURLKHMATCH_MISMATCH
 the hostkey is rejected, the connexion is canceled.
 .SH DEFAULT
 NULL
@@ -55,26 +59,27 @@ NULL
 SCP and SFTP
 .SH EXAMPLE
 .nf
-int curl_sshhostkeycallback(void *clientp,/* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
-                          int keytype, /* CURLKHTYPE */
-                          const char * key, /*hostkey to check*/
-                          size_t keylen); /*length of the key*/
+int hostkeycb(void *clientp,    /* passed with CURLOPT_SSH_HOSTKEYDATA */
+              int keytype,      /* CURLKHTYPE */
+              const char * key, /*hostkey to check*/
+              size_t keylen);   /*length of the key*/
 {
   /* 'clientp' points to the callback_data struct */
   /* investigate the situation and return the correct value */
-  return CURLKHCHECK_FINE;
+  return CURLKHMATCH_OK;
 }
 {
   curl_easy_setopt(curl, CURLOPT_URL, "sftp://example.com/thisfile.txt");
-  curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYFUNCTION, curl_sshhostkeycallback);
+  curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYFUNCTION, hostkeycb);
   curl_easy_setopt(curl, CURLOPT_SSH_HOSTKEYDATA, &callback_data);
 
   curl_easy_perform(curl);
 }
 .fi
 .SH AVAILABILITY
-Added in 7.81.0 , work only with libssh2 backend.
+Added in 7.84.0 , work only with libssh2 backend.
 .SH RETURN VALUE
 Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
 .BR CURLOPT_SSH_HOSTKEYDATA "(3), "
+.BR CURLOPT_SSH_KNOWNHOSTS "(3), "

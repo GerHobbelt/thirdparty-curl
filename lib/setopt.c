@@ -2480,7 +2480,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     result = Curl_setstropt(&data->set.str[STRING_SSH_KNOWNHOSTS],
                             va_arg(param, char *));
     break;
-
+#ifdef USE_LIBSSH2
   case CURLOPT_SSH_HOSTKEYFUNCTION:
     /* the callback to check the hostkey without the knownhost file */
     data->set.ssh_hostkeyfunc = va_arg(param, curl_sshhostkeycallback);
@@ -2492,7 +2492,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     data->set.ssh_hostkeyfunc_userp = va_arg(param, void *);
     break;
-
+#endif
   case CURLOPT_SSH_KEYFUNCTION:
     /* setting to NULL is fine since the ssh.c functions themselves will
        then revert to use the internal default */
