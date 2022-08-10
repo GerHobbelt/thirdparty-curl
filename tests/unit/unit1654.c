@@ -129,7 +129,7 @@ UNITTEST_START
   }
   fail_unless(asi->list.size == 10, "wrong number of entries");
 
-  Curl_altsvc_save(asi, outname);
+  Curl_altsvc_save(NULL, asi, outname);
 
   curl_easy_cleanup(curl);
   curl_global_cleanup();
