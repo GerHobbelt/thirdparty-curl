@@ -106,7 +106,7 @@ struct dohentry {
 };
 
 
-#ifdef DEBUGBUILD
+#if defined(DEBUGBUILD) || defined(BUILD_MONOLITHIC)
 DOHcode doh_encode(const char *host,
                    DNStype dnstype,
                    unsigned char *dnsp, /* buffer */

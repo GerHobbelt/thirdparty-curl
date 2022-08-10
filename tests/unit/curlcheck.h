@@ -95,8 +95,12 @@
 
 extern int unitfail;
 
+#ifndef UNITTEST_NAME
+#define UNITTEST_NAME  test
+#endif
+
 #define UNITTEST_START                          \
-  int test(char *arg)                           \
+  int UNITTEST_NAME(char *arg)                  \
   {                                             \
     (void)arg;                                  \
     if(unit_setup()) {                          \

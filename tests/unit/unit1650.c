@@ -21,6 +21,8 @@
  * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
+#define UNITTEST_NAME  test_unit1650
+
 #include "curlcheck.h"
 
 #include "doh.h"

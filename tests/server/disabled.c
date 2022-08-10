@@ -78,7 +78,11 @@ static const char *disabled[]={
   NULL
 };
 
-int main(void)
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_disabled_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   int i;
   for(i = 0; disabled[i]; i++)

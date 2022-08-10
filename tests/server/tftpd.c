@@ -551,7 +551,11 @@ static int synchnet(curl_socket_t f /* socket to flush */)
   return j;
 }
 
-int main(int argc, char **argv)
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_tftpd_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   srvr_sockaddr_union_t me;
   struct tftphdr *tp;

@@ -27,7 +27,7 @@
 
 bool Curl_is_absolute_url(const char *url, char *scheme, size_t buflen);
 
-#ifdef DEBUGBUILD
+#if defined(DEBUGBUILD) || defined(BUILD_MONOLITHIC)
 CURLUcode Curl_parse_port(struct Curl_URL *u, char *hostname, bool);
 #endif
 

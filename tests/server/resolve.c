@@ -61,7 +61,11 @@ static const char *ipv_inuse = "IPv4";
 
 const char *serverlogfile = ""; /* for a util.c function we don't use */
 
-int main(int argc, char *argv[])
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_resolve_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   int arg = 1;
   const char *host = NULL;

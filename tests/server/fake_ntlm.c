@@ -109,7 +109,11 @@ static char *printable(char *inbuf, size_t inlength)
   return outbuf;
 }
 
-int main(int argc, char *argv[])
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_fake_ntlm_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   char buf[1024];
   char logfilename[256];

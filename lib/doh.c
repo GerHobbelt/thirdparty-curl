@@ -43,6 +43,11 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
+#if defined(BUILD_MONOLITHIC)
+#undef UNITTEST
+#define UNITTEST
+#endif
+
 #define DNS_CLASS_IN 0x01
 
 #ifndef CURL_DISABLE_VERBOSE_STRINGS

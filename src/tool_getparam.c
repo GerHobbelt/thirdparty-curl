@@ -353,7 +353,7 @@ static const struct LongShort aliases[]= {
  * We allow ':' and '\' to be escaped by '\' so that we can use certificate
  * nicknames containing ':'.  See <https://sourceforge.net/p/curl/bugs/1196/>
  * for details. */
-#ifndef UNITTESTS
+#if !(defined(DEBUGBUILD) || defined(BUILD_MONOLITHIC))
 static
 #endif
 void parse_cert_parameter(const char *cert_parameter,

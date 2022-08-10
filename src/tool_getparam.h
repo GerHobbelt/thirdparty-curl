@@ -60,7 +60,7 @@ ParameterError getparameter(const char *flag, const char *nextarg,
                             struct GlobalConfig *global,
                             struct OperationConfig *operation);
 
-#ifdef UNITTESTS
+#if defined(DEBUGBUILD) || defined(BUILD_MONOLITHIC)
 void parse_cert_parameter(const char *cert_parameter,
                           char **certname,
                           char **passphrase);

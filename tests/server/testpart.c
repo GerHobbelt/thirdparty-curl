@@ -30,7 +30,11 @@
 /* include memdebug.h last */
 #include "memdebug.h"
 
-int main(int argc, char **argv)
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_part_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   char  *part;
   size_t partlen;

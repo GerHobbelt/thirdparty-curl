@@ -1867,7 +1867,11 @@ static int service_connection(curl_socket_t msgsock, struct httprequest *req,
   return -1;
 }
 
-int main(int argc, char *argv[])
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      curl_test_sws_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   srvr_sockaddr_union_t me;
   curl_socket_t sock = CURL_SOCKET_BAD;

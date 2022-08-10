@@ -543,6 +543,11 @@ static CURLUcode parse_hostname_login(struct Curl_URL *u,
   return result;
 }
 
+#if defined(BUILD_MONOLITHIC)
+#undef UNITTEST
+#define UNITTEST
+#endif
+
 UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, char *hostname,
                                    bool has_scheme)
 {
