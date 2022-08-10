@@ -38,5 +38,7 @@
 #  define FUNCALLCONV
 #endif
 
+#ifndef USE_WINSOCK
 LIBHOSTNAME_EXTERN int FUNCALLCONV
   gethostname(char *name, GETHOSTNAME_TYPE_ARG2 namelen);
+#endif
