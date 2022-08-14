@@ -727,9 +727,6 @@
 /* The size of `int', as computed by sizeof. */
 ${SIZEOF_INT_CODE}
 
-/* The size of `short', as computed by sizeof. */
-${SIZEOF_SHORT_CODE}
-
 /* The size of `long', as computed by sizeof. */
 ${SIZEOF_LONG_CODE}
 
