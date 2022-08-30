@@ -113,9 +113,6 @@ endif()
 set_target_properties(${LIB_NAME} PROPERTIES PREFIX "")
 set_target_properties(${LIB_NAME} PROPERTIES IMPORT_PREFIX "")
 
-# embed version number in the library filename, if _ver defined
-set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME}${_ver})
-
 if(CURL_HAS_LTO)
   set_target_properties(${LIB_NAME} PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE

@@ -47,6 +47,13 @@ include(CheckCCompilerFlag)
 
 project(CURL C)
 include(flags OPTIONAL)
+if(DEFINED XP_NAMESPACE)
+  set(XP_MODULE_PATH ${CMAKE_MODULE_PATH})
+  set(XP_OPT_INSTALL EXCLUDE_FROM_ALL)
+  set(nameSpace ${XP_NAMESPACE}::)
+else()
+  set(nameSpace ${PROJECT_NAME}::)
+endif()
 
 file(STRINGS ${CURL_SOURCE_DIR}/include/curl/curlver.h CURL_VERSION_H_CONTENTS REGEX "#define LIBCURL_VERSION( |_NUM )")
 string(REGEX MATCH "#define LIBCURL_VERSION \"[^\"]*"
@@ -150,11 +157,9 @@ endif()
 set(CURL_LIBS "")
 
 if(ENABLE_ARES)
-  option(FIND_ARES_MODULE_PATH "Find c-ares in CMAKE_MODULE_PATH" OFF)
-  mark_as_advanced(FIND_ARES_MODULE_PATH)
   set(USE_ARES 1)
-  if(FIND_ARES_MODULE_PATH)
-    find_package(usexp-CARES REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+  if(COMMAND xpFindPkg)
+    xpFindPkg(PKGS cares)
     set(CARES_LIBRARY ${CARES_LIBRARIES})
   else()
     find_package(CARES REQUIRED)
@@ -437,10 +442,8 @@ if(use_core_foundation)
 endif()
 
 if(CMAKE_USE_OPENSSL)
-  option(CMAKE_USE_OPENSSL_MODULE_PATH "Find OpenSSL in CMAKE_MODULE_PATH." OFF)
-  mark_as_advanced(CMAKE_USE_OPENSSL_MODULE_PATH)
-  if(CMAKE_USE_OPENSSL_MODULE_PATH)
-    find_package(usexp-OpenSSL REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+  if(COMMAND xpFindPkg)
+    xpFindPkg(PKGS openssl)
   else()
     find_package(OpenSSL REQUIRED)
   endif()
@@ -702,10 +705,8 @@ check_library_exists("${CURL_LIBS}" dlopen "" HAVE_DLOPEN)
 set(HAVE_LIBZ OFF)
 set(HAVE_ZLIB_H OFF)
 set(USE_ZLIB OFF)
-option(CURL_ZLIB_MODULE_PATH "Find zlib in CMAKE_MODULE_PATH." OFF)
-mark_as_advanced(CURL_ZLIB_MODULE_PATH)
-if(CURL_ZLIB_MODULE_PATH)
-  find_package(usexp-ZLIB REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+if(COMMAND xpFindPkg)
+  xpFindPkg(PKGS zlib)
 else()
   optional_dependency(ZLIB)
 endif()
@@ -768,10 +769,8 @@ set(HAVE_LIBSSH2 OFF)
 set(HAVE_LIBSSH2_H OFF)
 
 if(CMAKE_USE_LIBSSH2)
-  option(CMAKE_USE_LIBSSH2_MODULE_PATH "Find libssh2 in CMAKE_MODULE_PATH." OFF)
-  mark_as_advanced(CMAKE_USE_LIBSSH2_MODULE_PATH)
-  if(CMAKE_USE_LIBSSH2_MODULE_PATH)
-    find_package(usexp-LibSSH2 REQUIRED PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+  if(COMMAND xpFindPkg)
+    xpFindPkg(PKGS libssh2)
     get_target_property(LIBSSH2_INCLUDE_DIR ${LIBSSH2_LIBRARIES} INTERFACE_INCLUDE_DIRECTORIES)
     list(FILTER LIBSSH2_INCLUDE_DIR INCLUDE REGEX "/libssh2$") # include dir ending with /libssh2
     set(LIBSSH2_LIBRARY ${LIBSSH2_LIBRARIES})
@@ -1384,23 +1383,9 @@ function(transform_makefile_inc INPUT_FILE OUTPUT_FILE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${INPUT_FILE}")
 endfunction()
 
-if(NOT DEFINED CURL_VER)
-  set(CURL_VER ${CURL_VERSION})
-elseif(NOT CURL_VER STREQUAL CURL_VERSION)
-  message(AUTHOR_WARNING "version passed in (${CURL_VER}) doesn't match internal version (${CURL_VERSION})")
-endif()
-if(XP_INSTALL_DIRS)
-  set(_ver _${CURL_VER})
-endif()
-if(DEFINED XP_NAMESPACE)
-  set(nameSpace ${XP_NAMESPACE}::)
-else()
-  set(nameSpace ${PROJECT_NAME}::)
-endif()
-
 include(GNUInstallDirs)
 
-set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}${_ver})
+set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
@@ -1585,31 +1570,26 @@ set(REQUIRE_LIB_DEPS        "no")
 # SUPPORT_PROTOCOLS
 set(VERSIONNUM              "${CURL_VERSION_NUM}")
 
-option(INSTALL_CURL_CONFIG "Set to ON to install cURL config." ON)
-mark_as_advanced(INSTALL_CURL_CONFIG)
-
 # Finally generate a "curl-config" matching this config
 # Use:
 # * ENABLE_SHARED
 # * ENABLE_STATIC
 configure_file("${CURL_SOURCE_DIR}/curl-config.in"
                "${CURL_BINARY_DIR}/curl-config" @ONLY)
-if(INSTALL_CURL_CONFIG)
 install(FILES "${CURL_BINARY_DIR}/curl-config"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
+        ${XP_OPT_INSTALL}
         PERMISSIONS
           OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE
           WORLD_READ WORLD_EXECUTE)
-endif()
 
 # Finally generate a pkg-config file matching this config
 configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
                "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
-if(INSTALL_CURL_CONFIG)
 install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
+        ${XP_OPT_INSTALL}
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
 
 # install headers
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/curl"
@@ -1639,12 +1619,11 @@ if(CURL_ENABLE_EXPORT_TARGET)
   )
 endif()
 
-if(INSTALL_CURL_CONFIG)
 install(
         FILES ${version_config} ${project_config}
+        ${XP_OPT_INSTALL}
         DESTINATION ${CURL_INSTALL_CMAKE_DIR}
 )
-endif()
 
 # Workaround for MSVS10 to avoid the Dialog Hell
 # FIXME: This could be removed with future version of CMake.
