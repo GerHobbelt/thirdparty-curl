@@ -2936,6 +2936,7 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
     k->ignorebody = TRUE;
     infof(data, "Ignoring the response-body");
   }
+
   if(data->state.resume_from && !k->content_range &&
      (data->state.httpreq == HTTPREQ_GET) &&
      !k->ignorebody) {
