@@ -1530,7 +1530,7 @@ set(exec_prefix             "\${prefix}")
 set(includedir              "\${prefix}/include")
 set(LDFLAGS                 "${CMAKE_SHARED_LINKER_FLAGS}")
 set(LIBCURL_LIBS            "")
-set(libdir                  "${CMAKE_INSTALL_PREFIX}/lib")
+set(libdir                  "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 foreach(_lib ${CMAKE_C_IMPLICIT_LINK_LIBRARIES} ${CURL_LIBS})
   if(TARGET "${_lib}")
     set(_libname "${_lib}")
@@ -1589,7 +1589,7 @@ configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
                "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
 install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
         ${XP_OPT_INSTALL}
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
 
 # install headers
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/curl"
