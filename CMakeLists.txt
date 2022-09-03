@@ -1385,7 +1385,11 @@ endfunction()
 
 include(GNUInstallDirs)
 
-set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+if(DEFINED XP_INSTALL_CMAKEDIR)
+  set(CURL_INSTALL_CMAKE_DIR ${XP_INSTALL_CMAKEDIR})
+else()
+  set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+endif()
 set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
