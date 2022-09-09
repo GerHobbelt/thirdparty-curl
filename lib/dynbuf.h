@@ -46,6 +46,7 @@ CURLcode Curl_dyn_vaddf(struct dynbuf *s, const char *fmt, va_list ap)
   WARN_UNUSED_RESULT;
 void Curl_dyn_reset(struct dynbuf *s);
 CURLcode Curl_dyn_tail(struct dynbuf *s, size_t trail);
+CURLcode Curl_dyn_setlen(struct dynbuf *s, size_t set);
 char *Curl_dyn_ptr(const struct dynbuf *s);
 unsigned char *Curl_dyn_uptr(const struct dynbuf *s);
 size_t Curl_dyn_len(const struct dynbuf *s);
