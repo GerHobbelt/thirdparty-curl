@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 #  endif
 #endif
 
-#if defined(HAVE_SETVBUF) && defined(_IONBF) && defined(WIN32)
+#if ( defined(HAVE_SETVBUF) || defined(_MSC_VER) ) && defined(_IONBF) && ( defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64) )
   (void)setvbuf(stdout, NULL, _IONBF, 0);
   (void)setvbuf(stderr, NULL, _IONBF, 0);
 #endif
