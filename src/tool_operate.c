@@ -207,6 +207,7 @@ static curl_off_t VmsSpecialSize(const char *name,
 
 struct per_transfer *transfers; /* first node */
 static struct per_transfer *transfersl; /* last node */
+static long all_pers;
 
 /* add_per_transfer creates a new 'per_transfer' node in the linked
    list of transfers */
@@ -229,6 +230,8 @@ static CURLcode add_per_transfer(struct per_transfer **per)
   }
   *per = p;
   all_xfers++; /* count total number of transfers added */
+  all_pers++;
+
   return CURLE_OK;
 }
 
@@ -256,6 +259,7 @@ static struct per_transfer *del_per_transfer(struct per_transfer *per)
     transfersl = p;
 
   free(per);
+  all_pers--;
 
   return n;
 }
@@ -2297,9 +2301,11 @@ static CURLcode add_parallel_transfers(struct GlobalConfig *global,
   bool sleeping = FALSE;
   *addedp = FALSE;
   *morep = FALSE;
-  result = create_transfer(global, share, addedp);
-  if(result)
-    return result;
+  if(all_pers < (global->parallel_max*2)) {
+    result = create_transfer(global, share, addedp);
+    if(result)
+      return result;
+  }
   for(per = transfers; per && (all_added < global->parallel_max);
       per = per->next) {
     bool getadded = FALSE;
