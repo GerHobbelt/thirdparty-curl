@@ -432,7 +432,7 @@ static curl_version_info_data version_info = {
     ( (SIZEOF_OFF_T > 4) || defined(USE_WIN32_LARGE_FILES) )
   | CURL_VERSION_LARGEFILE
 #endif
-#if defined(WIN32) && defined(UNICODE) && defined(_UNICODE)
+#if ( defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64) ) && defined(UNICODE) && defined(_UNICODE)
   | CURL_VERSION_UNICODE
 #endif
 #if defined(USE_TLS_SRP)

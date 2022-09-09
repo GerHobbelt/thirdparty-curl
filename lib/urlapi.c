@@ -903,7 +903,7 @@ static CURLUcode seturl(const char *url, CURLU *u, unsigned int flags)
           ptr += 9; /* now points to the slash after the host */
         }
         else {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
           size_t len;
 
           /* the host name, NetBIOS computer name, can not contain disallowed

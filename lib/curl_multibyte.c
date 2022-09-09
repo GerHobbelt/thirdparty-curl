@@ -32,7 +32,7 @@
 
 #include "curl_setup.h"
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
 
 #include "curl_multibyte.h"
 
