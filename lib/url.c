@@ -644,7 +644,6 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
   set->tcp_maxseg = -1;
   set->tcp_fastopen = FALSE;
   set->tcp_nodelay = TRUE;
-  set->ssl_enable_npn = TRUE;
   set->ssl_enable_alpn = TRUE;
   set->expect_100_timeout = 1000L; /* Wait for a second by default. */
   set->sep_headers = TRUE; /* separated header lists by default */
@@ -2398,7 +2397,7 @@ static char *detect_proxy(struct Curl_easy *data,
 
   /* Now, build <protocol>_proxy and check for such a one to use */
   while(*protop)
-    *envp++ = (char)tolower((int)*protop++);
+    *envp++ = Curl_raw_tolower(*protop++);
 
   /* append _proxy */
   strcpy(envp, "_proxy");
@@ -4053,13 +4052,11 @@ static CURLcode create_conn(struct Curl_easy *data,
        be able to do that if we have reached the limit of how many
        connections we are allowed to open. */
 
-    if(conn->handler->flags & PROTOPT_ALPN_NPN) {
+    if(conn->handler->flags & PROTOPT_ALPN) {
       /* The protocol wants it, so set the bits if enabled in the easy handle
          (default) */
       if(data->set.ssl_enable_alpn)
         conn->bits.tls_enable_alpn = TRUE;
-      if(data->set.ssl_enable_npn)
-        conn->bits.tls_enable_npn = TRUE;
     }
 
     if(waitpipe)
