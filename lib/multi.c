@@ -1345,8 +1345,6 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
       pollrc = Curl_poll(ufds, nfds, 0); /* just pre-check with WinSock */
     else
       pollrc = 0;
-    if(pollrc <= 0) /* now wait... if not ready during the pre-check above */
-      WSAWaitForMultipleEvents(1, &multi->wsa_event, FALSE, timeout_ms, FALSE);
 #else
     pollrc = Curl_poll(ufds, nfds, timeout_ms); /* wait... */
 #endif
@@ -1356,6 +1354,9 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
     if(pollrc > 0) {
       retcode = pollrc;
 #ifdef USE_WINSOCK
+    }
+    else { /* now wait... if not ready during the pre-check (pollrc == 0) */
+      WSAWaitForMultipleEvents(1, &multi->wsa_event, FALSE, timeout_ms, FALSE);
     }
     /* With WinSock, we have to run the following section unconditionally
        to call WSAEventSelect(fd, event, 0) on all the sockets */
@@ -1377,11 +1378,11 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
             mask |= CURL_WAIT_POLLOUT;
           if(wsa_events.lNetworkEvents & FD_OOB)
             mask |= CURL_WAIT_POLLPRI;
-          if(ret && pollrc <= 0 && wsa_events.lNetworkEvents)
+          if(ret && !pollrc && wsa_events.lNetworkEvents)
             retcode++;
         }
         WSAEventSelect(s, multi->wsa_event, 0);
-        if(pollrc <= 0) {
+        if(!pollrc) {
           extra_fds[i].revents = mask;
           continue;
         }
@@ -1407,7 +1408,7 @@ static CURLMcode multi_wait(struct Curl_multi *multi,
             if(bitmap & (GETSOCK_READSOCK(i) | GETSOCK_WRITESOCK(i))) {
               wsa_events.lNetworkEvents = 0;
               if(WSAEnumNetworkEvents(sockbunch[i], NULL, &wsa_events) == 0) {
-                if(ret && pollrc <= 0 && wsa_events.lNetworkEvents)
+                if(ret && !pollrc && wsa_events.lNetworkEvents)
                   retcode++;
               }
               WSAEventSelect(sockbunch[i], multi->wsa_event, 0);
