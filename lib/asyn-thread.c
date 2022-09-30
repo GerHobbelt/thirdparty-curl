@@ -44,16 +44,6 @@
 #include <inet.h>
 #endif
 
-#if defined(USE_THREADS_POSIX)
-#  ifdef HAVE_PTHREAD_H
-#    include <pthread.h>
-#  endif
-#elif defined(USE_THREADS_WIN32)
-#  ifdef HAVE_PROCESS_H
-#    include <process.h>
-#  endif
-#endif
-
 #if (defined(NETWARE) && defined(__NOVELL_LIBC__))
 #undef in_addr_t
 #define in_addr_t unsigned long

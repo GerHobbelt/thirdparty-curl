@@ -26,6 +26,16 @@
 #include "curl_setup.h"
 
 #if defined(USE_THREADS_POSIX)
+#  ifdef HAVE_PTHREAD_H
+#    include <pthread.h>
+#  endif
+#elif defined(USE_THREADS_WIN32)
+#  ifdef HAVE_PROCESS_H
+#    include <process.h>
+#  endif
+#endif
+
+#if defined(USE_THREADS_POSIX)
 #  define CURL_STDCALL
 #  define curl_mutex_t           pthread_mutex_t
 #  define curl_thread_t          pthread_t *
