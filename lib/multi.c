@@ -2771,6 +2771,11 @@ CURLMcode curl_multi_cleanup(struct Curl_multi *multi)
     wakeup_close(multi->wakeup_pair[1]);
 #endif
 #endif
+
+#ifdef USE_SSL
+    Curl_free_multi_ssl_backend_data(multi->ssl_backend_data);
+#endif
+
     free(multi);
 
     return CURLM_OK;
