@@ -349,6 +349,11 @@ static const char * const protocols[] = {
 #endif
 #ifdef USE_LIBRTMP
   "rtmp",
+  "rtmpe",
+  "rtmps",
+  "rtmpt",
+  "rtmpte",
+  "rtmpts",
 #endif
 #ifndef CURL_DISABLE_RTSP
   "rtsp",
