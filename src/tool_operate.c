@@ -467,9 +467,12 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
       /* If it returned OK. _or_ failonerror was enabled and it
          returned due to such an error, check for HTTP transient
          errors to retry on. */
-      long protocol = 0;
-      curl_easy_getinfo(curl, CURLINFO_PROTOCOL, &protocol);
-      if((protocol == CURLPROTO_HTTP) || (protocol == CURLPROTO_HTTPS)) {
+      char *scheme;
+      proto_t protocol = proto_last;
+      curl_easy_getinfo(curl, CURLINFO_SCHEME, &scheme);
+      if(scheme)
+        protocol = scheme2protocol(scheme);
+      if(protocol == proto_http || protocol == proto_https) {
         /* This was HTTP(S) */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response);
 
@@ -496,12 +499,16 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
       }
     } /* if CURLE_OK */
     else if(result) {
-      long protocol = 0;
+      char *scheme;
+      proto_t protocol = proto_last;
 
       curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response);
-      curl_easy_getinfo(curl, CURLINFO_PROTOCOL, &protocol);
+      curl_easy_getinfo(curl, CURLINFO_SCHEME, &scheme);
 
-      if((protocol == CURLPROTO_FTP || protocol == CURLPROTO_FTPS) &&
+      if(scheme)
+        protocol = scheme2protocol(scheme);
+
+      if((protocol == proto_ftp || protocol == proto_ftps) &&
          response / 100 == 4)
         /*
          * This is typically when the FTP server only allows a certain
@@ -773,10 +780,10 @@ static void ipfs_url_rewrite(char **url)
 /*
  * Return the proto bit for the scheme used in the given URL
  */
-static long url_proto(char **url, struct OperationConfig *config)
+static proto_t url_proto(char **url, struct OperationConfig *config)
 {
   CURLU *uh = curl_url();
-  long proto = 0;
+  proto_t proto = PROTO_NONE;
 
   /* Before we do anything, see if we need to reqrite the URL.*/
   if(curl_strnequal(*url, "ipfs", 4) || curl_strnequal(*url, "ipns", 4)) {
@@ -942,7 +949,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         struct OutStruct *etag_save;
         struct HdrCbData *hdrcbdata = NULL;
         struct OutStruct etag_first;
-        long use_proto;
+        proto_t use_proto;
         CURL *curl;
 
         /* --etag-save */
@@ -1348,8 +1355,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
         /* here */
         use_proto = url_proto(&per->this_url, config);
+        if(use_proto == PROTO_NONE)
+          use_proto = proto_last;  /* Do not match any identified protocol. */
 #if 0
-        if(!(use_proto & built_in_protos)) {
+        if(use_proto >= proto_last) {
           warnf(global, "URL is '%s' but no support for the scheme\n",
                 per->this_url);
         }
@@ -1505,13 +1514,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
         my_setopt_slist(curl, CURLOPT_HTTPHEADER, config->headers);
 
-        if(built_in_protos & (CURLPROTO_HTTP | CURLPROTO_RTSP)) {
+        if(proto_http < proto_last || proto_rtsp < proto_last) {
           my_setopt_str(curl, CURLOPT_REFERER, config->referer);
           my_setopt_str(curl, CURLOPT_USERAGENT, config->useragent);
         }
 
-        if(built_in_protos & CURLPROTO_HTTP) {
-
+        if(proto_http < proto_last) {
           long postRedir = 0;
 
           my_setopt(curl, CURLOPT_FOLLOWLOCATION,
@@ -1561,9 +1569,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             return result;
           }
 
-        } /* (built_in_protos & CURLPROTO_HTTP) */
+        } /* (proto_http < proto_last) */
 
-        my_setopt_str(curl, CURLOPT_FTPPORT, config->ftpport);
+        if(proto_ftp < proto_last)
+          my_setopt_str(curl, CURLOPT_FTPPORT, config->ftpport);
         my_setopt(curl, CURLOPT_LOW_SPEED_LIMIT,
                   config->low_speed_limit);
         my_setopt(curl, CURLOPT_LOW_SPEED_TIME, config->low_speed_time);
@@ -1580,7 +1589,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt_str(curl, CURLOPT_KEYPASSWD, config->key_passwd);
         my_setopt_str(curl, CURLOPT_PROXY_KEYPASSWD, config->proxy_key_passwd);
 
-        if(use_proto & (CURLPROTO_SCP|CURLPROTO_SFTP|CURLPROTO_SSH)) {
+        if(use_proto == proto_scp || use_proto == proto_sftp || use_proto == proto_ssh) {
 
           /* SSH and SSL private key uses same command-line option */
           /* new in libcurl 7.16.1 */
@@ -1851,7 +1860,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->path_as_is)
           my_setopt(curl, CURLOPT_PATH_AS_IS, 1L);
 
-        if((use_proto & (CURLPROTO_SCP|CURLPROTO_SFTP|CURLPROTO_SSH)) &&
+        if((use_proto == proto_scp || use_proto == proto_sftp || use_proto == proto_ssh) &&
            !config->insecure_ok) {
           char *known = findfile(".ssh/known_hosts", FALSE);
           if(known) {
@@ -2061,7 +2070,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt(curl, CURLOPT_FTP_SKIP_PASV_IP, config->ftp_skip_ip?1L:0L);
 
         /* curl 7.15.1 */
-        my_setopt(curl, CURLOPT_FTP_FILEMETHOD, (long)config->ftp_filemethod);
+        if(proto_ftp < proto_last)
+          my_setopt(curl, CURLOPT_FTP_FILEMETHOD,
+                    (long)config->ftp_filemethod);
 
         /* curl 7.15.2 */
         if(config->localport) {
@@ -2100,7 +2111,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           my_setopt(curl, CURLOPT_TCP_MAXSEG, config->tcp_maxseg);
 
         /* curl 7.20.0 */
-        if(config->tftp_blksize)
+        if(config->tftp_blksize && proto_tftp < proto_last)
           my_setopt(curl, CURLOPT_TFTP_BLKSIZE, config->tftp_blksize);
 
         if(config->mail_from)
@@ -2213,7 +2224,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
                         (long)(config->expect100timeout*1000));
 
         /* new in 7.48.0 */
-        if(config->tftp_no_options)
+        if(config->tftp_no_options && proto_tftp < proto_last)
           my_setopt(curl, CURLOPT_TFTP_NO_OPTIONS, 1L);
 
         /* new in 7.59.0 */
