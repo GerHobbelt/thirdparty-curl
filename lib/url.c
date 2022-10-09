@@ -73,8 +73,8 @@
 #endif
 
 #elif defined(USE_WIN32_IDN)
-/* prototype for curl_win32_idn_to_ascii() */
-bool curl_win32_idn_to_ascii(const char *in, char **out);
+/* prototype for Curl_win32_idn_to_ascii() */
+bool Curl_win32_idn_to_ascii(const char *in, char **out);
 #endif  /* USE_LIBIDN2 */
 
 #include "doh.h"
@@ -1669,7 +1669,7 @@ CURLcode Curl_idnconvert_hostname(struct Curl_easy *data,
 #elif defined(USE_WIN32_IDN)
     char *ace_hostname = NULL;
 
-    if(curl_win32_idn_to_ascii(host->name, &ace_hostname)) {
+    if(Curl_win32_idn_to_ascii(host->name, &ace_hostname)) {
       host->encalloc = ace_hostname;
       /* change the name pointer to point to the encoded hostname */
       host->name = host->encalloc;
@@ -1700,7 +1700,7 @@ void Curl_free_idnconverted_hostname(struct hostname *host)
   }
 #elif defined(USE_WIN32_IDN)
   free(host->encalloc); /* must be freed with free() since this was
-                           allocated by curl_win32_idn_to_ascii */
+                           allocated by Curl_win32_idn_to_ascii */
   host->encalloc = NULL;
 #else
   (void)host;
@@ -3524,9 +3524,9 @@ static CURLcode resolve_proxy(struct Curl_easy *data,
 }
 #endif
 
-static CURLcode resolve_ip(struct Curl_easy *data,
-                           struct connectdata *conn,
-                           bool *async)
+static CURLcode resolve_host(struct Curl_easy *data,
+                             struct connectdata *conn,
+                             bool *async)
 {
   struct Curl_dns_entry *hostaddr = NULL;
   struct hostname *connhost;
@@ -3592,7 +3592,7 @@ static CURLcode resolve_fresh(struct Curl_easy *data,
     return resolve_proxy(data, conn, async);
 #endif
 
-  return resolve_ip(data, conn, async);
+  return resolve_host(data, conn, async);
 }
 
 /*************************************************************
