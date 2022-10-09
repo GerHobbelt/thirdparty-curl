@@ -2192,7 +2192,10 @@ typedef enum {
   /* specify which protocols that libcurl is allowed to follow directs to */
   CURLOPT(CURLOPT_REDIR_PROTOCOLS_STR, CURLOPTTYPE_STRINGPOINT, 321),
 
-  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 322),
+  /* websockets options */
+  CURLOPT(CURLOPT_WS_OPTIONS, CURLOPTTYPE_LONG, 322),
+
+  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 323),
 	  
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
@@ -3150,6 +3153,7 @@ CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
 #include "urlapi.h"
 #include "options.h"
 #include "header.h"
+#include "websockets.h"
 
 /* the typechecker doesn't work in C++ (yet) */
 #if defined(__GNUC__) && defined(__GNUC_MINOR__) && \

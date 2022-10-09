@@ -1175,8 +1175,7 @@ CURLcode curl_easy_pause(struct Curl_easy *data, int action)
 }
 
 
-static CURLcode easy_connection(struct Curl_easy *data,
-                                curl_socket_t *sfd,
+static CURLcode easy_connection(struct Curl_easy *data, curl_socket_t *sfd,
                                 struct connectdata **connp)
 {
   if(!data)
@@ -1235,20 +1234,18 @@ CURLcode curl_easy_recv(struct Curl_easy *data, void *buffer, size_t buflen,
 }
 
 /*
- * Sends data over the connected socket. Use after successful
- * curl_easy_perform() with CURLOPT_CONNECT_ONLY option.
+ * Sends data over the connected socket.
+ *
+ * This is the private internal version of curl_easy_send()
  */
-CURLcode curl_easy_send(struct Curl_easy *data, const void *buffer,
-                        size_t buflen, size_t *n)
+CURLcode Curl_senddata(struct Curl_easy *data, const void *buffer,
+                       size_t buflen, size_t *n)
 {
   curl_socket_t sfd;
   CURLcode result;
   ssize_t n1;
   struct connectdata *c = NULL;
   SIGPIPE_VARIABLE(pipe_st);
-
-  if(Curl_is_in_callback(data))
-    return CURLE_RECURSIVE_API_CALL;
 
   result = easy_connection(data, &sfd, &c);
   if(result)
@@ -1274,6 +1271,19 @@ CURLcode curl_easy_send(struct Curl_easy *data, const void *buffer,
   *n = (size_t)n1;
 
   return result;
+}
+
+/*
+ * Sends data over the connected socket. Use after successful
+ * curl_easy_perform() with CURLOPT_CONNECT_ONLY option.
+ */
+CURLcode curl_easy_send(struct Curl_easy *data, const void *buffer,
+                        size_t buflen, size_t *n)
+{
+  if(Curl_is_in_callback(data))
+    return CURLE_RECURSIVE_API_CALL;
+
+  return Curl_senddata(data, buffer, buflen, n);
 }
 
 /*
