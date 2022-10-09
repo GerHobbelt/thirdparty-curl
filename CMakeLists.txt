@@ -1101,6 +1101,11 @@ check_symbol_exists(getrlimit      "${CURL_INCLUDES}" HAVE_GETRLIMIT)
 check_symbol_exists(setlocale      "${CURL_INCLUDES}" HAVE_SETLOCALE)
 check_symbol_exists(setmode        "${CURL_INCLUDES}" HAVE_SETMODE)
 check_symbol_exists(setrlimit      "${CURL_INCLUDES}" HAVE_SETRLIMIT)
+
+if(NOT MSVC OR (MSVC_VERSION GREATER_EQUAL 1900))
+  # earlier MSVC compilers had faulty snprintf implementations
+  check_symbol_exists(snprintf       "${CURL_INCLUDES}" HAVE_SNPRINTF)
+endif()
 check_function_exists(mach_absolute_time HAVE_MACH_ABSOLUTE_TIME)
 check_symbol_exists(inet_pton      "${CURL_INCLUDES}" HAVE_INET_PTON)
 check_symbol_exists(SSL_get_shutdown      "${CURL_INCLUDES}" HAVE_SSL_GET_SHUTDOWN)
