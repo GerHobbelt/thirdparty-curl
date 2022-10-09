@@ -1077,7 +1077,6 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
      (conn->tempsock[1] == CURL_SOCKET_BAD)) {
     /* no more addresses to try */
     const char *hostname;
-    char buffer[STRERROR_LEN];
     CURLcode failreason = result;
 
     /* if the first address family runs out of addresses to try before the
@@ -1104,11 +1103,7 @@ CURLcode Curl_is_connected(struct Curl_easy *data,
           "%" CURL_FORMAT_TIMEDIFF_T " ms: %s",
           hostname, conn->port,
           Curl_timediff(now, data->progress.t_startsingle),
-#ifdef ENABLE_QUIC
-          (conn->transport == TRNSPRT_QUIC) ?
-          curl_easy_strerror(result) :
-#endif
-          Curl_strerror(error, buffer, sizeof(buffer)));
+          curl_easy_strerror(result));
 
     Curl_quic_disconnect(data, conn, 0);
     Curl_quic_disconnect(data, conn, 1);
