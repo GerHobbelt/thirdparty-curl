@@ -104,6 +104,7 @@ static const struct LongShort aliases[]= {
   {"*M", "ntlm-wb",                  ARG_BOOL},
   {"*n", "basic",                    ARG_BOOL},
   {"*o", "anyauth",                  ARG_BOOL},
+  {"*O", "safe-auth",                ARG_BOOL},
 #ifdef USE_WATT32
   {"*p", "wdebug",                   ARG_BOOL},
 #endif
@@ -277,6 +278,7 @@ static const struct LongShort aliases[]= {
   {"E7", "proxy-capath",             ARG_FILENAME},
   {"E8", "proxy-insecure",           ARG_BOOL},
   {"E9", "proxy-tlsv1",              ARG_NONE},
+  {"EG", "proxy-safe-auth",          ARG_BOOL},
   {"EA", "socks5-basic",             ARG_BOOL},
   {"EB", "socks5-gssapi",            ARG_BOOL},
   {"EC", "etag-save",                ARG_FILENAME},
@@ -980,6 +982,12 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         if(toggle)
           config->authtype = CURLAUTH_ANY;
         /* --no-anyauth simply doesn't touch it */
+        break;
+
+      case 'O': /* --safe-auth, disable clear text password authentication. */
+        config->safeauth &= ~CURLSAFE_AUTH;
+        if(toggle)
+          config->safeauth |= CURLSAFE_AUTH;
         break;
 
 #ifdef USE_WATT32
@@ -1910,6 +1918,12 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
       case 'E':
         GetStr(&config->ssl_ec_curves, nextarg);
+        break;
+
+      case 'G': /* --proxy-safe-auth, disable clear password authentication. */
+        config->safeauth &= ~CURLSAFE_PROXYAUTH;
+        if(toggle)
+          config->safeauth |= CURLSAFE_PROXYAUTH;
         break;
 
       default: /* unknown flag */

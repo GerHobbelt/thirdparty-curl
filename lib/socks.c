@@ -38,6 +38,7 @@
 #include "select.h"
 #include "connect.h"
 #include "timeval.h"
+#include "vauth/vauth.h"
 #include "socks.h"
 #include "multiif.h" /* for getsock macros */
 #include "inet_pton.h"
@@ -669,6 +670,8 @@ CURLproxycode Curl_SOCKS5(const char *proxy_user,
     /* Needs user name and password */
     size_t proxy_user_len, proxy_password_len;
     if(proxy_user && proxy_password) {
+      if(!Curl_auth_use_unsafe(data, TRUE))
+        return CURLPX_NO_AUTH;
       proxy_user_len = strlen(proxy_user);
       proxy_password_len = strlen(proxy_password);
     }
