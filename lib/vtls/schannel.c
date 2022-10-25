@@ -1556,7 +1556,7 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
       DEBUGF(infof(data, "schannel: encrypted data length: %lu",
                    inbuf[1].cbBuffer));
       /*
-        There are two cases where we could be getting extra data here:
+        There are three cases where we could be getting extra data here:
         1) If we're renegotiating a connection and the handshake is already
         complete (from the server perspective), it can encrypted app data
         (not handshake data) in an extra buffer at this point.
@@ -1564,6 +1564,10 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
         connection and this extra data is part of the handshake.
         We should process the data immediately; waiting for the socket to
         be ready may fail since the server is done sending handshake data.
+        3) Sometimes the InitializeSecurityContext returns SEC_E_OK before
+        the TLS handshake is actually complete. In such cases we need to
+        do another call to InitializeSecurityContext to actually finish
+        the handshake. See github issue #9431.
       */
       /* check if the remaining data is less than the total amount
          and therefore begins after the already processed data */
@@ -1574,8 +1578,9 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
         backend->encdata_offset = inbuf[1].cbBuffer;
         if(sspi_status == SEC_I_CONTINUE_NEEDED) {
           doread = FALSE;
-          continue;
         }
+
+        continue;
       }
     }
     else {
