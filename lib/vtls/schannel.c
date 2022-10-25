@@ -1412,12 +1412,12 @@ schannel_connect_step2(struct Curl_easy *data, struct connectdata *conn,
   for(;;) {
     if(doread) {
       /* read encrypted handshake data from socket */
-      result = Curl_read_plain(conn->sock[sockindex],
-                               (char *) (backend->encdata_buffer +
-                                         backend->encdata_offset),
-                               backend->encdata_length -
-                               backend->encdata_offset,
-                               &nread);
+      nread = Curl_recv_plain(data, sockindex,
+                              (char *) (backend->encdata_buffer +
+                                        backend->encdata_offset),
+                              backend->encdata_length -
+                              backend->encdata_offset,
+                              &result);
       if(result == CURLE_AGAIN) {
         if(connssl->connecting_state != ssl_connect_2_writing)
           connssl->connecting_state = ssl_connect_2_reading;
