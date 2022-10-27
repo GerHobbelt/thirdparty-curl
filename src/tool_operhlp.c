@@ -22,6 +22,7 @@
  *
  ***************************************************************************/
 #include "tool_setup.h"
+#include "tool_operate.h"
 
 #include "strcase.h"
 
@@ -52,6 +53,7 @@ void clean_getout(struct OperationConfig *config)
     }
     config->url_list = NULL;
   }
+  single_transfer_cleanup(config);
 }
 
 bool output_expected(const char *url, const char *uploadfile)

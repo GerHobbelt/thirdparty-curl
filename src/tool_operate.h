@@ -76,6 +76,7 @@ struct per_transfer {
 };
 
 CURLcode operate(struct GlobalConfig *config, int argc, const char** argv);
+void single_transfer_cleanup(struct OperationConfig *config);
 
 extern struct per_transfer *transfers; /* first node */
 
