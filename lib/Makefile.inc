@@ -177,6 +177,7 @@ LIB_CFILES =         \
   multi.c            \
   netrc.c            \
   nonblock.c         \
+  noproxy.c          \
   openldap.c         \
   openlock.c         \
   parsedate.c        \
@@ -302,6 +303,7 @@ LIB_HFILES =         \
   netrc.h            \
   nonblock.h         \
   openlock.h         \
+  noproxy.h          \
   parsedate.h        \
   pingpong.h         \
   pop3.h             \
