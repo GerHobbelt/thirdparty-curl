@@ -30,9 +30,10 @@
 
 #if defined(HAVE_ZLIB_H) && !defined(HAVE_ZLIB_NG_H)
 #include <zlib.h>
-#endif
-#ifdef HAVE_ZLIB_NG_H
+#elif defined(HAVE_ZLIB_NG_H)
 #include <zlib-ng.h>
+#elif defined(HAVE_LIBZ)
+#include <zlib.h>
 #endif
 
 #ifdef HAVE_BROTLI

@@ -275,11 +275,11 @@ static CURLcode pre_transfer(struct GlobalConfig *global,
     /* VMS Note:
      *
      * Reading binary from files can be a problem...  Only FIXED, VAR
-     * etc WITHOUT implied CC will work Others need a \n appended to a
-     * line
+     * etc WITHOUT implied CC will work. Others need a \n appended to
+     * a line
      *
-     * - Stat gives a size but this is UNRELIABLE in VMS As a f.e. a
-     * fixed file with implied CC needs to have a byte added for every
+     * - Stat gives a size but this is UNRELIABLE in VMS. E.g.
+     * a fixed file with implied CC needs to have a byte added for every
      * record processed, this can be derived from Filesize & recordsize
      * for VARiable record files the records need to be counted!  for
      * every record add 1 for linefeed and subtract 2 for the record
@@ -1229,12 +1229,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           /*
            * We have specified a file to upload and it isn't "-".
            */
-          char *nurl = add_file_name_to_url(per->this_url, per->uploadfile);
-          if(!nurl) {
-            result = CURLE_OUT_OF_MEMORY;
+          result = add_file_name_to_url(per->curl, &per->this_url,
+                                        per->uploadfile);
+          if(result)
             break;
-          }
-          per->this_url = nurl;
         }
         else if(per->uploadfile && stdin_upload(per->uploadfile)) {
           /* count to see if there are more than one auth bit set
@@ -1289,43 +1287,22 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         }
 
         if(httpgetfields) {
-          char *urlbuffer;
-          /* Find out whether the url contains a file name */
-          const char *pc = strstr(per->this_url, "://");
-          char sep = '?';
-          if(pc)
-            pc += 3;
-          else
-            pc = per->this_url;
-
-          pc = strrchr(pc, '/'); /* check for a slash */
-
-          if(pc) {
-            /* there is a slash present in the URL */
-
-            if(strchr(pc, '?'))
-              /* Ouch, there's already a question mark in the URL string, we
-                 then append the data with an ampersand separator instead! */
-              sep = '&';
+          CURLU *uh = curl_url();
+          if(uh) {
+            char *updated;
+            if(curl_url_set(uh, CURLUPART_URL, per->this_url,
+                            CURLU_GUESS_SCHEME) ||
+               curl_url_set(uh, CURLUPART_QUERY, httpgetfields,
+                            CURLU_APPENDQUERY) ||
+               curl_url_get(uh, CURLUPART_URL, &updated, CURLU_GUESS_SCHEME)) {
+              curl_url_cleanup(uh);
+              result = CURLE_OUT_OF_MEMORY;
+              break;
+            }
+            Curl_safefree(per->this_url); /* free previous URL */
+            per->this_url = updated; /* use our new URL instead! */
+            curl_url_cleanup(uh);
           }
-          /*
-           * Then append ? followed by the get fields to the url.
-           */
-          if(pc)
-            urlbuffer = aprintf("%s%c%s", per->this_url, sep, httpgetfields);
-          else
-            /* Append  / before the ? to create a well-formed url
-               if the url contains a hostname only
-            */
-            urlbuffer = aprintf("%s/?%s", per->this_url, httpgetfields);
-
-          if(!urlbuffer) {
-            result = CURLE_OUT_OF_MEMORY;
-            break;
-          }
-
-          Curl_safefree(per->this_url); /* free previous URL */
-          per->this_url = urlbuffer; /* use our new URL instead! */
         }
 
         if(!global->errors)

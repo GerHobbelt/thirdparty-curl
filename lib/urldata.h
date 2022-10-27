@@ -186,10 +186,10 @@ typedef CURLcode (*Curl_datastream)(struct Curl_easy *data,
 # endif
 #endif
 
-#ifdef HAVE_LIBSSH2_H
+#ifdef USE_LIBSSH2
 #include <libssh2.h>
 #include <libssh2_sftp.h>
-#endif /* HAVE_LIBSSH2_H */
+#endif /* USE_LIBSSH2 */
 
 #define READBUFFER_SIZE CURL_MAX_WRITE_SIZE
 #define READBUFFER_MAX  CURL_MAX_READ_SIZE
@@ -582,7 +582,7 @@ struct Curl_async {
   struct Curl_dns_entry *dns;
   struct thread_data *tdata;
   void *resolver; /* resolver state, if it is used in the URL state -
-                     ares_channel f.e. */
+                     ares_channel e.g. */
   int port;
   int status; /* if done is TRUE, this is the status from the callback */
   BIT(done);  /* set TRUE when the lookup is complete */

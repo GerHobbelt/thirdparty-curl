@@ -642,7 +642,7 @@ static CURLUcode hostname_check(struct Curl_URL *u, char *hostname,
   }
   else {
     /* letters from the second string are not ok */
-    len = strcspn(hostname, " \r\n\t/:#?!@");
+    len = strcspn(hostname, " \r\n\t/:#?!@{}[]\\$\'\"^`*<>=;,");
     if(hlen != len)
       /* hostname with bad content */
       return CURLUE_BAD_HOSTNAME;
@@ -785,9 +785,6 @@ static CURLUcode decode_host(struct dynbuf *host)
  *
  * The function handles a query part ('?' + stuff) appended but it expects
  * that fragments ('#' + stuff) have already been cut off.
- *
- * Note that this funciton *writes* a byte into the source buffer during its
- * operation.
  *
  * RETURNS
  *
