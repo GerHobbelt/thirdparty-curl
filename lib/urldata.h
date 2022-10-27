@@ -315,6 +315,7 @@ struct ssl_config_data {
 
 struct ssl_general_config {
   size_t max_ssl_sessions; /* SSL session id cache size */
+  int ca_cache_timeout;  /* Certificate store cache timeout (seconds) */
 };
 
 /* information stored about one single SSL session */
@@ -1533,7 +1534,7 @@ struct UrlState {
  * Character pointer fields point to dynamic storage, unless otherwise stated.
  */
 
-struct Curl_multi;    /* declared and used only in multi.c */
+struct Curl_multi;    /* declared in multihandle.c */
 
 /*
  * This enumeration MUST not use conditional directives (#ifdefs), new

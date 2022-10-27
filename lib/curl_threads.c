@@ -26,16 +26,6 @@
 
 #include <curl/curl.h>
 
-#if defined(USE_THREADS_POSIX)
-#  ifdef HAVE_PTHREAD_H
-#    include <pthread.h>
-#  endif
-#elif defined(USE_THREADS_WIN32)
-#  ifdef HAVE_PROCESS_H
-#    include <process.h>
-#  endif
-#endif
-
 #include "curl_threads.h"
 #include "curl_memory.h"
 /* The last #include file should be: */
