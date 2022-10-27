@@ -71,8 +71,8 @@ struct OperationConfig {
   curl_off_t postfieldsize;
   char *referer;
   char *query;
-  double timeout;
-  double connecttimeout;
+  long timeout_ms;
+  long connecttimeout_ms;
   long maxredirs;
   curl_off_t max_filesize;
   char *output_dir;
@@ -277,7 +277,7 @@ struct OperationConfig {
   bool falsestart;
   bool path_as_is;
   bool noclobber_output_file;     /* don't overwrite any existing output file but use a renaming scheme instead */
-  double expect100timeout;
+  long expect100timeout_ms;
   bool suppress_connect_headers;  /* suppress proxy CONNECT response headers
                                      from user callbacks */
   bool synthetic_error;           /* if TRUE, this is tool-internal error */
