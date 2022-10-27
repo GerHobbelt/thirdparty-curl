@@ -84,7 +84,7 @@ int main(int argc, const char** argv)
 
   /* curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L); */
 
-  /* set an URL containing wildcard pattern (only in the last part) */
+  /* set a URL containing wildcard pattern (only in the last part) */
   if(argc == 2)
     curl_easy_setopt(handle, CURLOPT_URL, argv[1]);
   else

@@ -38,16 +38,19 @@ SSL
 debug
 crypto
 </features>
+<setenv>
+CURL_FORCEHOST=1
+</setenv>
 
 <name>
-HTTP AWS_SIGV4 with two providers, region and service
+HTTP AWS_SIGV4 with X-Xxx-Content-Sha256
 </name>
 <tool>
 lib%TESTNUMBER
 </tool>
 
 <command>
-http://127.0.0.1:9000/%TESTNUMBER/testapi/test 127.0.0.1:9000:%HOSTIP:%HTTPPORT
+http://exam.ple.com:9000/%TESTNUMBER/testapi/test exam.ple.com:9000:%HOSTIP:%HTTPPORT
 </command>
 </client>
 
@@ -60,9 +63,12 @@ http://127.0.0.1:9000/%TESTNUMBER/testapi/test 127.0.0.1:9000:%HOSTIP:%HTTPPORT
 </strip>
 <protocol>
 GET /%TESTNUMBER/testapi/test HTTP/1.1
-Host: 127.0.0.1:9000
-Authorization: XXX4-HMAC-SHA256 Credential=xxx/19700101/rrr/sss/xxx4_request, SignedHeaders=content-type;host;x-yyy-date, Signature=026b713d76b0789bd224c5e41322f74eed088f8a22fd15183ca68376c575c5b0
-X-Yyy-Date: 19700101T000000Z
+Host: exam.ple.com:9000
+Authorization: XXX4-HMAC-SHA256 Credential=xxx/19700101/ple/exam/xxx4_request, SignedHeaders=content-type;host;tesmixcase;test0;test1;test2;test_space;x-xxx-date, Signature=819251feec8de52dfaa992320241f23d27cefa979c93e039ae7df03ac486ed16
+X-Xxx-Date: 19700101T000000Z
+test2: 1234
+test_space: t	s  m	   end    
+tesMixCase: MixCase
 
 </protocol>
 </verify>
