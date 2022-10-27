@@ -42,7 +42,7 @@
 /* curl stuff */
 
 /*
- * Simply download a HTTP file.
+ * Simply download an HTTP file.
  */
 
 #if defined(BUILD_MONOLITHIC)

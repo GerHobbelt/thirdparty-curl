@@ -43,7 +43,7 @@
 /* curl stuff */
 
 /*
- * Download a HTTP file and upload an FTP file simultaneously.
+ * Download an HTTP file and upload an FTP file simultaneously.
  */
 
 #define HANDLECOUNT 2   /* Number of simultaneous transfers */
