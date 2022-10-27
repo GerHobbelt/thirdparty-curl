@@ -780,15 +780,15 @@ static const char *url_proto(char *url, struct OperationConfig* config)
   CURLU *uh = curl_url();
   const char *proto = NULL;
 
-  /* Before we do anything, see if we need to reqrite the URL.*/
-  if(curl_strnequal(*url, "ipfs", 4) || curl_strnequal(*url, "ipns", 4)) {
-    ipfs_url_rewrite(url);
+  /* Before we do anything, see if we need to rewrite the URL.*/
+  if(curl_strnequal(url, "ipfs", 4) || curl_strnequal(url, "ipns", 4)) {
+    ipfs_url_rewrite(&url);
     config->followlocation = TRUE;
   }
 
   if(uh) {
     if(url) {
-      if(!curl_url_set(uh, CURLUPART_URL, *url,
+      if(!curl_url_set(uh, CURLUPART_URL, url,
                        CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME)) {
         char *schemep = NULL;
         if(!curl_url_get(uh, CURLUPART_SCHEME, &schemep,
@@ -1215,7 +1215,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
 			Curl_infof(per->curl, "Resuming: data will be written (appended) to output file: %s", per->outfile);
 
-			outs->fopened = TRUE;
+            outs->fopened = TRUE;
             outs->stream = file;
             outs->init = config->resume_from;
           }
