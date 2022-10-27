@@ -68,6 +68,7 @@ struct getout *new_getout(struct OperationConfig *config)
 ParameterError file2string(char **bufp, FILE *file)
 {
   struct dynbuf dyn;
+  DEBUGASSERT(MAX_FILE2STRING < INT_MAX); /* needs to fit in an int later */
   Curl_dyn_init(&dyn, MAX_FILE2STRING);
   if(file) {
     char buffer[256];
@@ -94,6 +95,8 @@ ParameterError file2memory(char **bufp, size_t *size, FILE *file)
   if(file) {
     size_t nread;
     struct dynbuf dyn;
+    /* The size needs to fit in an int later */
+    DEBUGASSERT(MAX_FILE2MEMORY < INT_MAX);
 	Curl_dyn_init(&dyn, MAX_FILE2MEMORY);
     do {
       char buffer[4096];
