@@ -99,7 +99,7 @@ endif
 if USE_CPPFLAG_CURL_STATICLIB
 libcurl_la_CPPFLAGS_EXTRA += -DCURL_STATICLIB
 else
-if OS_WINDOWS
+if HAVE_WINDRES
 libcurl_la_SOURCES += $(LIB_RCFILES)
 $(LIB_RCFILES): $(top_srcdir)/include/curl/curlver.h
 endif
@@ -144,7 +144,7 @@ tidy:
 optiontable:
 	perl optiontable.pl < $(top_srcdir)/include/curl/curl.h > easyoptions.c
 
-if OS_WINDOWS
+if HAVE_WINDRES
 .rc.lo:
 	$(LIBTOOL) --tag=RC --mode=compile $(RC) -I$(top_srcdir)/include $(RCFLAGS) -i $< -o $@
 endif
