@@ -774,7 +774,7 @@ static void ipfs_url_rewrite(char **url)
 /*
  * Return the protocol token for the scheme used in the given URL
  */
-static const char *url_proto(char *url)
+static const char *url_proto(char *url, struct OperationConfig* config)
 {
   CURLU *uh = curl_url();
   const char *proto = NULL;
