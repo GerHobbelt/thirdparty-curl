@@ -475,7 +475,7 @@ CURLcode Curl_output_aws_sigv4(struct Curl_easy *data, bool proxy)
                     data->state.up.query ? data->state.up.query : "",
                     Curl_dyn_ptr(&canonical_headers),
                     Curl_dyn_ptr(&signed_headers),
-                    payload_hash_len, payload_hash);
+                    (int)payload_hash_len, payload_hash);
     if(!canonical_request)
       goto fail;
   }
