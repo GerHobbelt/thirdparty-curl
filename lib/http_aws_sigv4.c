@@ -280,8 +280,7 @@ static char *parse_content_sha_hdr(struct Curl_easy *data,
   char *value;
   size_t len;
 
-  key_len = msnprintf(key, CONTENT_SHA256_KEY_LEN,
-                      "x-%s-content-sha256", provider1);
+  key_len = msnprintf(key, sizeof(key), "x-%s-content-sha256", provider1);
 
   value = Curl_checkheaders(data, key, key_len);
   if(!value)
