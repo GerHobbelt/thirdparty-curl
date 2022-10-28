@@ -184,6 +184,7 @@ DPAGES = \
   proxy-ntlm.d \
   proxy-pass.d \
   proxy-pinnedpubkey.d \
+  proxy-safe-auth.d \
   proxy-service-name.d \
   proxy-ssl-allow-beast.d \
   proxy-ssl-auto-client-cert.d \
@@ -216,6 +217,7 @@ DPAGES = \
   retry-delay.d \
   retry-max-time.d \
   retry.d \
+  safe-auth.d \
   sasl-authzid.d \
   sasl-ir.d \
   service-name.d \
