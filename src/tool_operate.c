@@ -757,7 +757,7 @@ static void ipfs_url_rewrite(char **url)
   char *everything_after_scheme;
   char *urlbuffer;
 
-  /* 7 is "ipfs://" and "ipns://", it needs o be at least 7 characters*/
+  /* 7 is "ipfs://" and "ipns://", it needs to be at least 7 characters*/
   if(strlen(inner) < 7) {
     return;
   }
