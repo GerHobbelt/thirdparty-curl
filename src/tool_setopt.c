@@ -208,9 +208,9 @@ static char *c_escape(const char *str, curl_off_t len)
   const char *s;
   unsigned int cutoff = 0;
   CURLcode result;
-  struct curlx_dynbuf escaped;
+  struct dynbuf escaped;
 
-  curlx_dyn_init(&escaped, 4 * MAX_STRING_LENGTH_OUTPUT + 3);
+  Curl_dyn_init(&escaped, 4 * MAX_STRING_LENGTH_OUTPUT + 3);
 
   if(len == ZERO_TERMINATED)
     len = strlen(str);
@@ -221,7 +221,7 @@ static char *c_escape(const char *str, curl_off_t len)
     cutoff = 3;
   }
 
-  result = curlx_dyn_addn(&escaped, STRCONST(""));
+  result = Curl_dyn_addn(&escaped, STRCONST(""));
   for(s = str; !result && len; s++, len--) {
     /* escape question marks as well, to prevent generating accidental
        trigraphs */
@@ -232,12 +232,12 @@ static char *c_escape(const char *str, curl_off_t len)
     if(!p && ISPRINT(*s))
       continue;
 
-    result = curlx_dyn_addn(&escaped, str, s - str);
+    result = Curl_dyn_addn(&escaped, str, s - str);
     str = s + 1;
 
     if(!result) {
       if(p && *p)
-        result = curlx_dyn_addn(&escaped, to + 2 * (p - from), 2);
+        result = Curl_dyn_addn(&escaped, to + 2 * (p - from), 2);
       else {
         const char *format = "\\x%02x";
 
@@ -246,19 +246,19 @@ static char *c_escape(const char *str, curl_off_t len)
           format = "\\%03o";
         }
 
-        result = curlx_dyn_addf(&escaped, format,
+        result = Curl_dyn_addf(&escaped, format,
                                 (unsigned int) *(unsigned char *) s);
       }
     }
   }
 
   if(!result)
-    result = curlx_dyn_addn(&escaped, str, s - str);
+    result = Curl_dyn_addn(&escaped, str, s - str);
 
   if(!result)
-    (void) !curlx_dyn_addn(&escaped, "...", cutoff);
+    (void) !Curl_dyn_addn(&escaped, "...", cutoff);
 
-  return curlx_dyn_ptr(&escaped);
+  return Curl_dyn_ptr(&escaped);
 }
 
 /* setopt wrapper for enum types */

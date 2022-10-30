@@ -332,11 +332,11 @@ ParameterError proto2num(struct OperationConfig *config,
   const char *sep = ",";
   char *token;
   const char **protoset;
-  struct curlx_dynbuf obuf;
+  struct dynbuf obuf;
   size_t proto;
   CURLcode result;
 
-  curlx_dyn_init(&obuf, MAX_PROTOSTRING);
+  Curl_dyn_init(&obuf, MAX_PROTOSTRING);
 
   if(!str)
     return PARAM_OPTION_AMBIGUOUS;
@@ -428,12 +428,12 @@ ParameterError proto2num(struct OperationConfig *config,
   qsort((char *) protoset, protoset_index(protoset, NULL), sizeof(*protoset),
         struplocompare4sort);
 
-  result = curlx_dyn_addn(&obuf, "", 0);
+  result = Curl_dyn_addn(&obuf, "", 0);
   for(proto = 0; protoset[proto] && !result; proto++)
-    result = curlx_dyn_addf(&obuf, "%s,", protoset[proto]);
+    result = Curl_dyn_addf(&obuf, "%s,", protoset[proto]);
   free((char *) protoset);
-  curlx_dyn_setlen(&obuf, curlx_dyn_len(&obuf) - 1);
-  *ostr = curlx_dyn_ptr(&obuf);
+  Curl_dyn_setlen(&obuf, Curl_dyn_len(&obuf) - 1);
+  *ostr = Curl_dyn_ptr(&obuf);
 
   return *ostr ? PARAM_OK : PARAM_NO_MEM;
 }
