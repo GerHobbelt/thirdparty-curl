@@ -1325,7 +1325,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result)
           break;
 
-        use_proto = url_proto(&per->this_url, config);
+        use_proto = url_proto(per->this_url, config);
 
         if(!config->tcp_nodelay)
           my_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
