@@ -278,8 +278,7 @@ static char *parse_content_sha_hdr(struct Curl_easy *data,
   char *value;
   size_t len;
 
-  key_len = msnprintf(key, CONTENT_SHA256_KEY_LEN,
-                      "x-%s-content-sha256", provider1);
+  key_len = msnprintf(key, sizeof(key), "x-%s-content-sha256", provider1);
 
   value = Curl_checkheaders(data, key, key_len);
   if(!value)
@@ -474,7 +473,7 @@ CURLcode Curl_output_aws_sigv4(struct Curl_easy *data, bool proxy)
                     data->state.up.query ? data->state.up.query : "",
                     Curl_dyn_ptr(&canonical_headers),
                     Curl_dyn_ptr(&signed_headers),
-                    payload_hash_len, payload_hash);
+                    (int)payload_hash_len, payload_hash);
     if(!canonical_request)
       goto fail;
   }
