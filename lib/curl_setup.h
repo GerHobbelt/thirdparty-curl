@@ -734,7 +734,7 @@ extern "C" {
 #  define UNUSED_PARAM __attribute__((__unused__))
 #  define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
-#  define UNUSED_PARAM /*NOTHING*/
+#  define UNUSED_PARAM /* NOTHING */
 #  define WARN_UNUSED_RESULT
 #endif
 
