@@ -1,9 +1,9 @@
 
 Property
 {
-	CurlTargetInDependencies define bool = fg_IsTargetInDependencies("Lib_Curl")
-	MalterlibUseCurl define bool = false
-	CurlEnableSMTP define bool = true
+	CurlTargetInDependencies: bool = fg_IsTargetInDependencies("Lib_Curl")
+	MalterlibUseCurl: bool = false
+	CurlEnableSMTP: bool = true
 }
 
 Compile
@@ -19,7 +19,7 @@ Compile
 		}
 	}
 	
-	SearchPath += ["include"->MakeAbsolute(), `@(GetProperty("Property", "GeneratedDirectory", "Workspace:*.Group:External.Group:curl_original.Target:Lib_Curl.Target:Lib_Curl"))curl`]
+	SearchPath += ["include"->MakeAbsolute(), `@(GetProperty(&GeneratedDirectory, "Workspace:*.Group:External.Group:curl_original.Target:Lib_Curl.Target:Lib_Curl"))curl`]
 	PreprocessorDefines += ["CURL_STATICLIB"]
 }
 
