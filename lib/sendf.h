@@ -63,9 +63,10 @@ struct connectdata;
 bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex);
 
 /* internal read-function, does plain socket only */
-CURLcode Curl_read_plain(curl_socket_t sockfd,
+CURLcode Curl_read_plain(struct Curl_easy *data,
+                         curl_socket_t sockfd,
                          char *buf,
-                         size_t bytesfromsocket,
+                         size_t sizerequested,
                          ssize_t *n);
 
 ssize_t Curl_recv_plain(struct Curl_easy *data, int num, char *buf,
