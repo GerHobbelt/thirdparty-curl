@@ -2744,9 +2744,10 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
   CURLcode result = CURLE_OK;
   const char *first_arg = argc > 1 ? argv[1] : NULL;
 
-  /* Setup proper locale from environment */
 #ifdef HAVE_SETLOCALE
+  /* Override locale for number parsing (only) */
   setlocale(LC_ALL, "");
+  setlocale(LC_NUMERIC, "C");
 #endif
 
   /* Parse .curlrc if necessary */
