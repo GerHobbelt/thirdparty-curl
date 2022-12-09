@@ -478,7 +478,7 @@ static CURLcode imap_perform_upgrade_tls(struct Curl_easy *data,
   CURLcode result;
 
   if(!Curl_ssl_conn_is_ssl(data, FIRSTSOCKET)) {
-    result = Curl_ssl_cfilter_add(data, FIRSTSOCKET);
+    result = Curl_ssl_cfilter_add(data, conn, FIRSTSOCKET);
     if(result)
       goto out;
   }
@@ -781,7 +781,7 @@ static CURLcode imap_perform_append(struct Curl_easy *data)
 
     /* Add external headers and mime version. */
     curl_mime_headers(&data->set.mimepost, data->set.headers, 0);
-    result = Curl_mime_prepare_headers(&data->set.mimepost, NULL,
+    result = Curl_mime_prepare_headers(data, &data->set.mimepost, NULL,
                                        NULL, MIMESTRATEGY_MAIL);
 
     if(!result)
