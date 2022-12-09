@@ -2063,7 +2063,7 @@ void Curl_http_method(struct Curl_easy *data, struct connectdata *conn,
      (!data->state.this_is_a_follow || !data->set.redirect_clears_method))
     request = data->set.str[STRING_CUSTOMREQUEST];
   else {
-    if(data->set.opt_no_body)
+    if(data->req.no_body)
       request = "HEAD";
     else {
       DEBUGASSERT((httpreq >= HTTPREQ_GET) && (httpreq <= HTTPREQ_HEAD));
@@ -4217,7 +4217,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
          * If we requested a "no body", this is a good time to get
          * out and return home.
          */
-        if(data->set.opt_no_body)
+        if(data->req.no_body)
           *stop_reading = TRUE;
 #ifndef CURL_DISABLE_RTSP
         else if((conn->handler->protocol & CURLPROTO_RTSP) &&
