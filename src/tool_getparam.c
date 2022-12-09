@@ -1593,8 +1593,8 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       if(subletter == 'g') { /* --url-query */
 #define MAX_QUERY_LEN 100000 /* larger is not likely to ever work */
         char *query;
-        struct dynbuf dyn;
-        Curl_dyn_init(&dyn, MAX_QUERY_LEN);
+        struct curlx_dynbuf dyn;
+        curlx_dyn_init(&dyn, MAX_QUERY_LEN);
 
         if(*nextarg == '+') {
           /* use without encoding */
@@ -1610,12 +1610,12 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
         if(config->query) {
           CURLcode result =
-            Curl_dyn_addf(&dyn, "%s&%s", config->query, query);
+            curlx_dyn_addf(&dyn, "%s&%s", config->query, query);
           free(query);
           if(result)
             return PARAM_NO_MEM;
           free(config->query);
-          config->query = Curl_dyn_ptr(&dyn);
+          config->query = curlx_dyn_ptr(&dyn);
         }
         else
           config->query = query;
