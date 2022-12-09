@@ -80,7 +80,6 @@ CURL_CFILES = \
   tool_msgs.c \
   tool_operate.c \
   tool_operhlp.c \
-  tool_panykey.c \
   tool_paramhlp.c \
   tool_parsecfg.c \
   tool_progress.c \
@@ -121,7 +120,6 @@ CURL_HFILES = \
   tool_msgs.h \
   tool_operate.h \
   tool_operhlp.h \
-  tool_panykey.h \
   tool_paramhlp.h \
   tool_parsecfg.h \
   tool_progress.h \
