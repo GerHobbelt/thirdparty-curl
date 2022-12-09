@@ -1608,10 +1608,8 @@ CURLcode Curl_follow(struct Curl_easy *data,
                              to URL */
     }
     else {
-      /* mark the next request as a followed location: */
-      data->state.this_is_a_follow = TRUE;
-
-      data->state.followlocation++; /* count location-followers */
+      data->state.followlocation++; /* count redirect-followings, including
+                                       auth reloads */
 
       if(data->set.http_auto_referer) {
         CURLU *u;
