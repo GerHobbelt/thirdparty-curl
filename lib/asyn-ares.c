@@ -60,7 +60,7 @@
 #include "progress.h"
 #include "timediff.h"
 
-#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) && \
+#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) &&   \
      (defined(WIN32) || defined(WIN64))
 #    define CARES_STATICLIB
 #  endif

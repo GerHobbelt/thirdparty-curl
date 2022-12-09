@@ -921,12 +921,11 @@ enum curl_khcheck {
 };
 
 typedef int
-  (*curl_sshhostkeycallback) (void *clientp,/* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
-                          int keytype, /* CURLKHTYPE */
-                          const char *key, /*hostkey to check*/
-                          size_t keylen); /*length of the key*/
-                          /*return CURLE_OK to accept or something else to refuse*/
-
+  (*curl_sshhostkeycallback) (void *clientp, /* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
+                          int keytype,       /* CURLKHTYPE */
+                          const char *key,   /* hostkey to check */
+                          size_t keylen);    /* length of the key */
+                          /* return CURLE_OK to accept or something else to refuse */
 
 /* parameter for the CURLOPT_USE_SSL option */
 typedef enum {
@@ -2299,7 +2298,6 @@ typedef enum {
 #define CURL_FTP_SKIP_PASV_IP_NEVER           0L
 #define CURL_FTP_SKIP_PASV_IP_ALWAYS          1L
 #define CURL_FTP_SKIP_PASV_IP_IF_NOT_ROUTABLE 2L
-
 
   /* These enums are for use with the CURLOPT_HTTP_VERSION option. */
 enum {

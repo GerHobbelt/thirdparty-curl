@@ -1822,7 +1822,6 @@ static bool is_private_ip_v4(unsigned int ip[4])
     return true;
 }
 
-
 static CURLcode ftp_state_pasv_resp(struct Curl_easy *data,
                                     int ftpcode)
 {

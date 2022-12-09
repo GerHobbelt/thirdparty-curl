@@ -86,6 +86,7 @@ Example set of cookies:
 #include "curl_setup.h"
 
 #if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_COOKIES)
+
 #include "urldata.h"
 #include "cookie.h"
 #include "psl.h"
@@ -1669,8 +1670,8 @@ static char *get_netscape_format(const struct Cookie *co)
 
                    co->httponly?"#HttpOnly_":"",
                    /*
-                    * Make sure domains are prefixed with a dot if they allow
-                    * tailmatching.
+                    * Make sure all domains are prefixed with a dot if they allow
+                    * tailmatching. This is Mozilla-style.
                     */
                    (co->tailmatch && co->domain && co->domain[0] != '.')?
                    ".":"",
