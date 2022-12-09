@@ -2248,6 +2248,9 @@ typedef enum {
 
   CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 325),
 	  
+  /* Can leak things, gonna exit() soon */
+  CURLOPT(CURLOPT_QUICK_EXIT, CURLOPTTYPE_LONG, 326),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

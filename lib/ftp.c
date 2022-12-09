@@ -2324,7 +2324,7 @@ static CURLcode ftp_state_size_resp(struct Curl_easy *data,
     else
       fdigit = start;
     /* ignores parsing errors, which will make the size remain unknown */
-    (void)curlx_strtoofft(fdigit, NULL, 0, &filesize);
+    (void)curlx_strtoofft(fdigit, NULL, 10, &filesize);
 
   }
   else if(ftpcode == 550) { /* "No such file or directory" */
@@ -2510,7 +2510,7 @@ static CURLcode ftp_state_get_resp(struct Curl_easy *data,
         if(bytes) {
           ++bytes;
           /* get the number! */
-          (void)curlx_strtoofft(bytes, NULL, 0, &size);
+          (void)curlx_strtoofft(bytes, NULL, 10, &size);
         }
       }
     }
