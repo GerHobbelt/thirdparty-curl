@@ -328,6 +328,15 @@ CURLcode Curl_cfilter_setup(struct Curl_easy *data,
 #else
     (void)ssl_mode;
 #endif /* USE_SSL */
+
+#ifndef CURL_DISABLE_PROXY
+    if(data->set.haproxyprotocol) {
+      result = Curl_cfilter_haproxy_add(data, conn, sockindex);
+      if(result)
+        goto out;
+    }
+#endif /* !CURL_DISABLE_PROXY */
+
   }
   DEBUGASSERT(conn->cfilter[sockindex]);
   cf = data->conn->cfilter[sockindex];
@@ -405,7 +414,7 @@ void Curl_cfilter_attach_data(struct connectdata *conn,
     cf = conn->cfilter[i];
     if(cf) {
       DEBUGF(infof(data, "Curl_cfilter_attach(handle=%p, connection=%ld, "
-                   "index=%d)", data, conn->connection_id, i));
+                   "index=%zu)", data, conn->connection_id, i));
       while(cf) {
         cf->cft->attach_data(cf, data);
         cf = cf->next;
@@ -424,7 +433,7 @@ void Curl_cfilter_detach_data(struct connectdata *conn,
     cf = conn->cfilter[i];
     if(cf) {
       DEBUGF(infof(data, "Curl_cfilter_detach(handle=%p, connection=%ld, "
-                   "index=%d)", data, conn->connection_id, i));
+                   "index=%zu)", data, conn->connection_id, i));
       while(cf) {
         cf->cft->detach_data(cf, data);
         cf = cf->next;
