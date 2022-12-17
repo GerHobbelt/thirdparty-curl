@@ -187,7 +187,7 @@ bool Curl_auth_use_unsafe(struct Curl_easy *data, bool proxy)
     return data->set.safe_auth & CURLSAFE_PROXYAUTH ? FALSE : TRUE;
   }
 
-  if(conn->ssl[FIRSTSOCKET].use)
-    return TRUE;
+  //if(conn->ssl[FIRSTSOCKET].use)
+  //  return TRUE;
   return data->set.safe_auth & CURLSAFE_AUTH ? FALSE : TRUE;
 }
