@@ -1579,7 +1579,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       if(subletter == 'g') { /* --url-query */
 #define MAX_QUERY_LEN 100000 /* larger is not likely to ever work */
         char *query;
-        struct curlx_dynbuf dyn;
+        struct dynbuf dyn;
         curlx_dyn_init(&dyn, MAX_QUERY_LEN);
 
         if(*nextarg == '+') {
