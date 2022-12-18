@@ -172,7 +172,7 @@ static int writeString(FILE *stream, const struct writeoutvar *wovar,
   bool valid = false;
   const char *strinfo = NULL;
   struct dynbuf buf;
-  curlx_dyn_init(&buf, 256*1024);
+  Curl_dyn_init(&buf, 256*1024);
 
   DEBUGASSERT(wovar->writefunc == writeString);
 
@@ -208,23 +208,23 @@ static int writeString(FILE *stream, const struct writeoutvar *wovar,
           for(slist = per->certinfo->certinfo[i]; slist; slist = slist->next) {
             size_t len;
             if(curl_strnequal(slist->data, "cert:", 5)) {
-              if(curlx_dyn_add(&buf, &slist->data[5])) {
+              if(Curl_dyn_add(&buf, &slist->data[5])) {
                 error = TRUE;
                 break;
               }
             }
             else {
-              if(curlx_dyn_add(&buf, slist->data)) {
+              if(Curl_dyn_add(&buf, slist->data)) {
                 error = TRUE;
                 break;
               }
             }
-            len = curlx_dyn_len(&buf);
+            len = Curl_dyn_len(&buf);
             if(len) {
-              char *ptr = curlx_dyn_ptr(&buf);
+              char *ptr = Curl_dyn_ptr(&buf);
               if(ptr[len -1] != '\n') {
                 /* add a newline to make things look better */
-                if(curlx_dyn_addn(&buf, "\n", 1)) {
+                if(Curl_dyn_addn(&buf, "\n", 1)) {
                   error = TRUE;
                   break;
                 }
@@ -233,7 +233,7 @@ static int writeString(FILE *stream, const struct writeoutvar *wovar,
           }
         }
         if(!error) {
-          strinfo = curlx_dyn_ptr(&buf);
+          strinfo = Curl_dyn_ptr(&buf);
           if(!strinfo)
             /* maybe not a TLS protocol */
             strinfo = "";
@@ -282,7 +282,7 @@ static int writeString(FILE *stream, const struct writeoutvar *wovar,
       fprintf(stream, "\"%s\":null", wovar->name);
   }
 
-  curlx_dyn_free(&buf);
+  Curl_dyn_free(&buf);
   return 1; /* return 1 if anything was written */
 }
 
