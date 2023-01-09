@@ -1,45 +1,21 @@
 
 Property
 {
-	CurlTargetInDependencies: bool = fg_IsTargetInDependencies("Lib_Curl")
-	MalterlibUseCurl: bool = false
 	CurlEnableSMTP: bool = true
 }
 
-Compile
+%Group "{curl}/{TargetInjection}"
 {
-	&
+	Compile
 	{
-		CompileDialect "C"
-		!DocumentationEnabled true
-		|
+		&
 		{
-			CurlTargetInDependencies true
-			MalterlibUseCurl true
+			LanguageFamily "Native"
+			CompileDialect "C"
 		}
-	}
-	
-	SearchPath += ["include"->MakeAbsolute(), `@(GetProperty(&GeneratedDirectory, "Workspace:*.Group:External.Group:curl_original.Target:Lib_Curl.Target:Lib_Curl"))curl`]
-	PreprocessorDefines += ["CURL_STATICLIB"]
-}
 
-Target
-{
-	&
-	{
-		LanguageFamily "Native"
-		TargetIsExecutable true
-		!Target.Type "Driver"
-		|
-		{
-			CurlTargetInDependencies true
-			MalterlibUseCurl true
-		}
-	}
-
-	LinkWithLibraries =+ [["-framework", "SystemConfiguration"]]
-	{
-		!!PlatformIsDarwin true
+		SearchPath += ["include"->MakeAbsolute(), `@(GetProperty(&GeneratedDirectory, "Workspace:*.Group:External.Group:curl_original.Target:Lib_Curl.Target:Lib_Curl"))curl`]
+		PreprocessorDefines += ["CURL_STATICLIB"]
 	}
 }
 
@@ -50,6 +26,10 @@ Target
 		BaseName "Curl"
 		Type "StaticLibrary"
 		Group "External/curl_original"
+		DependencyInjectionGroups =+ "{curl}/{TargetInjection}"
+		{
+			!DocumentationEnabled true
+		}
 	}
 	Property
 	{
@@ -188,6 +168,26 @@ Target
 		%Group "include"
 		{
 			%File "include/^*"
+		}
+	}
+	%Dependency "Lib_BoringSSL_decrepit"
+	{
+		!DocumentationEnabled true
+
+		Dependency.Indirect true
+	}
+	%Dependency "SystemConfiguration"
+	{
+		&
+		{
+			PlatformIsDarwin true
+			!Target.Type "Driver"
+		}
+
+		Dependency
+		{
+			Type "Framework"
+			Indirect true
 		}
 	}
 }
