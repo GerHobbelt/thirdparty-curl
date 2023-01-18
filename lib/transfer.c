@@ -73,6 +73,7 @@
 #include "url.h"
 #include "getinfo.h"
 #include "vtls/vtls.h"
+#include "vquic/vquic.h"
 #include "select.h"
 #include "multiif.h"
 #include "connect.h"
@@ -367,11 +368,6 @@ static int data_pending(struct Curl_easy *data)
 {
   struct connectdata *conn = data->conn;
 
-#ifdef ENABLE_QUIC
-  if(conn->transport == TRNSPRT_QUIC)
-    return Curl_quic_data_pending(data);
-#endif
-
   if(conn->handler->protocol&PROTO_FAMILY_FTP)
     return Curl_conn_data_pending(data, SECONDARYSOCKET);
 
@@ -379,16 +375,6 @@ static int data_pending(struct Curl_easy *data)
      its internal buffers so we MUST always try until we get EAGAIN back */
   return conn->handler->protocol&(CURLPROTO_SCP|CURLPROTO_SFTP|
     CURLPROTO_SSH) ||
-#if defined(USE_NGHTTP2)
-    /* For HTTP/2, we may read up everything including response body
-       with header fields in Curl_http_readwrite_headers. If no
-       content-length is provided, curl waits for the connection
-       close, which we emulate it using conn->proto.httpc.closed =
-       TRUE. The thing is if we read everything, then http2_recv won't
-       be called and we cannot signal the HTTP/2 stream has closed. As
-       a workaround, we return nonzero here to call http2_recv. */
-    ((conn->handler->protocol&PROTO_FAMILY_HTTP) && conn->httpversion >= 20) ||
-#endif
     Curl_conn_data_pending(data, FIRSTSOCKET);
 }
 
@@ -455,29 +441,16 @@ static CURLcode readwrite_data(struct Curl_easy *data,
     bool is_empty_data = FALSE;
     size_t buffersize = data->set.buffer_size;
     size_t bytestoread = buffersize;
-#ifdef USE_NGHTTP2
-    bool is_http2 = ((conn->handler->protocol & PROTO_FAMILY_HTTP) &&
-                     (conn->httpversion == 20));
-#endif
-    bool is_http3 =
-#ifdef ENABLE_QUIC
-      ((conn->handler->protocol & PROTO_FAMILY_HTTP) &&
-       (conn->httpversion == 30));
-#else
-      FALSE;
-#endif
+    /* For HTTP/2 and HTTP/3, read data without caring about the content
+       length. This is safe because body in HTTP/2 is always segmented
+       thanks to its framing layer. Meanwhile, we have to call Curl_read
+       to ensure that http2_handle_stream_close is called when we read all
+       incoming bytes for a particular stream. */
+    bool is_http3 = Curl_conn_is_http3(data, conn, FIRSTSOCKET);
+    bool data_eof_handled = is_http3
+                            || Curl_conn_is_http2(data, conn, FIRSTSOCKET);
 
-    if(
-#ifdef USE_NGHTTP2
-      /* For HTTP/2, read data without caring about the content length. This
-         is safe because body in HTTP/2 is always segmented thanks to its
-         framing layer. Meanwhile, we have to call Curl_read to ensure that
-         http2_handle_stream_close is called when we read all incoming bytes
-         for a particular stream. */
-      !is_http2 &&
-#endif
-      !is_http3 && /* Same reason mentioned above. */
-      k->size != -1 && !k->header) {
+    if(!data_eof_handled && k->size != -1 && !k->header) {
       /* make sure we don't read too much */
       curl_off_t totalleft = k->size - k->bytecount;
       if(totalleft < (curl_off_t)bytestoread)
@@ -500,7 +473,7 @@ static CURLcode readwrite_data(struct Curl_easy *data,
     else {
       /* read nothing but since we wanted nothing we consider this an OK
          situation to proceed from */
-      DEBUGF(infof(data, "readwrite_data: we're done"));
+      DEBUGF(infof(data, DMSG(data, "readwrite_data: we're done")));
       nread = 0;
     }
 
@@ -519,14 +492,9 @@ static CURLcode readwrite_data(struct Curl_easy *data,
       buf[nread] = 0;
     }
     else {
-      /* if we receive 0 or less here, either the http2 stream is closed or the
+      /* if we receive 0 or less here, either the data transfer is done or the
          server closed the connection and we bail out from this! */
-#ifdef USE_NGHTTP2
-      if(is_http2 && !nread)
-        DEBUGF(infof(data, "nread == 0, stream closed, bailing"));
-      else
-#endif
-      if(is_http3 && !nread)
+      if(data_eof_handled)
         DEBUGF(infof(data, "nread == 0, stream closed, bailing"));
       else
         DEBUGF(infof(data, "nread <= 0, server closed connection, bailing"));
@@ -800,19 +768,18 @@ static CURLcode readwrite_data(struct Curl_easy *data,
   }
 
 out:
-  DEBUGF(infof(data, "readwrite_data(handle=%p) -> %d", data, result));
+  if(result)
+    DEBUGF(infof(data, DMSG(data, "readwrite_data() -> %d"), result));
   return result;
 }
 
 CURLcode Curl_done_sending(struct Curl_easy *data,
                            struct SingleRequest *k)
 {
-  struct connectdata *conn = data->conn;
   k->keepon &= ~KEEP_SEND; /* we're done writing */
 
   /* These functions should be moved into the handler struct! */
-  Curl_http2_done_sending(data, conn);
-  Curl_quic_done_sending(data);
+  Curl_conn_ev_data_done_send(data);
 
   return CURLE_OK;
 }
@@ -1183,13 +1150,9 @@ CURLcode Curl_readwrite(struct connectdata *conn,
       }
     }
 
-#ifdef ENABLE_QUIC
-    if(conn->transport == TRNSPRT_QUIC) {
-      result = Curl_quic_idle(data);
-      if(result)
-        goto out;
-    }
-#endif
+    result = Curl_conn_ev_data_idle(data);
+    if(result)
+      goto out;
   }
 
   if(Curl_pgrsUpdate(data))
@@ -1265,7 +1228,8 @@ CURLcode Curl_readwrite(struct connectdata *conn,
                             KEEP_RECV_PAUSE|KEEP_SEND_PAUSE))) ? TRUE : FALSE;
   result = CURLE_OK;
 out:
-  DEBUGF(infof(data, "Curl_readwrite(handle=%p) -> %d", data, result));
+  if(result)
+    DEBUGF(infof(data, DMSG(data, "Curl_readwrite() -> %d"), result));
   return result;
 }
 
@@ -1378,6 +1342,7 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
   data->state.authhost.want = data->set.httpauth;
   data->state.authproxy.want = data->set.proxyauth;
   Curl_safefree(data->info.wouldredirect);
+  Curl_data_priority_clear_state(data);
 
   if(data->state.httpreq == HTTPREQ_PUT)
     data->state.infilesize = data->set.filesize;
@@ -1435,7 +1400,6 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
       }
     }
 #endif
-    Curl_http2_init_state(&data->state);
     result = Curl_hsts_loadcb(data, data->hsts);
   }
 
@@ -1873,7 +1837,7 @@ Curl_setup_transfer(
   httpsending = ((conn->handler->protocol&PROTO_FAMILY_HTTP) &&
                  (http->sending == HTTPSEND_REQUEST));
 
-  if(conn->bits.multiplex || conn->httpversion == 20 || httpsending) {
+  if(conn->bits.multiplex || conn->httpversion >= 20 || httpsending) {
     /* when multiplexing, the read/write sockets need to be the same! */
     conn->sockfd = sockindex == -1 ?
       ((writesockindex == -1 ? CURL_SOCKET_BAD : conn->sock[writesockindex])) :
