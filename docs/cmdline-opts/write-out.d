@@ -38,7 +38,8 @@ The variables available are:
 .RS
 .TP 15
 .B certs
-Output the certificate chain with details. (Added in 7.88.0)
+Output the certificate chain with details. Supported only by the OpenSSL,
+GnuTLS, Schannel, NSS, GSKit and Secure Transport backends (Added in 7.88.0)
 .TP
 .B content_type
 The Content-Type of the requested document, if there was any.
@@ -93,7 +94,9 @@ The local port number of the most recently done connection. (Added in 7.29.0)
 The http method used in the most recent HTTP request. (Added in 7.72.0)
 .TP
 .B num_certs
-Number of server certificates received in the TLS handshake. (Added in 7.88.3)
+Number of server certificates received in the TLS handshake. Supported only by
+the OpenSSL, GnuTLS, Schannel, NSS, GSKit and Secure Transport backends (Added
+in 7.88.0)
 .TP
 .B num_connects
 Number of new connects made in the recent transfer. (Added in 7.12.3)
