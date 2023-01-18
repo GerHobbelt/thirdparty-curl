@@ -767,18 +767,18 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
         return CURLE_BAD_FUNCTION_ARGUMENT;
       /* append the cookie file name to the list of file names, and deal with
          them later */
-      cl = curl_slist_append(data->state.cookielist, argptr);
+      cl = curl_slist_append(data->set.cookielist, argptr);
       if(!cl) {
-        curl_slist_free_all(data->state.cookielist);
-        data->state.cookielist = NULL;
+        curl_slist_free_all(data->set.cookielist);
+        data->set.cookielist = NULL;
         return CURLE_OUT_OF_MEMORY;
       }
-      data->state.cookielist = cl; /* store the list for later use */
+      data->set.cookielist = cl; /* store the list for later use */
     }
     else {
       /* clear the list of cookie files */
-      curl_slist_free_all(data->state.cookielist);
-      data->state.cookielist = NULL;
+      curl_slist_free_all(data->set.cookielist);
+      data->set.cookielist = NULL;
 
       if(!data->share || !data->share->cookies) {
         /* throw away all existing cookies if this isn't a shared cookie
@@ -1315,6 +1315,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.krb = (data->set.str[STRING_KRB_LEVEL]) ? TRUE : FALSE;
     break;
 #endif
+#if !defined(CURL_DISABLE_FTP) || !defined(USE_SSH)
   case CURLOPT_FTP_CREATE_MISSING_DIRS:
     /*
      * An FTP/SFTP option that modifies an upload to create missing
@@ -1328,6 +1329,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     else
       data->set.ftp_create_missing_dirs = (unsigned char)arg;
     break;
+#endif
   case CURLOPT_READDATA:
     /*
      * FILE pointer to read the file to be uploaded from. Or possibly
