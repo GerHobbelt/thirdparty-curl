@@ -1141,7 +1141,7 @@ static ssize_t cf_socket_send(struct Curl_cfilter *cf, struct Curl_easy *data,
 
   DEBUGASSERT(data->conn == cf->conn);
   nwritten = Curl_send_plain(data, cf->sockindex, buf, len, err);
-  CF_DEBUGF(infof(data, CFMSG(cf, "send(len=%d) -> %d, err=%d"),
+  CF_DEBUGF(infof(data, CFMSG(cf, "send(len=%zu) -> %d, err=%d"),
             len, (int)nwritten, *err));
   return nwritten;
 }
@@ -1153,7 +1153,7 @@ static ssize_t cf_socket_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
 
   DEBUGASSERT(data->conn == cf->conn);
   nread = Curl_recv_plain(data, cf->sockindex, buf, len, err);
-  CF_DEBUGF(infof(data, CFMSG(cf, "recv(len=%d) -> %d, err=%d"),
+  CF_DEBUGF(infof(data, CFMSG(cf, "recv(len=%zu) -> %d, err=%d"),
             len, (int)nread, *err));
   return nread;
 }
@@ -1555,10 +1555,14 @@ CURLcode Curl_cf_socket_peek(struct Curl_cfilter *cf,
   if(Curl_cf_is_socket(cf) && cf->ctx) {
     struct cf_socket_ctx *ctx = cf->ctx;
 
-    *psock = ctx->sock;
-    *paddr = &ctx->addr;
-    *premote_ip_str = ctx->r_ip;
-    *premote_port = ctx->r_port;
+    if(psock)
+      *psock = ctx->sock;
+    if(paddr)
+      *paddr = &ctx->addr;
+    if(premote_ip_str)
+      *premote_ip_str = ctx->r_ip;
+    if(premote_port)
+      *premote_port = ctx->r_port;
     return CURLE_OK;
   }
   return CURLE_FAILED_INIT;
