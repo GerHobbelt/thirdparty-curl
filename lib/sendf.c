@@ -249,7 +249,7 @@ bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex)
 /* Curl_infof() is for info message along the way */
 #define MAXINFO 2048
 
-void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
+CURL_EXTERN void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
 {
   DEBUGASSERT(!strchr(fmt, '\n'));
   if(data && data->set.verbose) {
@@ -269,7 +269,7 @@ void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
  * The message SHALL NOT include any LF or CR.
  */
 
-void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
+CURL_EXTERN void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
 {
   DEBUGASSERT(!strchr(fmt, '\n'));
   if(data->set.verbose || data->set.errorbuffer) {

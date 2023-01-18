@@ -221,7 +221,7 @@ static char *c_escape(const char *str, curl_off_t len)
     cutoff = 3;
   }
 
-  result = Curl_dyn_addn(&escaped, STRCONST(""));
+  result = Curl_dyn_addn(&escaped, "", 0);
   for(s = str; !result && len; s++, len--) {
     /* escape question marks as well, to prevent generating accidental
        trigraphs */

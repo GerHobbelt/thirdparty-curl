@@ -703,6 +703,9 @@ ${SIZEOF___INT64_CODE}
 /* Define if you want to enable WIN32 threaded DNS lookup */
 #cmakedefine USE_THREADS_WIN32 1
 
+/* Define if you have process.h */
+#cmakedefine HAVE_PROCESS_H 1
+
 /* if GnuTLS is enabled */
 #cmakedefine USE_GNUTLS 1
 

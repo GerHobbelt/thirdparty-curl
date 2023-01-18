@@ -35,6 +35,9 @@
 #if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
 
 #include "curl_multibyte.h"
+/* The last 2 #include files should be in this order */
+#include "curl_memory.h"
+#include "memdebug.h"
 
 /*
  * MultiByte conversions using Windows kernel32 library.

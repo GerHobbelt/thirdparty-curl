@@ -48,6 +48,7 @@
 
 #include "tool_cfgable.h"
 #include "tool_doswin.h"
+#include "tool_getenv.h"
 #include "tool_msgs.h"
 #include "tool_operate.h"
 #include "tool_vms.h"
