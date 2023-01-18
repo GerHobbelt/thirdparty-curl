@@ -30,11 +30,11 @@ struct Curl_cfilter;
 /**
  * Init logging, return != 0 on failure.
  */
-CURLcode Curl_log_init(void);
+CURL_EXTERN CURLcode Curl_log_init(void);
 
 
-void Curl_infof(struct Curl_easy *, const char *fmt, ...);
-void Curl_failf(struct Curl_easy *, const char *fmt, ...);
+CURL_EXTERN void Curl_infof(struct Curl_easy *, const char *fmt, ...);
+CURL_EXTERN void Curl_failf(struct Curl_easy *, const char *fmt, ...);
 
 #if defined(CURL_DISABLE_VERBOSE_STRINGS)
 
@@ -61,7 +61,7 @@ void Curl_failf(struct Curl_easy *, const char *fmt, ...);
 
 
 /* the function used to output verbose information */
-void Curl_debug(struct Curl_easy *data, curl_infotype type,
+CURL_EXTERN void Curl_debug(struct Curl_easy *data, curl_infotype type,
                 char *ptr, size_t size);
 
 #ifdef DEBUGBUILD
@@ -80,7 +80,7 @@ void Curl_debug(struct Curl_easy *data, curl_infotype type,
 #define LOG_CF Curl_log_cf_debug
 #endif
 
-void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
+CURL_EXTERN void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
 #if defined(__GNUC__) && !defined(printf) && \
     defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
                        const char *fmt, ...)
@@ -105,7 +105,7 @@ void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
 #else
 #define LOG_CF                    Curl_log_cf_debug
 /* without c99, we seem unable to completely define away this function. */
-void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
+CURL_EXTERN void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
                        const char *fmt, ...);
 #endif
 

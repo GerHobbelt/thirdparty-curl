@@ -49,7 +49,7 @@
 #include "memdebug.h"
 
 
-void Curl_debug(struct Curl_easy *data, curl_infotype type,
+CURL_EXTERN void Curl_debug(struct Curl_easy *data, curl_infotype type,
                 char *ptr, size_t size)
 {
   if(data->set.verbose) {
@@ -80,7 +80,7 @@ void Curl_debug(struct Curl_easy *data, curl_infotype type,
 /* Curl_failf() is for messages stating why we failed.
  * The message SHALL NOT include any LF or CR.
  */
-void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
+CURL_EXTERN void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
 {
   DEBUGASSERT(!strchr(fmt, '\n'));
   if(data->set.verbose || data->set.errorbuffer) {
@@ -104,7 +104,7 @@ void Curl_failf(struct Curl_easy *data, const char *fmt, ...)
 /* Curl_infof() is for info message along the way */
 #define MAXINFO 2048
 
-void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
+CURL_EXTERN void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
 {
   DEBUGASSERT(!strchr(fmt, '\n'));
   if(data && data->set.verbose) {
@@ -122,7 +122,7 @@ void Curl_infof(struct Curl_easy *data, const char *fmt, ...)
 
 #ifdef DEBUGBUILD
 
-void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
+CURL_EXTERN void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
                        const char *fmt, ...)
 {
   DEBUGASSERT(cf);
@@ -174,7 +174,7 @@ static struct Curl_cftype *cf_types[] = {
 #define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
 #endif
 
-CURLcode Curl_log_init(void)
+CURL_EXTERN CURLcode Curl_log_init(void)
 {
   const char *setting = getenv("CURL_DEBUG");
   if(setting) {
@@ -201,13 +201,13 @@ CURLcode Curl_log_init(void)
 }
 #else /* DEBUGBUILD */
 
-CURLcode Curl_log_init(void)
+CURL_EXTERN CURLcode Curl_log_init(void)
 {
   return CURLE_OK;
 }
 
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
-void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
+CURL_EXTERN void Curl_log_cf_debug(struct Curl_easy *data, struct Curl_cfilter *cf,
                        const char *fmt, ...)
 {
   (void)data;

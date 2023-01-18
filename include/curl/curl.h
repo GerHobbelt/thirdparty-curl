@@ -3258,4 +3258,22 @@ CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
 #endif /* __STDC__ >= 1 */
 #endif /* gcc >= 4.3 && !__cplusplus && !CURL_DISABLE_TYPECHECK */
 
+// these were originally found in curl_setup.h, but the CURL_EXTERN macro is defined only this curl.h header file further above, so here they are:
+
+// CURL_EXTERN isn't defineed yet, so we'll have to postponee the next couple of prototype definitions:
+#if defined(CURL_WIN32)
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+CURL_EXTERN int curlx_win32_open(const char *filename, int oflag, ...);
+CURL_EXTERN int curlx_win32_stat(const char *path, struct_stat *buffer);
+CURL_EXTERN FILE *curlx_win32_fopen(const char *filename, const char *mode);
+CURL_EXTERN int curlx_win32_access(const char *path, int mode);
+#ifdef  __cplusplus
+}
+#endif
+
+#endif // CURL_WIN32
+
 #endif /* CURLINC_CURL_H */

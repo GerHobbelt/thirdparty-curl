@@ -382,16 +382,21 @@
 #  define open                       curlx_win32_open
 #  define fopen(fname,mode)          curlx_win32_fopen(fname, mode)
 #  define access(fname,mode)         curlx_win32_access(fname, mode)
+
+// CURL_EXTERN isn't defineed yet, so we'll have to postponee the next couple of prototype definitions:
+#if 0
 #ifdef  __cplusplus
 extern "C" {
 #endif
-   int curlx_win32_open(const char *filename, int oflag, ...);
-   int curlx_win32_stat(const char *path, struct_stat *buffer);
-   FILE *curlx_win32_fopen(const char *filename, const char *mode);
-   int curlx_win32_access(const char *path, int mode);
+CURL_EXTERN int curlx_win32_open(const char *filename, int oflag, ...);
+CURL_EXTERN int curlx_win32_stat(const char *path, struct_stat *buffer);
+CURL_EXTERN FILE *curlx_win32_fopen(const char *filename, const char *mode);
+CURL_EXTERN int curlx_win32_access(const char *path, int mode);
 #ifdef  __cplusplus
 }
 #endif
+#endif
+
 #endif
 
 /*
@@ -411,16 +416,21 @@ extern "C" {
 #    define open                       curlx_win32_open
 #    define fopen(fname,mode)          curlx_win32_fopen(fname, mode)
 #    define access(fname,mode)         curlx_win32_access(fname, mode)
+
+ // CURL_EXTERN isn't defineed yet, so we'll have to postponee the next couple of prototype definitions:
+#if 0
 #ifdef  __cplusplus
 extern "C" {
 #endif
-     int curlx_win32_stat(const char *path, struct_stat *buffer);
-     int curlx_win32_open(const char *filename, int oflag, ...);
-     FILE *curlx_win32_fopen(const char *filename, const char *mode);
-     int curlx_win32_access(const char *path, int mode);
+	CURL_EXTERN int curlx_win32_open(const char *filename, int oflag, ...);
+	CURL_EXTERN int curlx_win32_stat(const char *path, struct_stat *buffer);
+	CURL_EXTERN FILE *curlx_win32_fopen(const char *filename, const char *mode);
+	CURL_EXTERN int curlx_win32_access(const char *path, int mode);
 #ifdef  __cplusplus
 }
 #endif
+#endif
+
 #  endif
 #  define LSEEK_ERROR                (long)-1
 #endif
