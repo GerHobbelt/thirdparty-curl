@@ -29,7 +29,7 @@ EXTRA_DIST = Makefile.mk config-win32.h config-win32ce.h config-plan9.h    \
  config-riscos.h config-mac.h curl_config.h.in config-dos.h                \
  libcurl.plist libcurl.rc config-amigaos.h config-win32ce.h                \
  $(CMAKE_DIST) firefox-db2pem.sh checksrc.pl setup-win32.h .checksrc        \
- config-freertos.h config-micrium.h
+ config-freertos.h config-micrium.h Makefile.soname
 
 lib_LTLIBRARIES = libcurl.la
 
@@ -58,8 +58,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include        \
 # Prevent LIBS from being used for all link targets
 LIBS = $(BLANK_AT_MAKETIME)
 
-include libcurl.soname
-VERSIONINFO=-version-info $(SONAME)
+include Makefile.soname
 
 AM_CPPFLAGS += -DBUILDING_LIBCURL
 AM_LDFLAGS =

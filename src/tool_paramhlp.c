@@ -433,6 +433,7 @@ ParameterError proto2num(struct OperationConfig *config,
     result = Curl_dyn_addf(&obuf, "%s,", protoset[proto]);
   free((char *) protoset);
   Curl_dyn_setlen(&obuf, Curl_dyn_len(&obuf) - 1);
+  free(*ostr);
   *ostr = Curl_dyn_ptr(&obuf);
 
   return *ostr ? PARAM_OK : PARAM_NO_MEM;
