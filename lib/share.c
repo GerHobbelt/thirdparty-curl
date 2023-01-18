@@ -29,9 +29,11 @@
 #include "share.h"
 #include "psl.h"
 #include "vtls/vtls.h"
-#include "curl_memory.h"
+#include "hsts.h"
 
-/* The last #include file should be: */
+/* The last 3 #include files should be in this order */
+#include "curl_printf.h"
+#include "curl_memory.h"
 #include "memdebug.h"
 
 struct Curl_share *
@@ -92,6 +94,18 @@ curl_share_setopt(struct Curl_share *share, CURLSHoption option, ...)
 #endif
       break;
 
+    case CURL_LOCK_DATA_HSTS:
+#ifndef CURL_DISABLE_HSTS
+      if(!share->hsts) {
+        share->hsts = Curl_hsts_init();
+        if(!share->hsts)
+          res = CURLSHE_NOMEM;
+      }
+#else   /* CURL_DISABLE_HSTS */
+      res = CURLSHE_NOT_BUILT_IN;
+#endif
+      break;
+
     case CURL_LOCK_DATA_SSL_SESSION:
 #ifdef USE_SSL
       if(!share->sslsession) {
@@ -140,6 +154,16 @@ curl_share_setopt(struct Curl_share *share, CURLSHoption option, ...)
         share->cookies = NULL;
       }
 #else   /* CURL_DISABLE_HTTP */
+      res = CURLSHE_NOT_BUILT_IN;
+#endif
+      break;
+
+    case CURL_LOCK_DATA_HSTS:
+#ifndef CURL_DISABLE_HSTS
+      if(share->hsts) {
+        Curl_hsts_cleanup(&share->hsts);
+      }
+#else   /* CURL_DISABLE_HSTS */
       res = CURLSHE_NOT_BUILT_IN;
 #endif
       break;
@@ -208,6 +232,10 @@ curl_share_cleanup(struct Curl_share *share)
 
 #if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_COOKIES)
   Curl_cookie_cleanup(share->cookies);
+#endif
+
+#ifndef CURL_DISABLE_HSTS
+  Curl_hsts_cleanup(&share->hsts);
 #endif
 
 #ifdef USE_SSL

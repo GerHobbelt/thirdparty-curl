@@ -59,10 +59,14 @@ struct Curl_share {
 #ifdef USE_LIBPSL
   struct PslCache psl;
 #endif
-
+#ifndef CURL_DISABLE_HSTS
+  struct hsts *hsts;
+#endif
+#ifdef USE_SSL
   struct Curl_ssl_session *sslsession;
   size_t max_ssl_sessions;
   long sessionage;
+#endif
   void *known_hosts;
 };
 
