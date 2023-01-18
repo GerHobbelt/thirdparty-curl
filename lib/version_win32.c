@@ -69,7 +69,7 @@ struct OUR_OSVERSIONINFOEXW {
  *
  * Returns TRUE if matched; otherwise FALSE.
  */
-CURL_EXTERN bool curlx_verify_windows_version(const unsigned int majorVersion,
+bool curlx_verify_windows_version(const unsigned int majorVersion,
                                   const unsigned int minorVersion,
                                   const unsigned int buildVersion,
                                   const PlatformIdentifier platform,
