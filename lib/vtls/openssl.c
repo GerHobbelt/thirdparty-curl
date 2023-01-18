@@ -3473,9 +3473,6 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
 #endif
 #endif
   const long int ssl_version = conn_config->version;
-#ifdef USE_OPENSSL_SRP
-  const enum CURL_TLSAUTH ssl_authtype = ssl_config->primary.authtype;
-#endif
   char * const ssl_cert = ssl_config->primary.clientcert;
   const struct curl_blob *ssl_cert_blob = ssl_config->primary.cert_blob;
   const char * const ssl_cert_type = ssl_config->cert_type;
@@ -3646,25 +3643,32 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
     int cur = 0;
     unsigned char protocols[128];
 
-#ifdef USE_HTTP2
-    if(data->state.httpwant >= CURL_HTTP_VERSION_2
-#ifndef CURL_DISABLE_PROXY
-       && (!Curl_ssl_cf_is_proxy(cf) || !cf->conn->bits.tunnel_proxy)
-#endif
-      ) {
-      protocols[cur++] = ALPN_H2_LENGTH;
-
-      memcpy(&protocols[cur], ALPN_H2, ALPN_H2_LENGTH);
-      cur += ALPN_H2_LENGTH;
-      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
+    if(data->state.httpwant == CURL_HTTP_VERSION_1_0) {
+      protocols[cur++] = ALPN_HTTP_1_0_LENGTH;
+      memcpy(&protocols[cur], ALPN_HTTP_1_0, ALPN_HTTP_1_0_LENGTH);
+      cur += ALPN_HTTP_1_0_LENGTH;
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_0);
     }
+    else {
+#ifdef USE_HTTP2
+      if(data->state.httpwant >= CURL_HTTP_VERSION_2
+#ifndef CURL_DISABLE_PROXY
+         && (!Curl_ssl_cf_is_proxy(cf) || !cf->conn->bits.tunnel_proxy)
+#endif
+        ) {
+        protocols[cur++] = ALPN_H2_LENGTH;
+
+        memcpy(&protocols[cur], ALPN_H2, ALPN_H2_LENGTH);
+        cur += ALPN_H2_LENGTH;
+        infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_H2);
+      }
 #endif
 
-    protocols[cur++] = ALPN_HTTP_1_1_LENGTH;
-    memcpy(&protocols[cur], ALPN_HTTP_1_1, ALPN_HTTP_1_1_LENGTH);
-    cur += ALPN_HTTP_1_1_LENGTH;
-    infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
-
+      protocols[cur++] = ALPN_HTTP_1_1_LENGTH;
+      memcpy(&protocols[cur], ALPN_HTTP_1_1, ALPN_HTTP_1_1_LENGTH);
+      cur += ALPN_HTTP_1_1_LENGTH;
+      infof(data, VTLS_INFOF_ALPN_OFFER_1STR, ALPN_HTTP_1_1);
+    }
     /* expects length prefixed preference ordered list of protocols in wire
      * format
      */
@@ -3729,8 +3733,7 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
 #endif
 
 #ifdef USE_OPENSSL_SRP
-  if((ssl_authtype == CURL_TLSAUTH_SRP) &&
-     Curl_auth_allowed_to_host(data)) {
+  if(ssl_config->primary.username && Curl_auth_allowed_to_host(data)) {
     char * const ssl_username = ssl_config->primary.username;
     char * const ssl_password = ssl_config->primary.password;
     infof(data, "Using TLS-SRP username: %s", ssl_username);
