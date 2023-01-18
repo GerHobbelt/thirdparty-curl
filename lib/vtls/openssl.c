@@ -281,8 +281,6 @@
 #endif /* !LIBRESSL_VERSION_NUMBER */
 
 struct ssl_backend_data {
-  struct Curl_easy *logger; /* transfer handle to pass trace logs to, only
-                               using sockindex 0 */
   /* these ones requires specific SSL-types */
   SSL_CTX* ctx;
   SSL*     handle;
@@ -792,9 +790,6 @@ static void bio_cf_free_methods(void)
 #endif
 
 
-static bool ossl_attach_data(struct Curl_cfilter *cf,
-                             struct Curl_easy *data);
-
 /*
  * Number of bytes to read from the random number seed file. This must be
  * a finite value (because some entropy "files" like /dev/urandom have
@@ -926,18 +921,6 @@ static char *ossl_strerror(unsigned long error, char *buf, size_t size)
   return buf;
 }
 
-/* Return an extra data index for the transfer data.
- * This index can be used with SSL_get_ex_data() and SSL_set_ex_data().
- */
-static int ossl_get_ssl_data_index(void)
-{
-  static int ssl_ex_data_data_index = -1;
-  if(ssl_ex_data_data_index < 0) {
-    ssl_ex_data_data_index = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
-  }
-  return ssl_ex_data_data_index;
-}
-
 /* Return an extra data index for the associated Curl_cfilter instance.
  * This index can be used with SSL_get_ex_data() and SSL_set_ex_data().
  */
@@ -950,28 +933,20 @@ static int ossl_get_ssl_cf_index(void)
   return ssl_ex_data_cf_index;
 }
 
-/* Return an extra data index for the sockindex.
- * This index can be used with SSL_get_ex_data() and SSL_set_ex_data().
- */
-static int ossl_get_ssl_sockindex_index(void)
+static bool ossl_attach_cf(struct Curl_cfilter *cf)
 {
-  static int sockindex_index = -1;
-  if(sockindex_index < 0) {
-    sockindex_index = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
-  }
-  return sockindex_index;
-}
+  struct ssl_connect_data *connssl = cf->ctx;
+  struct ssl_backend_data *backend = connssl->backend;
+  int cf_idx = ossl_get_ssl_cf_index();
 
-/* Return an extra data index for proxy boolean.
- * This index can be used with SSL_get_ex_data() and SSL_set_ex_data().
- */
-static int ossl_get_proxy_index(void)
-{
-  static int proxy_index = -1;
-  if(proxy_index < 0) {
-    proxy_index = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+  DEBUGASSERT(backend);
+
+  /* If we don't have SSL context, do nothing. */
+  if(backend->handle && cf_idx >= 0) {
+    if(SSL_set_ex_data(backend->handle, cf_idx, cf))
+      return TRUE;
   }
-  return proxy_index;
+  return FALSE;
 }
 
 static int passwd_callback(char *buf, int num, int encrypting,
@@ -1776,8 +1751,7 @@ static int ossl_init(void)
   Curl_tls_keylog_open();
 
   /* Initialize the extra data indexes */
-  if(ossl_get_ssl_data_index() < 0 || ossl_get_ssl_cf_index() < 0 ||
-     ossl_get_ssl_sockindex_index() < 0 || ossl_get_proxy_index() < 0)
+  if(ossl_get_ssl_cf_index() < 0)
     return 0;
 
   return 1;
@@ -1964,19 +1938,15 @@ static struct curl_slist *ossl_engines_list(struct Curl_easy *data)
   return list;
 }
 
-#define set_logger(connssl, data)                  \
-  connssl->backend->logger = data
-
 static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
 {
   struct ssl_connect_data *connssl = cf->ctx;
   struct ssl_backend_data *backend = connssl->backend;
 
+  (void)data;
   DEBUGASSERT(backend);
 
   if(backend->handle) {
-    set_logger(connssl, data);
-
     if(cf->next && cf->next->connected) {
       char buf[32];
       /* Maybe the server has already sent a close notify alert.
@@ -2678,7 +2648,7 @@ static void ossl_trace(int direction, int ssl_ver, int content_type,
   connssl = cf->ctx;
   DEBUGASSERT(connssl);
   DEBUGASSERT(connssl->backend);
-  data = connssl->backend->logger;
+  data = connssl->call_data;
 
   if(!conn || !data || !data->set.fdebug ||
      (direction != 0 && direction != 1))
@@ -2971,21 +2941,17 @@ static int ossl_new_session_cb(SSL *ssl, SSL_SESSION *ssl_sessionid)
   struct Curl_easy *data;
   struct Curl_cfilter *cf;
   const struct ssl_config_data *config;
-  curl_socket_t *sockindex_ptr;
-  int data_idx = ossl_get_ssl_data_index();
   int cf_idx = ossl_get_ssl_cf_index();
-  int sockindex_idx = ossl_get_ssl_sockindex_index();
-  int proxy_idx = ossl_get_proxy_index();
+  struct ssl_connect_data *connssl;
   bool isproxy;
 
-  if(data_idx < 0 || cf_idx < 0 || sockindex_idx < 0 || proxy_idx < 0)
+  if(cf_idx < 0)
     return 0;
-
   cf = (struct Curl_cfilter*) SSL_get_ex_data(ssl, cf_idx);
-  data = (struct Curl_easy *) SSL_get_ex_data(ssl, data_idx);
+  connssl = cf? cf->ctx : NULL;
+  data = connssl? connssl->call_data : NULL;
   /* The sockindex has been stored as a pointer to an array element */
-  sockindex_ptr = (curl_socket_t*) SSL_get_ex_data(ssl, sockindex_idx);
-  if(!cf || !data || !sockindex_ptr)
+  if(!cf || !data)
     return 0;
 
   isproxy = Curl_ssl_cf_is_proxy(cf);
@@ -3569,7 +3535,6 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
     /* the SSL trace callback is only used for verbose logging */
     SSL_CTX_set_msg_callback(backend->ctx, ossl_trace);
     SSL_CTX_set_msg_callback_arg(backend->ctx, cf->conn);
-    set_logger(connssl, data);
   }
 #endif
 
@@ -3851,9 +3816,9 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
   }
 #endif
 
-  if(!ossl_attach_data(cf, data)) {
+  if(!ossl_attach_cf(cf)) {
     /* Maybe the internal errors of SSL_get_ex_new_index or SSL_set_ex_data */
-    failf(data, "SSL: ossl_attach_data failed: %s",
+    failf(data, "SSL: ossl_attach_cf failed: %s",
           ossl_strerror(ERR_get_error(), error_buffer,
                         sizeof(error_buffer)));
     return CURLE_SSL_CONNECT_ERROR;
@@ -3881,8 +3846,18 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
     return CURLE_OUT_OF_MEMORY;
 
   BIO_set_data(bio, cf);
+#ifdef HAVE_SSL_SET0_WBIO
+  /* with OpenSSL v1.1.1 we get an alternative to SSL_set_bio() that works
+   * without backward compat quirks. Every call takes one reference, so we
+   * up it and pass. SSL* then owns it and will free.
+   * We check on the function in configure, since libressl and friends
+   * each have their own versions to add support for this. */
+  BIO_up_ref(bio);
+  SSL_set0_rbio(backend->handle, bio);
+  SSL_set0_wbio(backend->handle, bio);
+#else
   SSL_set_bio(backend->handle, bio, bio);
-
+#endif
   connssl->connecting_state = ssl_connect_2;
 
   return CURLE_OK;
@@ -4527,7 +4502,6 @@ static ssize_t ossl_send(struct Curl_cfilter *cf,
   ERR_clear_error();
 
   memlen = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
-  set_logger(connssl, data);
   rc = SSL_write(backend->handle, mem, memlen);
 
   if(rc <= 0) {
@@ -4624,7 +4598,6 @@ static ssize_t ossl_recv(struct Curl_cfilter *cf,
   ERR_clear_error();
 
   buffsize = (buffersize > (size_t)INT_MAX) ? INT_MAX : (int)buffersize;
-  set_logger(connssl, data);
   nread = (ssize_t)SSL_read(backend->handle, buf, buffsize);
 
   if(nread <= 0) {
@@ -4842,89 +4815,6 @@ static void *ossl_get_internals(struct ssl_connect_data *connssl,
          (void *)backend->ctx : (void *)backend->handle;
 }
 
-static bool ossl_attach_data(struct Curl_cfilter *cf,
-                             struct Curl_easy *data)
-{
-  struct ssl_connect_data *connssl = cf->ctx;
-  struct ssl_backend_data *backend = connssl->backend;
-  const struct ssl_config_data *config;
-
-  DEBUGASSERT(backend);
-
-  /* If we don't have SSL context, do nothing. */
-  if(!backend->handle)
-    return FALSE;
-
-  config = Curl_ssl_cf_get_config(cf, data);
-  if(config->primary.sessionid) {
-    int data_idx = ossl_get_ssl_data_index();
-    int cf_idx = ossl_get_ssl_cf_index();
-    int sockindex_idx = ossl_get_ssl_sockindex_index();
-    int proxy_idx = ossl_get_proxy_index();
-
-    if(data_idx >= 0 && cf_idx >= 0 && sockindex_idx >= 0 &&
-       proxy_idx >= 0) {
-      int data_status, cf_status, sockindex_status, proxy_status;
-
-      /* Store the data needed for the "new session" callback.
-       * The sockindex is stored as a pointer to an array element. */
-      data_status = SSL_set_ex_data(backend->handle, data_idx, data);
-      cf_status = SSL_set_ex_data(backend->handle, cf_idx, cf);
-      sockindex_status = SSL_set_ex_data(backend->handle, sockindex_idx,
-                                         cf->conn->sock + cf->sockindex);
-#ifndef CURL_DISABLE_PROXY
-      proxy_status = SSL_set_ex_data(backend->handle, proxy_idx,
-                                     Curl_ssl_cf_is_proxy(cf)?
-                                       (void *) 1 : NULL);
-#else
-      proxy_status = SSL_set_ex_data(backend->handle, proxy_idx, NULL);
-#endif
-      if(data_status && cf_status && sockindex_status && proxy_status)
-        return TRUE;
-    }
-    return FALSE;
-  }
-  return TRUE;
-}
-
-/*
- * Starting with TLS 1.3, the ossl_new_session_cb callback gets called after
- * the handshake. If the transfer that sets up the callback gets killed before
- * this callback arrives, we must make sure to properly clear the data to
- * avoid UAF problems. A future optimization could be to instead store another
- * transfer that might still be using the same connection.
- */
-
-static void ossl_detach_data(struct Curl_cfilter *cf,
-                             struct Curl_easy *data)
-{
-  struct ssl_config_data *ssl_config = Curl_ssl_cf_get_config(cf, data);
-  struct ssl_connect_data *connssl = cf->ctx;
-  struct ssl_backend_data *backend = connssl->backend;
-  DEBUGASSERT(backend);
-
-  /* If we don't have SSL context, do nothing. */
-  if(!backend->handle)
-    return;
-
-  if(ssl_config->primary.sessionid) {
-    int data_idx = ossl_get_ssl_data_index();
-    int cf_idx = ossl_get_ssl_cf_index();
-    int sockindex_idx = ossl_get_ssl_sockindex_index();
-    int proxy_idx = ossl_get_proxy_index();
-
-    if(data_idx >= 0 && cf_idx >= 0 && sockindex_idx >= 0 &&
-       proxy_idx >= 0) {
-      /* Disable references to data in "new session" callback to avoid
-       * accessing a stale pointer. */
-      SSL_set_ex_data(backend->handle, data_idx, NULL);
-      SSL_set_ex_data(backend->handle, cf_idx, NULL);
-      SSL_set_ex_data(backend->handle, sockindex_idx, NULL);
-      SSL_set_ex_data(backend->handle, proxy_idx, NULL);
-    }
-  }
-}
-
 static void ossl_free_multi_ssl_backend_data(
   struct multi_ssl_backend_data *mbackend)
 {
@@ -4978,8 +4868,8 @@ const struct Curl_ssl Curl_ssl_openssl = {
 #else
   NULL,                     /* sha256sum */
 #endif
-  ossl_attach_data,         /* use of data in this connection */
-  ossl_detach_data,         /* remote of data from this connection */
+  NULL,                     /* use of data in this connection */
+  NULL,                     /* remote of data from this connection */
   ossl_free_multi_ssl_backend_data, /* free_multi_ssl_backend_data */
   ossl_recv,                /* recv decrypted data */
   ossl_send,                /* send data to encrypt */
