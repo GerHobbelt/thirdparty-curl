@@ -34,8 +34,7 @@ WARNLESS = ../../lib/warnless.c ../../lib/warnless.h
 TIMEVAL = ../../lib/timeval.c ../../lib/timeval.h
 
 # files used only in some libcurl test programs
-#   (these are now exported by libcurl anyway)
-MULTIBYTE = 
+MULTIBYTE = ../../lib/curl_multibyte.c ../../lib/curl_multibyte.h
 
 # these files are used in every single test program below
 SUPPORTFILES = ../../lib/timediff.c ../../lib/timediff.h first.c test.h

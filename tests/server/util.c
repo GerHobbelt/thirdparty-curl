@@ -52,7 +52,6 @@
 #include "getpart.h"
 #include "util.h"
 #include "timeval.h"
-#include <curl/curl.h>
 
 #ifdef USE_WINSOCK
 #undef  EINTR

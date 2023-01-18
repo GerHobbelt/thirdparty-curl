@@ -27,14 +27,12 @@
 
 #if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
 
-#include <curl/curl.h>
-
  /*
   * MultiByte conversions using Windows kernel32 library.
   */
 
-CURL_EXTERN wchar_t *curlx_convert_UTF8_to_wchar(const char *str_utf8);
-CURL_EXTERN char *curlx_convert_wchar_to_UTF8(const wchar_t *str_w);
+wchar_t *curlx_convert_UTF8_to_wchar(const char *str_utf8);
+char *curlx_convert_wchar_to_UTF8(const wchar_t *str_w);
 
 #endif /* WIN32 */
 
