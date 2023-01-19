@@ -280,6 +280,10 @@ timediff_t Curl_pgrsLimitWaitTime(curl_off_t cursize,
   timediff_t minimum;
   timediff_t actual;
 
+  DEBUGASSERT(limit >= 0);
+  DEBUGASSERT(startsize >= 0);
+  DEBUGASSERT(size >= 0);
+
   if(!limit || !size)
     return 0;
 

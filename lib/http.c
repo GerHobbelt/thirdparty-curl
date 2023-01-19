@@ -1273,7 +1273,7 @@ static size_t readmoredata(char *buffer,
   /* make sure that an HTTP request is never sent away chunked! */
   data->req.forbidchunk = (http->sending == HTTPSEND_REQUEST)?TRUE:FALSE;
 
-  if((data->set.max_send_speed > 0) &&
+  if(data->set.max_send_speed &&
      (data->set.max_send_speed < (curl_off_t)fullsize) &&
      (data->set.max_send_speed < http->postsize))
     /* speed limit */
@@ -1356,14 +1356,14 @@ CURLcode Curl_buffer_send(struct dynbuf *in,
     /* Make sure this doesn't send more body bytes than what the max send
        speed says. The request bytes do not count to the max speed.
     */
-    if((data->set.max_send_speed > 0) &&
+    if(data->set.max_send_speed &&
        (included_body_bytes > data->set.max_send_speed)) {
       curl_off_t overflow = included_body_bytes - data->set.max_send_speed;
       DEBUGASSERT((size_t)overflow < size);
-      sendsize = CURLMIN(size - (size_t)overflow, CURL_MAX_WRITE_SIZE);
+      sendsize = size - (size_t)overflow;
     }
     else
-      sendsize = CURLMIN(size, CURL_MAX_WRITE_SIZE);
+      sendsize = size;
 
     /* OpenSSL is very picky and we must send the SAME buffer pointer to the
        library when we attempt to re-send this buffer. Sending the same data

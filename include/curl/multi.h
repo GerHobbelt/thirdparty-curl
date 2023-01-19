@@ -225,7 +225,7 @@ CURL_EXTERN CURLMcode curl_multi_perform(CURLM *multi_handle,
  * Name:    curl_multi_count_connections()
  *
  * Desc:    It returns the number of opened connections. The number is
-            actualized in curl_multi_perform, curl_multi_socket*.
+ *          actualized in curl_multi_perform, curl_multi_socket*.
  *
  * Returns: CURLMcode type, general multi error code.
  */
