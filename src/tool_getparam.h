@@ -55,7 +55,7 @@ struct GlobalConfig;
 struct OperationConfig;
 
 ParameterError getparameter(const char *flag, const char *nextarg, 
-                            argv_item_t cleararg,
+							const char *cleararg,
                             bool *usedarg,
                             struct GlobalConfig *global,
                             struct OperationConfig *operation);

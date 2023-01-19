@@ -675,7 +675,7 @@ static void sethttpver(struct GlobalConfig *global,
 
 ParameterError getparameter(const char *flag, /* f or -long-flag */
                             const char *nextarg,    /* NULL if unset */
-                            argv_item_t cleararg,
+                            const char *cleararg,
                             bool *usedarg,    /* set to TRUE if the arg
                                                  has been used */
                             struct GlobalConfig *global,
