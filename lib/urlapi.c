@@ -433,7 +433,7 @@ static CURLUcode parse_hostname_login(struct Curl_URL *u,
   if(u->scheme)
     h = Curl_builtin_scheme(u->scheme, CURL_ZERO_TERMINATED);
 
-  /* We could use the login information in the URL so extract it. Only parse
+  /* We could use the login information in the URL to extract it. Only parse
      options if the handler says we should. Note that 'h' might be NULL! */
   ccode = Curl_parse_login_details(login, ptr - login - 1,
                                    &userp, &passwdp,
