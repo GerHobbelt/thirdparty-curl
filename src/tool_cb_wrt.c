@@ -101,7 +101,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 
   clobber_mode = config->file_clobber_mode;
 
-  if (01) {
+  if (config->sanitize_with_extreme_prejudice) {
 	  // config->failwithbody ?
 
 	  /* if HTTP response >= 400, return error */
@@ -298,12 +298,15 @@ bool tool_create_output_file(struct OutStruct *outs,
 		free(fn_ext);
 		return FALSE;
       }
+
+	  bool has_risky_filename = (fn_ext_pos == 0 || strchr(".\\/", fname[fn_ext_pos - 1]));
+
       while(fd == -1 && /* haven't successfully opened a file */
             (errno == EEXIST || errno == EISDIR) &&
             /* because we keep having files that already exist */
             next_num < 100 /* and we haven't reached the retry limit */ ) {
 		free(newname);
-		newname = aprintf("%.*s.%02d%s", (int)fn_ext_pos, fname, next_num, fn_ext);
+		newname = aprintf("%.*s%s.%02d%s", (int)fn_ext_pos, fname, (has_risky_filename ? "__download__" : ""), next_num, fn_ext);
 		if (!newname) {
 			errorf(global, "out of memory\n");
 			free(aname);

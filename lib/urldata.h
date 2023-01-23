@@ -1888,6 +1888,8 @@ struct UserDefined {
 #ifdef USE_WEBSOCKETS
   BIT(ws_raw_mode);
 #endif
+  BIT(sanitize_with_extreme_prejudice);       /* sanitize URLs and output filenames
+                          without compunction, producing filenames safe for all (modern) file systems */
 };
 
 struct Names {

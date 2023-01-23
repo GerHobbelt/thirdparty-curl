@@ -113,6 +113,7 @@ static const struct LongShort aliases[]= {
   {"*r", "create-dirs",              ARG_BOOL},
   {"*R", "create-file-mode",         ARG_STRING},
   {"*s", "max-redirs",               ARG_STRING},
+  {"*S", "sanitize-with-extreme-prejudice", ARG_NONE},
   {"*t", "proxy-ntlm",               ARG_BOOL},
   {"*u", "crlf",                     ARG_BOOL},
   {"*v", "stderr",                   ARG_FILENAME},
@@ -1027,6 +1028,10 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         if(config->maxredirs < -1)
           return PARAM_BAD_NUMERIC;
         break;
+
+	  case 'S': /* --sanitize-with-extreme-prejudice */
+		config->sanitize_with_extreme_prejudice = toggle;
+		break;
 
       case 't': /* --proxy-ntlm */
         if(!feature_ntlm)

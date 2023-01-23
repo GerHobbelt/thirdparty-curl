@@ -299,6 +299,15 @@ struct OperationConfig {
   struct State state;             /* for create_transfer() */
   bool rm_partial;                /* on error, remove partially written output
                                      files */
+  bool sanitize_with_extreme_prejudice; /* Sanitize URLs with extreme prejudice, i.e.
+                                      accept some pretty shoddy input and make
+									  the best of it.
+									  Output filenames are also sanitized with extreme
+									  prejudice: on all platform we will ensure
+									  that the generated filenames are 'sane',
+									  i.e. non-hidden (UNIX dotfiles) and without
+									  any crufty chracters that may thwart your
+									  fileesystem. */
 };
 
 struct GlobalConfig {
