@@ -67,7 +67,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   bool noclobber;
   bool overwrite;
   int duplicate = 1;
-  char* name = outs->filename;
+  char* fname = outs->filename;
   char* aname = NULL;
   size_t fn_ext_pos = 0;
   char* fn_ext = NULL;
@@ -78,7 +78,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   DEBUGASSERT(config);
 
   global = config->global;
-  if(!name || !*name) {
+  if(!fname || !*fname) {
     warnf(global, "Remote filename has no length!\n");
     return FALSE;
   }
@@ -87,12 +87,12 @@ bool tool_create_output_file(struct OutStruct *outs,
 
   if(config->output_dir && outs->is_cd_filename) {
     /* default behaviour: don't overwrite existing files */
-    aname = aprintf("%s/%s", config->output_dir, name);
+    aname = aprintf("%s/%s", config->output_dir, fname);
     if(!aname) {
       errorf(global, "out of memory\n");
       return FALSE;
     }
-    name = aname;
+    fname = aname;
 	overwrite = FALSE;
   }
   else {
@@ -101,22 +101,22 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   if (noclobber) {
-	  const char *p = strrchr(name, '.');
+	  const char *p = strrchr(fname, '.');
 	  if (!p || strchr(p, '/')) {
 		  /* filename has no extension */
-		  fn_ext_pos = strlen(name);
+		  fn_ext_pos = strlen(fname);
 	  }
 	  else {
-		  fn_ext_pos = p - name;
+		  fn_ext_pos = p - fname;
 	  }
-	  fn_ext = strdup(name + fn_ext_pos);
+	  fn_ext = strdup(fname + fn_ext_pos);
   }
 
   if (config->create_dirs) {
-	  CURLcode result = create_dir_hierarchy(name, global->errors);
+	  CURLcode result = create_dir_hierarchy(fname, global->errors);
 	  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
 	  if (result) {
-		  warnf(global, "Failed to create the path directories to file %s: %s\n", name,
+		  warnf(global, "Failed to create the path directories to file %s: %s\n", fname,
 			  strerror(errno));
 		  free(aname);
 		  return FALSE;
@@ -127,7 +127,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   for (;;) {
 	  if (!overwrite) {
 		  /* do not overwrite existing file */
-		  int fd = open(name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+		  int fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
 		  if (fd != -1) {
 			  file = fdopen(fd, "wb");
 			  if (!file)
@@ -142,7 +142,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 		  
 		     Of course, this will arrive at a possibly incorrect conclusion in the **fringe case** where *only* the existing file is inaccessible-for-reading due to strict user access limitations, but then one should not download new data while pointing at such a specifically protected file anyway.
            */
-		  fd = open(name, O_RDONLY | O_BINARY, OPENMODE);
+		  fd = open(fname, O_RDONLY | O_BINARY, OPENMODE);
 		  if (fd == -1) {
 			  break;
 		  }
@@ -150,7 +150,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 
 		  /* when we get here, we've got a collision with an existing file and want to use a unique output name for our file */
 		  {
-			  char* newname = aprintf("%.*s-%04d%s", (int)fn_ext_pos, name, duplicate, fn_ext);
+			  char* newname = aprintf("%.*s-%04d%s", (int)fn_ext_pos, fname, duplicate, fn_ext);
 			  duplicate++;
 			  free(aname);
 			  aname = NULL;
@@ -159,12 +159,12 @@ bool tool_create_output_file(struct OutStruct *outs,
 			  }
 			  free(per->outfile);
 			  outs->alloc_filename = TRUE;
-			  /* aname = */ name = outs->filename = newname;
+			  /* aname = */ fname = outs->filename = newname;
 			  per->outfile = strdup(newname);
 		  }
 	  }
 	  else {
-		  file = fopen(name, "wb");
+		  file = fopen(fname, "wb");
 		  break;
 	  }
   }
@@ -175,17 +175,17 @@ bool tool_create_output_file(struct OutStruct *outs,
      (config->file_clobber_mode == CLOBBER_DEFAULT &&
       !outs->is_cd_filename)) {
     /* open file for writing */
-    file = fopen(name, "wb");
+    file = fopen(fname, "wb");
   }
   else {
     int fd;
     do {
-      fd = open(name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+      fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
       /* Keep retrying in the hope that it isn't interrupted sometime */
     } while(fd == -1 && errno == EINTR);
     if(config->file_clobber_mode == CLOBBER_NEVER && fd == -1) {
       int next_num = 1;
-      size_t len = strlen(name);
+      size_t len = strlen(fname);
       size_t newlen = len + 13; /* nul + 1-11 digits + dot */
       char *newname;
       /* Guard against wraparound in new filename */
@@ -200,7 +200,7 @@ bool tool_create_output_file(struct OutStruct *outs,
         free(aname);
         return FALSE;
       }
-      memcpy(newname, name, len);
+      memcpy(newname, fname, len);
       newname[len] = '.';
       while(fd == -1 && /* haven't successfully opened a file */
             (errno == EEXIST || errno == EISDIR) &&
