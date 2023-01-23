@@ -1455,7 +1455,7 @@ static CURLcode reinit_hostname(struct Curl_cfilter *cf)
     eport = cf->conn->remote_port;
   }
 
-  /* change iff ehostname changes */
+  /* change if ehostname changed */
   if(ehostname && (!connssl->hostname
                    || strcmp(ehostname, connssl->hostname))) {
     free_hostname(connssl);
