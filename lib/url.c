@@ -1829,7 +1829,8 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
                     CURLU_NON_SUPPORT_SCHEME |
                     (data->set.disallow_username_in_url ?
                      CURLU_DISALLOW_USER : 0) |
-                    (data->set.path_as_is ? CURLU_PATH_AS_IS : 0));
+                    (data->set.path_as_is ? CURLU_PATH_AS_IS : 0) |
+		            CURLU_ALLOW_SPACE);
     if(uc) {
       DEBUGF(infof(data, "curl_url_set rejected %s: %s", data->state.url,
                    curl_url_strerror(uc)));

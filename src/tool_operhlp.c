@@ -84,7 +84,7 @@ CURLcode add_file_name_to_url(CURL *curl, char **inurlp, const char *filename)
   if(uh) {
     char *ptr;
     if(curl_url_set(uh, CURLUPART_URL, *inurlp,
-                    CURLU_GUESS_SCHEME|CURLU_NON_SUPPORT_SCHEME))
+                    CURLU_GUESS_SCHEME|CURLU_NON_SUPPORT_SCHEME|CURLU_ALLOW_SPACE))
       goto fail;
     if(curl_url_get(uh, CURLUPART_PATH, &path, 0))
       goto fail;
@@ -160,7 +160,7 @@ CURLcode get_url_file_name(char **filename, const char *url)
 
   *filename = NULL;
 
-  if(!curl_url_set(uh, CURLUPART_URL, url, CURLU_GUESS_SCHEME) &&
+  if(!curl_url_set(uh, CURLUPART_URL, url, CURLU_GUESS_SCHEME | CURLU_ALLOW_SPACE) &&
      !curl_url_get(uh, CURLUPART_PATH, &path, 0)) {
     curl_url_cleanup(uh);
 

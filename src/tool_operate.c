@@ -789,7 +789,7 @@ static const char *url_proto(char *url, struct OperationConfig* config)
   if(uh) {
     if(url) {
       if(!curl_url_set(uh, CURLUPART_URL, url,
-                       CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME)) {
+                       CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME | CURLU_ALLOW_SPACE)) {
         char *schemep = NULL;
         if(!curl_url_get(uh, CURLUPART_SCHEME, &schemep,
                          CURLU_DEFAULT_SCHEME) &&
@@ -2248,6 +2248,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->hsts)
           my_setopt_str(curl, CURLOPT_HSTS, config->hsts);
 
+		if (config->sanitize_with_extreme_prejudice)
+			my_setopt_str(curl, CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, 1L);
+
         /* initialize retry vars for loop below */
         per->retry_sleep_default = (config->retry_delay) ?
           config->retry_delay*1000L : RETRY_SLEEP_DEFAULT; /* ms */
@@ -2754,7 +2757,6 @@ static CURLcode run_all_transfers(struct GlobalConfig *global,
   /* Reset the global config variables */
   global->noprogress = orig_noprogress;
   global->isatty = orig_isatty;
-
 
   return result;
 }
