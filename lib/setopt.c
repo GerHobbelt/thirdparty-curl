@@ -2995,8 +2995,11 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.path_as_is = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
   case CURLOPT_NOCLOBBER_OUTPUT_FILE:
-	data->set.noclobber_output_file = (0 != va_arg(param, long)) ? TRUE : FALSE;
-    break;
+  {
+	  long state = va_arg(param, long);
+	  data->set.file_clobber_mode = state < 0 ? CLOBBER_DEFAULT : state == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
+  }
+	break;
   case CURLOPT_PIPEWAIT:
     data->set.pipewait = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;

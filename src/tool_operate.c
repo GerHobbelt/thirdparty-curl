@@ -1128,6 +1128,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           break;
 
         if(state->outfiles) {
+		  DEBUGASSERT(per->outfile == NULL);
           per->outfile = strdup(state->outfiles);
           if(!per->outfile) {
             result = CURLE_OUT_OF_MEMORY;
@@ -1145,6 +1146,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           if(!per->outfile) {
             /* extract the file name from the URL */
+			DEBUGASSERT(per->outfile == NULL);
             result = get_url_file_name(&per->outfile, per->this_url);
             if(result) {
               errorf(global, "Failed to extract a sensible file name"
@@ -1237,8 +1239,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           else {
             outs->stream = NULL; /* open when needed */
           }
-          outs->filename = per->outfile;
-          outs->s_isreg = TRUE;
+          outs->filename = strdup(per->outfile);
+		  outs->alloc_filename = TRUE;
+		  outs->s_isreg = TRUE;
         }
 
         if(per->uploadfile && !stdin_upload(per->uploadfile)) {

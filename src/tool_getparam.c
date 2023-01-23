@@ -350,7 +350,6 @@ static const struct LongShort aliases[]= {
   {"#",  "progress-bar",             ARG_BOOL},
   {"#l", "tcp-maxseg",               ARG_STRING},
   {"#m", "progress-meter",           ARG_BOOL},
-  {"#n", "clobber",                  ARG_BOOL},
   {":",  "next",                     ARG_NONE},
 };
 
@@ -1436,9 +1435,6 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'm': /* --progress-meter */
         global->noprogress = !toggle;
         break;
-	  case 'n': /* --clobber / --no-clobber */
-		  config->noclobber_output_file = !toggle;
-		  break;
 	  default:  /* --progress-bar */
         global->progressmode =
           toggle ? CURL_PROGRESS_BAR : CURL_PROGRESS_STATS;
