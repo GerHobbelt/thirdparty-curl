@@ -123,54 +123,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  }
   }
 
-#if 0
-  for (;;) {
-	  if (!overwrite) {
-		  /* do not overwrite existing file */
-		  int fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
-		  if (fd != -1) {
-			  file = fdopen(fd, "wb");
-			  if (!file)
-				  close(fd);
-			  break;
-		  }
-
-		  if (!noclobber)
-			  break;
-
-		  /* check if we can open the file at all, i.e. if it actually exists. If not, we've got an invalid destination path.
-		  
-		     Of course, this will arrive at a possibly incorrect conclusion in the **fringe case** where *only* the existing file is inaccessible-for-reading due to strict user access limitations, but then one should not download new data while pointing at such a specifically protected file anyway.
-           */
-		  fd = open(fname, O_RDONLY | O_BINARY, OPENMODE);
-		  if (fd == -1) {
-			  break;
-		  }
-		  close(fd);
-
-		  /* when we get here, we've got a collision with an existing file and want to use a unique output name for our file */
-		  {
-			  char* newname = aprintf("%.*s-%04d%s", (int)fn_ext_pos, fname, duplicate, fn_ext);
-			  duplicate++;
-			  free(aname);
-			  aname = NULL;
-			  if (outs->alloc_filename) {
-				free(outs->filename);
-			  }
-			  free(per->outfile);
-			  outs->alloc_filename = TRUE;
-			  /* aname = */ fname = outs->filename = newname;
-			  per->outfile = strdup(newname);
-		  }
-	  }
-	  else {
-		  file = fopen(fname, "wb");
-		  break;
-	  }
-  }
-
-#else
-
   if(config->file_clobber_mode == CLOBBER_ALWAYS ||
      (config->file_clobber_mode == CLOBBER_DEFAULT &&
       !outs->is_cd_filename)) {
@@ -227,7 +179,6 @@ bool tool_create_output_file(struct OutStruct *outs,
         close(fd);
     }
   }
-#endif
 
   free(fn_ext);
 
