@@ -47,6 +47,7 @@ struct per_transfer {
   int infd;
   bool noprogress;
   struct ProgressData progressbar;
+  struct ProgressPercent progresspercent;
   struct OutStruct outs;
   struct OutStruct heads;
   struct OutStruct etag_save;
@@ -55,7 +56,7 @@ struct per_transfer {
   long num_headers;
   bool was_last_header_empty;
 
-  bool added; /* set TRUE when added to the multi handle */
+  bool added;     /* set TRUE when added to the multi handle */
   time_t startat; /* when doing parallel transfers, this is a retry transfer
                      that has been set to sleep until this time before it
                      should get started (again) */
