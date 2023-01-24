@@ -289,7 +289,13 @@ bool tool_create_output_file(struct OutStruct *outs,
       errorf(global, "out of memory\n");
       return FALSE;
     }
-    fname = aname;
+
+	if (outs->alloc_filename)
+		free(outs->filename);
+	fname = outs->filename = aname;
+	outs->alloc_filename = TRUE;
+	aname = NULL;
+
 	clobber_mode = CLOBBER_NEVER;
   }
   else {
