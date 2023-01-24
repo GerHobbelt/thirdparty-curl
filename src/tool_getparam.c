@@ -1098,36 +1098,107 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case '~': /* --xattr */
         config->xattr = toggle;
         break;
-      case '@': /* the URL! */
-      {
-        struct getout *url;
+		case '@': /* --url = the URL! */
+			if (nextarg[0] == '@') {
+				/* read many URLs from a file or stdin */
+				char* string;
+				size_t len;
+				bool use_stdin = !strcmp(&nextarg[1], "-");
+				FILE* file = use_stdin ? stdin : fopen(&nextarg[1], FOPEN_READTEXT);
+				if (!file)
+					warnf(global, "Failed to open %s!\n", &nextarg[1]);
+				else {
+					err = file2memory(&string, &len, file);
+					if (!err && string) {
+						/* Allow strtok() here since this isn't used threaded */
+						/* !checksrc! disable BANNEDFUNC 2 */
+						char* h = strtok(string, "\r\n");
+						while (h) {
+							// trim leading & trailing whitespace
+							while (*h && isspace(*h))
+								h++;
+							char* e = h + strlen(h);
+							while (e > h && isspace(e[-1]))
+								e--;
+							*e = 0;
+							// only add non-empty lines as URLs
+							if (*h) {
+								struct getout* url;
 
-        if(!config->url_get)
-          config->url_get = config->url_list;
+								if (!config->url_get)
+									config->url_get = config->url_list;
 
-        if(config->url_get) {
-          /* there's a node here, if it already is filled-in continue to find
-             an "empty" node */
-          while(config->url_get && (config->url_get->flags & GETOUT_URL))
-            config->url_get = config->url_get->next;
-        }
+								if (config->url_get) {
+									/* there's a node here, if it already is filled-in continue to find
+									   an "empty" node */
+									while (config->url_get && (config->url_get->flags & GETOUT_URL))
+										config->url_get = config->url_get->next;
+								}
 
-        /* now there might or might not be an available node to fill in! */
+								/* now there might or might not be an available node to fill in! */
 
-        if(config->url_get)
-          /* existing node */
-          url = config->url_get;
-        else
-          /* there was no free node, create one! */
-          config->url_get = url = new_getout(config);
+								if (config->url_get)
+									/* existing node */
+									url = config->url_get;
+								else
+									/* there was no free node, create one! */
+									config->url_get = url = new_getout(config);
 
-        if(!url)
-          return PARAM_NO_MEM;
+								if (!url)
+									return PARAM_NO_MEM;
 
-        /* fill in the URL */
-        GetStr(&url->url, nextarg);
-        url->flags |= GETOUT_URL;
-      }
+								/* fill in the URL */
+								if (global->tracetype) {
+									fprintf(global->errors, "+ Adding URL to the queue:  %s\n", h);
+								}
+								//notef(global, "adding to the queue: URL: %s\n", h);
+								GetStr(&url->url, h);
+								url->flags |= GETOUT_URL;
+							}
+							if (err)
+								break;
+							h = strtok(NULL, "\r\n");
+						}
+						free(string);
+					}
+					if (!use_stdin)
+						fclose(file);
+					if (err) {
+						errorf(global, "out of memory while parsing URL list file '%s'\n", &nextarg[1]);
+						return err;
+					}
+				}
+			}
+			else {
+				struct getout* url;
+
+				if (!config->url_get)
+					config->url_get = config->url_list;
+
+				if (config->url_get) {
+					/* there's a node here, if it already is filled-in continue to find
+					   an "empty" node */
+					while (config->url_get && (config->url_get->flags & GETOUT_URL))
+						config->url_get = config->url_get->next;
+				}
+
+				/* now there might or might not be an available node to fill in! */
+
+				if (config->url_get)
+					/* existing node */
+					url = config->url_get;
+				else
+					/* there was no free node, create one! */
+					config->url_get = url = new_getout(config);
+
+				if (!url)
+					return PARAM_NO_MEM;
+
+				/* fill in the URL */
+				GetStr(&url->url, nextarg);
+				url->flags |= GETOUT_URL;
+			}
+			break;
       }
       break;
     case '$': /* more options without a short option */
