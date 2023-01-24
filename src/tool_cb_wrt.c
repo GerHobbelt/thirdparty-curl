@@ -184,12 +184,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 						  }
 
 						  // strip off ';charset=...' bits and such-like:
-						  char* mime_str = NULL;
-						  if (SANITIZE_ERR_OK != sanitize_file_name(&mime_str, mime_ext, 0)) {
-							  errorf(global, "failure during mime-type-for-filename-extension sanitization: out of memory?\n");
-							  free(fn);
-							  return FALSE;
-						  }
+						  char* mime_str = strdup(mime_ext);
 
 						  mime_ext = mime_str;
 						  char* m_end = strchr(mime_ext, ';');
@@ -206,20 +201,20 @@ bool tool_create_output_file(struct OutStruct *outs,
 
 						  char* m_last = strrchr(mime_ext, '-');
 						  if (m_last) {
-							  strncpy(new_ext, m_last + 1, sizeof(new_ext));
-							  free(mime_str);
-							  break;
+							  mime_ext = m_last + 1;
 						  }
 						  m_end = strchr(mime_ext, '.');
-						  if (!m_end) {
-							  strncpy(new_ext, mime_ext, sizeof(new_ext));
+						  if (m_end) {
+							  m_end[0] = 0;
+						  }
+						  size_t cp_len = strlen(mime_ext);
+						  if (cp_len > sizeof(new_ext) - 1) {
+							  // 'extension' too long: forget it!
+							  new_ext[0] = 0;
 							  free(mime_str);
 							  break;
 						  }
-						  size_t cp_len = strlen(mime_ext);
-						  if (cp_len > sizeof(new_ext))
-							  cp_len = sizeof(new_ext);
-						  strncpy(new_ext, mime_ext, cp_len);
+						  strncpy(new_ext, mime_ext, sizeof(new_ext));
 						  free(mime_str);
 						  break;
 					  }
@@ -227,6 +222,20 @@ bool tool_create_output_file(struct OutStruct *outs,
 			  }
 		  }
 		  new_ext[sizeof(new_ext) - 1] = 0;
+
+		  // sanitize new_ext: we are only interested in derived extensions containing letters and numbeers:
+		  // e.g. 'html, 'mp3', ...
+		  for (const char* p = new_ext; *p; p++) {
+			  if (*p >= '0' && *p <= '9')
+				  continue;
+			  if (*p >= 'a' && *p <= 'z')
+				  continue;
+			  if (*p >= 'A' && *p <= 'Z')
+				  continue;
+			  // bad character encountered: nuke the entire extension!
+			  new_ext[0] = 0;
+			  break;
+		  }
 
 		  if (!ext) {
 			  // when we could not determine a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown'
