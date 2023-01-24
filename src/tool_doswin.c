@@ -154,8 +154,23 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
     p = target;
 
   /* replace control characters and other banned characters */
+  bool dot = FALSE;
   for(; *p; ++p) {
     const char *banned;
+
+	if (*p == '.') {
+		if (!dot)
+			dot = TRUE;
+		else {
+			// previous character was a '.' as well: sanitize them all!
+			p[-1] = '_';
+			*p = '_';
+			continue;
+		}
+	}
+	else {
+		dot = FALSE;
+	}
 
     if((1 <= *p && *p <= 31) || (*p == 0x7F) ||
        (!(flags & (SANITIZE_ALLOW_COLONS|SANITIZE_ALLOW_PATH)) && *p == ':') ||
