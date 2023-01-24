@@ -1827,6 +1827,9 @@ CURLcode Curl_preconnect(struct Curl_easy *data)
       return CURLE_OUT_OF_MEMORY;
   }
 
+  // reset noise suppression for noisy infos/warnings:
+  data->state.reported_need_more_data = FALSE;
+
   return CURLE_OK;
 }
 

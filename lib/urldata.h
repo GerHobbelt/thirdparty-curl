@@ -1456,6 +1456,7 @@ struct UrlState {
   BIT(rewindbeforesend);/* TRUE when the sending couldn't be stopped even
                            though it will be discarded. We must call the data
                            rewind callback before trying to send again. */
+  BIT(reported_need_more_data);   /* noise suppression for this info/warning */
 };
 
 /*

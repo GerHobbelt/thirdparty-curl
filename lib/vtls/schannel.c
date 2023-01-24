@@ -2368,7 +2368,12 @@ schannel_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
       backend->encdata_is_incomplete = true;
       if(!*err)
         *err = CURLE_AGAIN;
-      infof(data, "schannel: failed to decrypt data, need more data");
+	  // This next message can become pretty obnoxious (noisy!) with some servers
+	  // (e.g. arxiv.org) so we only mention this one per request/response.
+	  if (!data->state.reported_need_more_data) {
+		infof(data, "schannel: failed to decrypt data, need more data (this is a benign issue; no user action required)");
+		data->state.reported_need_more_data = TRUE;
+	  }
       goto cleanup;
     }
     else {
