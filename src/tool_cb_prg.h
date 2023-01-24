@@ -48,7 +48,7 @@ struct ProgressPercent {
   curl_off_t     prev;
   struct timeval prevtime;
   FILE           *out;
-  uint           tick;
+  unsigned int   tick;
 };
 
 void progresspercentinit(struct ProgressPercent *perc,
