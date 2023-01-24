@@ -31,7 +31,8 @@ bool Curl_isunreserved(unsigned char in);
 enum urlreject {
   REJECT_NADA = 2,
   REJECT_CTRL,
-  REJECT_ZERO
+  REJECT_ZERO,
+  SANITIZE_CTRL,
 };
 
 CURLcode Curl_urldecode(const char *string, size_t length,

@@ -41,6 +41,7 @@
 #include "tool_getenv.h"
 #include "tool_operate.h"
 #include "tool_doswin.h"
+#include "escape.h"
 #include "sendf.h" /* for infof function prototype */
 
 #include "memdebug.h" /* keep this as LAST include */
@@ -118,9 +119,19 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  char* fn = find_last_of(fname, "\\/:");
 	  int fn_offset = (int)(fn - fname);
 
-	  if (SANITIZE_ERR_OK != sanitize_file_name(&fn, fn, 0)) {
-		  errorf(global, "failure during filename sanitization: out of memory?\n");
-		  return FALSE;
+	  // unescape possibly url-escaped filename for our convenience:
+	  {
+		  size_t len = strlen(fn);
+		  char* fn2 = NULL;
+		  if (CURLE_OK != Curl_urldecode(fn, len, &fn2, &len, SANITIZE_CTRL)) {
+			  errorf(global, "failure during filename sanitization: out of memory?\n");
+			  return FALSE;
+		  }
+
+		  if (SANITIZE_ERR_OK != sanitize_file_name(&fn, fn2, 0)) {
+			  errorf(global, "failure during filename sanitization: out of memory?\n");
+			  return FALSE;
+		  }
 	  }
 
 	  bool empty = !*fn;
@@ -236,7 +247,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 			  //    treat the filename extension as part of the filename instead.
 			  //    e.g. filename="3532342.3532351" --> ext="3532351", mimee-ext="html" --> new filename="3532342.3532351.html"
 
-			  if (!stricmp(new_ext, ext)) {
+			  if (curl_strequal(new_ext, ext)) {
 				  // 1. keep the ext... but lowercase it for convenience.
 				  strlwr(new_ext);
 				  ext = new_ext;

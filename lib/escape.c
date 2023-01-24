@@ -168,12 +168,14 @@ CURLcode Curl_urldecode(const char *string, size_t length,
       alloc -= 2;
     }
 
-    if(((ctrl == REJECT_CTRL) && (in < 0x20)) ||
+    if(((ctrl == REJECT_CTRL) && (in < 0x20 || in == 0x7F)) ||
        ((ctrl == REJECT_ZERO) && (in == 0))) {
       free(ns);
       return CURLE_URL_MALFORMAT;
     }
-
+	else if ((ctrl == SANITIZE_CTRL) && (in < 0x20 || in == 0x7F)) {
+	  in = '_';
+	}
     ns[strindex++] = in;
     string++;
   }

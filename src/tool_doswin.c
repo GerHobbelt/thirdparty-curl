@@ -157,7 +157,7 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
   for(; *p; ++p) {
     const char *banned;
 
-    if((1 <= *p && *p <= 31) ||
+    if((1 <= *p && *p <= 31) || (*p == 0x7F) ||
        (!(flags & (SANITIZE_ALLOW_COLONS|SANITIZE_ALLOW_PATH)) && *p == ':') ||
        (!(flags & SANITIZE_ALLOW_PATH) && (*p == '/' || *p == '\\'))) {
       *p = '_';
