@@ -164,7 +164,7 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
       continue;
     }
 
-    for(banned = "|<>\"?*"; *banned; ++banned) {
+    for(banned = "|<>\"&'~`?*$^;"; *banned; ++banned) {
       if(*p == *banned) {
         *p = '_';
         break;
