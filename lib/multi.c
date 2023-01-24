@@ -2515,7 +2515,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
             free(newurl);
             newurl = data->req.location;
             data->req.location = NULL;
-            result = Curl_follow(data, newurl, FOLLOW_FAKE);
+            result = Curl_follow(data, newurl, FOLLOW_REDIR /* FOLLOW_FAKE */ );
             free(newurl);
             if(result) {
               stream_error = TRUE;

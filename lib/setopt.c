@@ -2338,7 +2338,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
         Curl_cookie_cleanup(data->cookies);
         /* enable cookies since we now use a share that uses cookies! */
         data->cookies = data->share->cookies;
-      }
+		/* ... and announce the cookie engine is activated */
+		data->state.cookie_engine = TRUE;
+	  }
 #endif   /* CURL_DISABLE_HTTP */
 #ifndef CURL_DISABLE_HSTS
       if(data->share->hsts) {

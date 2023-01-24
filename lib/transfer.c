@@ -1712,7 +1712,7 @@ CURLcode Curl_follow(struct Curl_easy *data,
      *
      * ----
      *
-     * Many webservers expect this, so these servers often answers to a POST
+     * Many webservers expect this, so these servers often answer to a POST
      * request with an error page. To be sure that libcurl gets the page that
      * most user agents would get, libcurl has to force GET.
      *

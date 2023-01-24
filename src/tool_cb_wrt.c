@@ -128,9 +128,24 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  char* ext = strrchr(fn + hidden, '.');
 	  char new_ext[6] = "";
 
-	  int fn_length = ((!empty && ext) ? (ext - fn) : 100);
+	  int fn_length = ((!empty && ext) ? (ext - fn) : INT_MAX);
 
-	  if (!ext || !ext[1]) {
+	  // We would like to derive a 'sane' filename extension from the server-reported mime-type
+	  // when our current filename has NO extension.
+	  // We ALSO benefit from doing this when the actual filename has a 'nonsense extension',
+	  // which can happen due to the filename having been derived off the request URL, where
+	  // you might get something like:
+	  //     https://dl.acm.org/doi/abs/10.1145/3532342.3532351
+	  // and you would thus end up with thee 'nonsense filename':
+	  //     3532342.3532351
+	  // where appending a 'sane' mime-type based extension MIGHT help:
+
+	  if (!ext || !ext[1])
+		  ext = NULL;
+	  else
+		  ext++;
+
+	  {
 		  // construct a sane extension from the mime type if the filename doesn't have a porper extension yet.
 		  if (ctype) {
 			  static const char* mime_categories[] = {
@@ -140,6 +155,9 @@ bool tool_create_output_file(struct OutStruct *outs,
 				  "audio",
 				  "application"
 			  };
+
+			  // TODO: map known mime types, e.g. text/javascript, to extension, without using the heuristic code below.
+
 			  for (int i = 0; i < sizeof(mime_categories) / sizeof(mime_categories[0]); i++) {
 				  const int cat_len = strlen(mime_categories[i]);
 				  if (!strncmp(mime_categories[i], ctype, cat_len)) {
@@ -199,16 +217,48 @@ bool tool_create_output_file(struct OutStruct *outs,
 		  }
 		  new_ext[sizeof(new_ext) - 1] = 0;
 
-		  // when we could not determinee a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown'
-		  if (!*new_ext || strlen(new_ext) == sizeof(new_ext) - 1) {
-			  ext = "unknown";
+		  if (!ext) {
+			  // when we could not determine a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown'
+			  if (!*new_ext || strlen(new_ext) == sizeof(new_ext) - 1) {
+				  ext = "unknown";
+			  }
+			  else {
+				  strlwr(new_ext);    // lowercase extension for convenience
+				  ext = new_ext;
+			  }
 		  }
 		  else {
-			  ext = new_ext;
+			  // we already have an extension for the filename, but the mime-type derived one might be 'saner'.
+			  // There are now 3 scenarios to consider:
+			  // 1. both extensions are the same (case-*IN*sensitive comparison, because '.PDF' == '.pdf' for our purposes!)
+			  // 2. the filename extension is 'sane', the mime-derived one isn't so much: keep the filename ext as-is.
+			  // 3. the filename extension is less 'sane' than the mime-derived one. Append the mime-ext, i.e.
+			  //    treat the filename extension as part of the filename instead.
+			  //    e.g. filename="3532342.3532351" --> ext="3532351", mimee-ext="html" --> new filename="3532342.3532351.html"
+
+			  if (!stricmp(new_ext, ext)) {
+				  // 1. keep the ext... but lowercase it for convenience.
+				  strlwr(new_ext);
+				  ext = new_ext;
+			  }
+			  else {
+				  bool mime_ext_is_sane = (*new_ext && strlen(new_ext) < sizeof(new_ext) - 1);
+				  bool mime_ext_is_preferred = (!strcmp("html", new_ext) || !strcmp("js", new_ext) || !strcmp("css", new_ext)); /* TODO: vet the set of known-good extensions */
+				  DEBUGASSERT(*ext);
+				  if ( ! (
+					     mime_ext_is_preferred ||
+						 (mime_ext_is_sane && strlen(ext) > strlen(new_ext))
+				  )) {
+					  // 2. no-op
+				  }
+				  else {
+					  // 3. drop file ext; use mime ext.
+				      fn_length = INT_MAX;
+					  strlwr(new_ext);    // lowercase extension for convenience
+					  ext = new_ext;
+				  }
+			  }
 		  }
-	  }
-	  else {
-		  ext++;
 	  }
 
 	  aname = aprintf("%.*s%s%.*s.%s", fn_offset, fname, (hidden ? "___" : ""), fn_length, (empty ? "__download__" : fn), ext);
