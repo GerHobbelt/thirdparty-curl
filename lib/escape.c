@@ -229,3 +229,75 @@ void curl_free(void *p)
 {
   free(p);
 }
+
+/*
+* Clean single line input for display on the stdout: replace control characters,
+* keeep it otherwise as-is.
+*
+* Note: CR/LF are therefore also considered undesirable control codes in this context.
+*/
+char* curl_clean_for_printing_to_console(const char* url)
+{
+	size_t len = strlen(url);
+	// worst-worst case it's all control characters, which take 5 per 1:
+	char* dst = malloc(5 * len + 1);
+	if (!dst)
+		return NULL;
+	char* p;
+	static const char* ctrl_table[] = {
+		"<SOH>",    // Start of Heading
+		"<STX>",    // Start of Text
+		"<ETX>",    // End of Text
+		"<EOT>",    // End of Transmission
+		"<ENQ>",    // Enquiry
+		"<ACK>",    // Acknowledge
+		"<BEL>",    // Bell, Alert
+		"<BS>",    // Backspace
+		"<HT>",    // Horizontal Tab
+		"<LF>",    // Line Feed
+		"<VT>",    // Vertical Tabulation
+		"<FF>",    // Form Feed
+		"<CR>",    // Carriage Return
+		"<SO>",    // Shift Out
+		"<SI>",    // Shift In
+		"<DLE>",    // Data Link Escape
+		"<DC1>",    // Device Control One(XON)
+		"<DC2>",    // Device Control Two
+		"<DC3>",    // Device Control Three(XOFF)
+		"<DC4>",    // Device Control Four
+		"<NAK>",    // Negative Acknowledge
+		"<SYN>",    // Synchronous Idle
+		"<ETB>",    // End of Transmission Block
+		"<CAN>",    // Cancel
+		"<EM>",    // End of medium
+		"<SUB>",    // Substitute
+		"<ESC>",    // Escape
+		"<FS>",    // File Separator
+		"<GS>",    // Group Separator
+		"<RS>",    // Record Separator
+		"<US>",    // Unit Separator
+		"<DEL>",    // Delete
+	};
+
+	for (p = dst; *url; url++)
+	{
+		unsigned int c = *url;
+		if (c < 32)
+		{
+			strcpy(p, ctrl_table[c - 1]);
+			p += strlen(p);
+		}
+		else if (c == 127)
+		{
+			strcpy(p, ctrl_table[31]);
+			p += strlen(p);
+		}
+		else
+		{
+			*p++ = c;
+		}
+	}
+	*p = 0;
+	DEBUGASSERT(p - dst < 5 * len + 1);
+	return dst;
+}

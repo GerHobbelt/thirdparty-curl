@@ -386,6 +386,12 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
   CURL *curl = per->curl;
   struct OperationConfig *config = per->config;
 
+  {
+	  char* cleaned_url = curl_clean_for_printing_to_console(per->this_url);
+	  Curl_infof(per->curl, "Processed URL: %s", cleaned_url);
+	  free(cleaned_url);
+  }
+
   if(!curl || !config)
     return result;
 

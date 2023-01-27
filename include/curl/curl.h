@@ -2721,6 +2721,15 @@ CURL_EXTERN char *curl_easy_unescape(CURL *handle,
 CURL_EXTERN char *curl_unescape(const char *string,
                                 int length);
 
+
+/*
+* Clean single line input for display on the stdout: replace control characters,
+* keeep it otherwise as-is.
+*
+* Note: CR/LF are therefore also considered undesirable control codes in this context.
+*/
+CURL_EXTERN char* curl_clean_for_printing_to_console(const char* url);
+
 /*
  * NAME curl_free()
  *
