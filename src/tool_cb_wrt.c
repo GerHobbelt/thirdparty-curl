@@ -77,15 +77,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   struct GlobalConfig *global;
   struct OperationConfig *config;
   FILE *file = NULL;
-  enum {
-	  CLOBBER_DEFAULT, /* Provides compatibility with previous versions of curl,
-						  by using the default behavior for -o, -O, and -J.
-						  If those options would have overwritten files, like
-						  -o and -O would, then overwrite them. In the case of
-						  -J, this will not overwrite any files. */
-	  CLOBBER_NEVER, /* If the file exists, always fail */
-	  CLOBBER_ALWAYS /* If the file exists, always overwrite it */
-  } clobber_mode;
+  file_clobber_mode_t clobber_mode;
   int duplicate = 1;
   char* fname = outs->filename;
   char* aname = NULL;

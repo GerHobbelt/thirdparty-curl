@@ -1861,15 +1861,7 @@ struct UserDefined {
   BIT(tcp_fastopen);   /* use TCP Fast Open */
   BIT(ssl_enable_alpn);/* TLS ALPN extension? */
   BIT(path_as_is);     /* allow dotdots? */
-  enum {
-	  CLOBBER_DEFAULT, /* Provides compatibility with previous versions of curl,
-						  by using the default behavior for -o, -O, and -J.
-						  If those options would have overwritten files, like
-						  -o and -O would, then overwrite them. In the case of
-						  -J, this will not overwrite any files. */
-  	  CLOBBER_NEVER, /* If the file exists, always fail */
-	  CLOBBER_ALWAYS /* If the file exists, always overwrite it */
-  } file_clobber_mode;
+  file_clobber_mode_t file_clobber_mode;
   BIT(pipewait);       /* wait for multiplex status before starting a new
                           connection */
   BIT(suppress_connect_headers); /* suppress proxy CONNECT response headers

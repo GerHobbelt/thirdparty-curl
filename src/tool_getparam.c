@@ -2660,6 +2660,20 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
     }
   }
 
+  // apply some sane defaults when --output-dir was specified without much anything else:
+  if (config->output_dir && (config->file_clobber_mode == CLOBBER_DEFAULT)) {
+	  config->file_clobber_mode = CLOBBER_NEVER;
+  }
+  if (config->output_dir && config->url_list && !(config->url_list->flags & GETOUT_USEREMOTE)) {
+	  config->default_node_flags = GETOUT_USEREMOTE;
+	  struct getout* url = config->url_list;
+	  while (url) {
+		  if (!url->outfile)
+			  url->flags |= GETOUT_USEREMOTE;
+		  url = url->next;
+	  }
+  }
+
   if(!result && config->content_disposition) {
     if(config->show_headers)
       result = PARAM_CONTDISP_SHOW_HEADER;
