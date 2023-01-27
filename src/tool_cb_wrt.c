@@ -524,6 +524,14 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
       warnf(config->global, "Binary output can mess up your terminal. "
             "Use \"--output -\" to tell curl to output it to your terminal "
             "anyway, or consider \"--output <FILE>\" to save to a file.\n");
+
+	  if (config->output_dir) {
+		  warnf(config->global, "\n");
+		  warnf(config->global, "By the way: you specified --output-dir "
+			  "but output is still written to stdout as you apperently did not "
+			  "specify an --output or --remote-name-all option. Might be you "
+			  "wanted to do that?\n");
+	  }
       config->synthetic_error = TRUE;
       return CURL_WRITEFUNC_ERROR;
     }
