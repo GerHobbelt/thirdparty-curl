@@ -2513,7 +2513,8 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
           /* after the transfer is done, go DONE */
 
           /* but first check to see if we got a location info even though we're
-             not following redirects */
+             not following redirects -- oh, news update! We now DO follow these 
+			 redirects. */
           if(data->req.location) {
             free(newurl);
             newurl = data->req.location;
