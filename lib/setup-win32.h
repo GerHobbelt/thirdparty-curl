@@ -47,12 +47,12 @@
  * warnings and macro clashes.
  * Make sure to define this macro before including any Windows headers.
  */
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#  endif
-#  ifndef NOGDI
-#    define NOGDI
-#  endif
+//#  ifndef WIN32_LEAN_AND_MEAN
+//#    define WIN32_LEAN_AND_MEAN
+//#  endif
+//#  ifndef NOGDI
+//#    define NOGDI
+//#  endif
 #  ifdef HAVE_WINSOCK2_H
 #    include <winsock2.h>
 #    ifdef HAVE_WS2TCPIP_H

@@ -1170,9 +1170,9 @@ then
       AC_LINK_IFELSE([
         AC_LANG_PROGRAM([[
 #ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+//#ifndef WIN32_LEAN_AND_MEAN
+//#define WIN32_LEAN_AND_MEAN
+//#endif
 #include <windows.h>
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
