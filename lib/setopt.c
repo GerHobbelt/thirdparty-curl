@@ -1474,7 +1474,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_TIMEOUT_MS:
     uarg = va_arg(param, unsigned long);
-    if(uarg >= UINT_MAX)
+    if(uarg > UINT_MAX)
       uarg = UINT_MAX;
     data->set.timeout = (unsigned int)uarg;
     break;
@@ -1492,7 +1492,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_CONNECTTIMEOUT_MS:
     uarg = va_arg(param, unsigned long);
-    if(uarg >= UINT_MAX)
+    if(uarg > UINT_MAX)
       uarg = UINT_MAX;
     data->set.connecttimeout = (unsigned int)uarg;
     break;
@@ -1510,7 +1510,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * The maximum time for curl to wait for FTP server connect
      */
     uarg = va_arg(param, unsigned long);
-    if(uarg >= UINT_MAX)
+    if(uarg > UINT_MAX)
       uarg = UINT_MAX;
     data->set.accepttimeout = (unsigned int)uarg;
     break;
@@ -3032,7 +3032,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS:
     uarg = va_arg(param, unsigned long);
-    if(uarg >= UINT_MAX)
+    if(uarg > UINT_MAX)
       uarg = UINT_MAX;
     data->set.happy_eyeballs_timeout = (unsigned int)uarg;
     break;
