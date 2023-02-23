@@ -1976,7 +1976,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           my_setopt(curl, CURLOPT_XFERINFODATA, per);
         }
         else if((global->progressmode == CURL_PROGRESS_PERCENT) &&
-           !global->noprogress && !global->mute) {
+           !global->noprogress) {
           progresspercentinit(&per->progresspercent, config);
           my_setopt(curl, CURLOPT_XFERINFOFUNCTION, tool_progress_pct);
           my_setopt(curl, CURLOPT_XFERINFODATA, per);
