@@ -1116,11 +1116,10 @@ CURLcode Curl_loadhostpairs(struct Curl_easy *data)
       char *port_ptr;
       char *end_ptr;
       bool permanent = TRUE;
-      char *host_begin;
       unsigned long tmp_port;
       bool error = true;
+      char *host_begin = hostp->data;
 
-      host_begin = hostp->data;
       if(host_begin[0] == '+') {
         host_begin++;
         permanent = FALSE;
