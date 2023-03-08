@@ -169,7 +169,7 @@ typedef CURLcode (*Curl_datastream)(struct Curl_easy *data,
 #include "rtsp.h"
 #include "smb.h"
 #include "mqtt.h"
-#include "wildcard.h"
+#include "ftplistparser.h"
 #include "multihandle.h"
 #include "c-hyper.h"
 #include "cf-socket.h"
@@ -1952,7 +1952,7 @@ struct Curl_easy {
   struct UrlState state;       /* struct for fields used for state info and
                                   other dynamic purposes */
 #ifndef CURL_DISABLE_FTP
-  struct WildcardData wildcard; /* wildcard download state info */
+  struct WildcardData *wildcard; /* wildcard download state info */
 #endif
   struct PureInfo info;        /* stats, reports and info data */
   struct curl_tlssessioninfo tsi; /* Information about the TLS session, only
