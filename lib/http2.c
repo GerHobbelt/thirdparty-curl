@@ -98,7 +98,6 @@ static size_t populate_binsettings(uint8_t *binsettings,
 struct cf_h2_ctx {
   nghttp2_session *h2;
   uint32_t max_concurrent_streams;
-  bool enable_push;
   /* The easy handle used in the current filter call, cleared at return */
   struct cf_call_data call_data;
 
@@ -116,6 +115,10 @@ struct cf_h2_ctx {
   int32_t pause_stream_id; /* stream ID which paused
                               nghttp2_session_mem_recv */
   size_t drain_total; /* sum of all stream's UrlState.drain */
+  int32_t goaway_error;
+  int32_t last_stream_id;
+  BIT(goaway);
+  BIT(enable_push);
 };
 
 /* How to access `call_data` from a cf_h2 filter */
@@ -364,41 +367,42 @@ static void http2_stream_free(struct HTTP *stream)
 }
 
 /*
+ * Returns nonzero if current HTTP/2 session should be closed.
+ */
+static int should_close_session(struct cf_h2_ctx *ctx)
+{
+  return ctx->drain_total == 0 && !nghttp2_session_want_read(ctx->h2) &&
+    !nghttp2_session_want_write(ctx->h2);
+}
+
+/*
  * The server may send us data at any point (e.g. PING frames). Therefore,
  * we cannot assume that an HTTP/2 socket is dead just because it is readable.
  *
  * Check the lower filters first and, if successful, peek at the socket
  * and distinguish between closed and data.
  */
-static bool http2_connisdead(struct Curl_cfilter *cf, struct Curl_easy *data)
+static bool http2_connisalive(struct Curl_cfilter *cf, struct Curl_easy *data,
+                              bool *input_pending)
 {
   struct cf_h2_ctx *ctx = cf->ctx;
-  int sval;
-  bool dead = TRUE;
+  bool alive = TRUE;
 
-  if(!cf->next || !cf->next->cft->is_alive(cf->next, data))
-    return TRUE;
+  *input_pending = FALSE;
+  if(!cf->next || !cf->next->cft->is_alive(cf->next, data, input_pending))
+    return FALSE;
 
-  sval = SOCKET_READABLE(Curl_conn_cf_get_socket(cf, data), 0);
-  if(sval == 0) {
-    /* timeout */
-    dead = FALSE;
-  }
-  else if(sval & CURL_CSELECT_ERR) {
-    /* socket is in an error state */
-    dead = TRUE;
-  }
-  else if(sval & CURL_CSELECT_IN) {
+  if(*input_pending) {
     /* This happens before we've sent off a request and the connection is
        not in use by any other transfer, there shouldn't be any data here,
        only "protocol frames" */
     CURLcode result;
     ssize_t nread = -1;
 
+    *input_pending = FALSE;
     Curl_attach_connection(data, cf->conn);
     nread = Curl_conn_cf_recv(cf->next, data,
                               ctx->inbuf, H2_BUFSIZE, &result);
-    dead = FALSE;
     if(nread != -1) {
       DEBUGF(LOG_CF(data, cf, "%d bytes stray data read before trying "
                     "h2 connection", (int)nread));
@@ -406,15 +410,19 @@ static bool http2_connisdead(struct Curl_cfilter *cf, struct Curl_easy *data)
       ctx->inbuflen = nread;
       if(h2_process_pending_input(cf, data, &result) < 0)
         /* immediate error, considered dead */
-        dead = TRUE;
+        alive = FALSE;
+      else {
+        alive = !should_close_session(ctx);
+      }
     }
-    else
+    else {
       /* the read failed so let's say this is dead anyway */
-      dead = TRUE;
+      alive = FALSE;
+    }
     Curl_detach_connection(data);
   }
 
-  return dead;
+  return alive;
 }
 
 static CURLcode http2_send_ping(struct Curl_cfilter *cf,
@@ -815,7 +823,7 @@ static int on_frame_recv(nghttp2_session *session, const nghttp2_frame *frame,
       ctx->max_concurrent_streams = nghttp2_session_get_remote_settings(
           session, NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS);
       ctx->enable_push = nghttp2_session_get_remote_settings(
-          session, NGHTTP2_SETTINGS_ENABLE_PUSH);
+          session, NGHTTP2_SETTINGS_ENABLE_PUSH) != 0;
       DEBUGF(LOG_CF(data, cf, "MAX_CONCURRENT_STREAMS == %d",
                     ctx->max_concurrent_streams));
       DEBUGF(LOG_CF(data, cf, "ENABLE_PUSH == %s",
@@ -829,9 +837,12 @@ static int on_frame_recv(nghttp2_session *session, const nghttp2_frame *frame,
       break;
     }
     case NGHTTP2_GOAWAY:
+      ctx->goaway = TRUE;
+      ctx->goaway_error = frame->goaway.error_code;
+      ctx->last_stream_id = frame->goaway.last_stream_id;
       if(data) {
         infof(data, "recveived GOAWAY, error=%d, last_stream=%u",
-                    frame->goaway.error_code, frame->goaway.last_stream_id);
+                    ctx->goaway_error, ctx->last_stream_id);
         multi_connchanged(data->multi);
       }
       break;
@@ -940,6 +951,7 @@ static int on_frame_recv(nghttp2_session *session, const nghttp2_frame *frame,
     break;
   case NGHTTP2_RST_STREAM:
     DEBUGF(LOG_CF(data_s, cf, "[h2sid=%u] recv RST", stream_id));
+    stream->closed = TRUE;
     stream->reset = TRUE;
     break;
   case NGHTTP2_WINDOW_UPDATE:
@@ -1445,15 +1457,6 @@ CURLcode Curl_http2_request_upgrade(struct dynbuf *req,
 }
 
 /*
- * Returns nonzero if current HTTP/2 session should be closed.
- */
-static int should_close_session(struct cf_h2_ctx *ctx)
-{
-  return ctx->drain_total == 0 && !nghttp2_session_want_read(ctx->h2) &&
-    !nghttp2_session_want_write(ctx->h2);
-}
-
-/*
  * h2_process_pending_input() processes pending input left in
  * httpc->inbuf.  Then, call h2_session_send() to send pending data.
  * This function returns 0 if it succeeds, or -1 and error code will
@@ -1722,6 +1725,18 @@ static ssize_t cf_h2_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
 
   CF_DATA_SAVE(save, cf, data);
 
+  /* IFF transfer was RST by server or
+   * we got a final GOAWAY and the last processed stream ID, as announced
+   * by the server, is lower than this stream's ID, we will never see
+   * anything more for this stream, so give up */
+  if(stream->reset ||
+     (ctx->goaway && ctx->goaway_error &&
+      ctx->last_stream_id < stream->stream_id)) {
+    *err = stream->bodystarted? CURLE_PARTIAL_FILE : CURLE_RECV_ERROR;
+    nread = -1;
+    goto out;
+  }
+
   if(should_close_session(ctx)) {
     DEBUGF(LOG_CF(data, cf, "http2_recv: nothing to do in this session"));
     if(cf->conn->bits.close) {
@@ -1871,7 +1886,7 @@ static ssize_t cf_h2_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
         goto out;
       }
       else if(nread == 0) {
-        if(!stream->closed) {
+        if(!stream->closed || stream->reset) {
           /* This will happen when the server or proxy server is SIGKILLed
              during data transfer. We should emit an error since our data
              received may be incomplete. */
@@ -2340,14 +2355,17 @@ static bool cf_h2_data_pending(struct Curl_cfilter *cf,
 }
 
 static bool cf_h2_is_alive(struct Curl_cfilter *cf,
-                           struct Curl_easy *data)
+                           struct Curl_easy *data,
+                           bool *input_pending)
 {
   struct cf_h2_ctx *ctx = cf->ctx;
   CURLcode result;
   struct cf_call_data save;
 
   CF_DATA_SAVE(save, cf, data);
-  result = (ctx && ctx->h2 && !http2_connisdead(cf, data));
+  result = (ctx && ctx->h2 && http2_connisalive(cf, data, input_pending));
+  DEBUGF(LOG_CF(data, cf, "conn alive -> %d, input_pending=%d",
+         result, *input_pending));
   CF_DATA_RESTORE(cf, save);
   return result;
 }
