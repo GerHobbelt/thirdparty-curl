@@ -57,6 +57,9 @@ domain..tld	FALSE	/	FALSE	2139150993	mooo	indeed
 domain..tld	FALSE	/want	FALSE	0	empty	
 encoded.com	FALSE	/	FALSE	0	hello=there	foo=bar	enc
 </file>
+<features>
+cookies
+</features>
 </client>
 
 # Verify data after the test has been "shot"
