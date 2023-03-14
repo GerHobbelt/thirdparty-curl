@@ -83,6 +83,7 @@ CURL_CFILES = \
   tool_paramhlp.c \
   tool_parsecfg.c \
   tool_progress.c \
+  tool_stderr.c \
   tool_strdup.c \
   tool_setopt.c \
   tool_sleep.c \
@@ -127,6 +128,7 @@ CURL_HFILES = \
   tool_setopt.h \
   tool_setup.h \
   tool_sleep.h \
+  tool_stderr.h \
   tool_strdup.h \
   tool_urlglob.h \
   tool_util.h \

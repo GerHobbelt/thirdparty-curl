@@ -54,6 +54,7 @@
 #include "tool_vms.h"
 #include "tool_main.h"
 #include "tool_libinfo.h"
+#include "tool_stderr.h"
 
 /*
  * This is low-level hard-hacking memory leak tracking and similar. Using
@@ -157,7 +158,6 @@ static CURLcode main_init(struct GlobalConfig *config)
 
   /* Initialise the global config */
   config->showerror = FALSE;          /* show errors when silent */
-  config->errors = stderr;            /* Default errors to stderr */
   config->styled_output = TRUE;       /* enable detection */
   config->parallel_max = PARALLEL_DEFAULT;
 
@@ -196,10 +196,6 @@ static CURLcode main_init(struct GlobalConfig *config)
 static void free_globalconfig(struct GlobalConfig *config)
 {
   Curl_safefree(config->trace_dump);
-
-  if(config->errors_fopened && config->errors)
-    fclose(config->errors);
-  config->errors = NULL;
 
   if(config->trace_fopened && config->trace_stream)
     fclose(config->trace_stream);
@@ -245,6 +241,8 @@ int main(int argc, const char** argv)
   CURLcode result = CURLE_OK;
   struct GlobalConfig global;
   memset(&global, 0, sizeof(global));
+
+  tool_init_stderr();
 
 #ifdef WIN32
   /* Undocumented diagnostic option to list the full paths of all loaded
