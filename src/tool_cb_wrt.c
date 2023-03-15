@@ -315,7 +315,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   if (config->create_dirs) {
-	  CURLcode result = create_dir_hierarchy(fname, global->errors);
+	  CURLcode result = create_dir_hierarchy(fname, stderr);
 	  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
 	  if (result) {
 		  warnf(global, "Failed to create the path directories to file %s: %s\n", fname,

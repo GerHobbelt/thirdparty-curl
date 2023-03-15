@@ -330,6 +330,6 @@ void progresspercentinit(struct ProgressPercent *perc,
 {
   memset(perc, 0, sizeof(struct ProgressPercent));
 
-  perc->out = config->global->errors;
+  perc->out = stderr;
   perc->tick = 250;
 }

@@ -39,7 +39,7 @@ void tool_init_stderr(void)
   tool_stderr = stderr;
 }
 
-void tool_set_stderr_file(char *filename)
+void tool_set_stderr_file(const char *filename)
 {
   FILE *fp;
 

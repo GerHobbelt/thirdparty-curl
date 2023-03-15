@@ -1138,7 +1138,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
 								/* fill in the URL */
 								if (global->tracetype) {
-									fprintf(global->errors, "+ Adding URL to the queue:  %s\n", h);
+									fprintf(stderr, "+ Adding URL to the queue:  %s\n", h);
 								}
 								//notef(global, "adding to the queue: URL: %s\n", h);
 								GetStr(&url->url, h);
