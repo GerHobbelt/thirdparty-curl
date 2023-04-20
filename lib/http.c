@@ -1319,7 +1319,7 @@ CURLcode Curl_buffer_send(struct dynbuf *in,
 
   if((conn->handler->flags & PROTOPT_SSL
 #ifndef CURL_DISABLE_PROXY
-      || conn->http_proxy.proxytype == CURLPROXY_HTTPS
+      || IS_HTTPS_PROXY(conn->http_proxy.proxytype)
 #endif
        )
      && conn->httpversion != 20) {
@@ -3607,7 +3607,7 @@ CURLcode Curl_http_header(struct Curl_easy *data, struct connectdata *conn,
                                          TRUE);
     if(result)
       return result;
-    if(!k->chunk) {
+    if(!k->chunk && data->set.http_transfer_encoding) {
       /* if this isn't chunked, only close can signal the end of this transfer
          as Content-Length is said not to be trusted for transfer-encoding! */
       connclose(conn, "HTTP/1.1 transfer-encoding without chunks");
