@@ -3899,8 +3899,9 @@ static CURLcode ossl_connect_step2(struct Curl_cfilter *cf,
       }
 #if (OPENSSL_VERSION_NUMBER >= 0x10101000L &&   \
      !defined(LIBRESSL_VERSION_NUMBER) &&       \
-     !defined(OPENSSL_IS_BORINGSSL) && \
+     !defined(OPENSSL_IS_BORINGSSL) &&          \
      !defined(OPENSSL_IS_AWSLC))
+
       /* SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED is only available on
          OpenSSL version above v1.1.1, not LibreSSL, BoringSSL, or AWS-LC */
       else if((lib == ERR_LIB_SSL) &&
