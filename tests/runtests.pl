@@ -98,22 +98,16 @@ use serverhelp qw(
 use sshhelp qw(
     $hstpubmd5f
     $hstpubsha256f
-    $sshdexe
     $sshexe
     $sftpexe
-    $sshconfig
     $sftpconfig
     $sshdlog
-    $sshlog
     $sftplog
     $sftpcmds
     display_sshdconfig
-    display_sshconfig
     display_sftpconfig
     display_sshdlog
-    display_sshlog
     display_sftplog
-    exe_ext
     find_sshd
     find_ssh
     find_sftp
@@ -513,10 +507,9 @@ sub startnew {
 # Check for a command in the PATH of the test server.
 #
 sub checkcmd {
-    my ($cmd)=@_;
+    my ($cmd, @extrapaths)=@_;
     my @paths=(split(m/[:]/, $ENV{'PATH'}), "/usr/sbin", "/usr/local/sbin",
-               "/sbin", "/usr/bin", "/usr/local/bin",
-               "$LIBDIR/.libs", "$LIBDIR");
+               "/sbin", "/usr/bin", "/usr/local/bin", @extrapaths);
     for(@paths) {
         if( -x "$_/$cmd" && ! -d "$_/$cmd") {
             # executable bit but not a directory!
@@ -549,7 +542,8 @@ sub get_disttests {
 #
 sub checktestcmd {
     my ($cmd)=@_;
-    return checkcmd($cmd);
+    my @testpaths=("$LIBDIR/.libs", "$LIBDIR");
+    return checkcmd($cmd, @testpaths);
 }
 
 #######################################################################
@@ -5991,8 +5985,8 @@ if ($gdbthis) {
     }
 }
 
-$HTTPUNIXPATH    = "http$$.sock"; # HTTP server Unix domain socket path
-$SOCKSUNIXPATH    = $pwd."/socks$$.sock"; # HTTP server Unix domain socket path, absolute path
+$HTTPUNIXPATH  = "$PIDDIR/http.sock";  # HTTP server Unix domain socket path
+$SOCKSUNIXPATH = "$PIDDIR/socks.sock"; # SOCKS server Unix domain socket path
 
 #######################################################################
 # clear and create logging directory:
@@ -6016,10 +6010,10 @@ init_serverpidfile_hash();
 if(!$listonly) {
     unlink($memdump);  # remove this if there was one left
     checksystemfeatures();
-}
 
-# globally disabled tests
-disabledtests("$TESTDIR/DISABLED");
+    # globally disabled tests
+    disabledtests("$TESTDIR/DISABLED");
+}
 
 #######################################################################
 # Fetch all disabled tests, if there are any
