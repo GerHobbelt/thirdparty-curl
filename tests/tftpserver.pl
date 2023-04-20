@@ -74,6 +74,12 @@ while(@ARGV) {
             shift @ARGV;
         }
     }
+    elsif($ARGV[0] eq '--logdir') {
+        if($ARGV[1]) {
+            $logdir = $ARGV[1];
+            shift @ARGV;
+        }
+    }
     elsif($ARGV[0] eq '--srcdir') {
         if($ARGV[1]) {
             $srcdir = $ARGV[1];
@@ -111,7 +117,7 @@ if(!$srcdir) {
     $srcdir = $ENV{'srcdir'} || '.';
 }
 if(!$pidfile) {
-    $pidfile = "$path/". server_pidfilename($proto, $ipvnum, $idnum);
+    $pidfile = server_pidfilename($path, $proto, $ipvnum, $idnum);
 }
 if(!$logfile) {
     $logfile = server_logfilename($logdir, $proto, $ipvnum, $idnum);
@@ -119,7 +125,8 @@ if(!$logfile) {
 
 $flags .= "--pidfile \"$pidfile\" ".
     "--portfile \"$portfile\" ".
-    "--logfile \"$logfile\" ";
+    "--logfile \"$logfile\" ".
+    "--logdir \"$logdir\" ";
 $flags .= "--ipv$ipvnum --port $port --srcdir \"$srcdir\"";
 
 $| = 1;

@@ -201,10 +201,10 @@ ssize_t Curl_bufq_read(struct bufq *q, unsigned char *buf, size_t len,
  * Repeated calls return the same information until the buffer queue
  * is modified, see `Curl_bufq_skip()``
  */
-bool Curl_bufq_peek(const struct bufq *q,
+bool Curl_bufq_peek(struct bufq *q,
                     const unsigned char **pbuf, size_t *plen);
 
-bool Curl_bufq_peek_at(const struct bufq *q, size_t offset,
+bool Curl_bufq_peek_at(struct bufq *q, size_t offset,
                        const unsigned char **pbuf, size_t *plen);
 
 /**
@@ -245,6 +245,28 @@ typedef ssize_t Curl_bufq_reader(void *reader_ctx,
 ssize_t Curl_bufq_slurp(struct bufq *q, Curl_bufq_reader *reader,
                         void *reader_ctx, CURLcode *err);
 
+/**
+ * Read up to `max_len` bytes and append it to the end of the buffer queue.
+ * if `max_len` is 0, no limit is imposed and the call behaves exactly
+ * the same as `Curl_bufq_slurp()`.
+ * Returns the total amount of buf read (may be 0) or -1 on other
+ * reader errors.
+ * Note that even in case of a -1 chunks may have been read and
+ * the buffer queue will have different length than before.
+ */
+ssize_t Curl_bufq_slurpn(struct bufq *q, size_t max_len,
+                         Curl_bufq_reader *reader, void *reader_ctx,
+                         CURLcode *err);
+
+/**
+ * Read *once* up to `max_len` bytes and append it to the buffer.
+ * if `max_len` is 0, no limit is imposed besides the chunk space.
+ * Returns the total amount of buf read (may be 0) or -1 on other
+ * reader errors.
+ */
+ssize_t Curl_bufq_sipn(struct bufq *q, size_t max_len,
+                       Curl_bufq_reader *reader, void *reader_ctx,
+                       CURLcode *err);
 
 /**
  * Write buf to the end of the buffer queue.

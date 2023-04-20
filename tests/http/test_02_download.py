@@ -114,6 +114,8 @@ class TestDownload:
                                            httpd, nghttpx, repeat, proto):
         if proto == 'h3' and not env.have_h3():
             pytest.skip("h3 not supported")
+        if proto == 'h3' and env.curl_uses_lib('msh3'):
+            pytest.skip("msh3 shaky here")
         curl = CurlClient(env=env)
         urln = f'https://{env.authority_for(env.domain1, proto)}/data.json?[0-499]'
         r = curl.http_download(urls=[urln], alpn_proto=proto)
@@ -159,8 +161,10 @@ class TestDownload:
         ])
         r.check_exit_code(0)  
         r.check_stats(count=count, exp_status=200)
-        # should have used 2 connections only (test servers allow 100 req/conn)
-        assert r.total_connects == 2, "h2 should use fewer connections here"
+        # should have used at most 2 connections only (test servers allow 100 req/conn)
+        # it may be just 1 on slow systems where request are answered faster than
+        # curl can exhaust the capacity or if curl runs with address-sanitizer speed
+        assert r.total_connects <= 2, "h2 should use fewer connections here"
 
     # download files parallel with http/1.1, check connection not reused
     @pytest.mark.parametrize("proto", ['http/1.1'])
@@ -221,6 +225,8 @@ class TestDownload:
                               httpd, nghttpx, repeat, proto):
         if proto == 'h3' and not env.have_h3():
             pytest.skip("h3 not supported")
+        if proto == 'h3' and env.curl_uses_lib('msh3'):
+            pytest.skip("msh3 stalls here")
         count = 20
         urln = f'https://{env.authority_for(env.domain1, proto)}/data-10m?[0-{count-1}]'
         curl = CurlClient(env=env)

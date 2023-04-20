@@ -4605,7 +4605,8 @@ CURLcode Curl_http_req_make(struct http_req **preq,
     if(!req->path)
       goto out;
   }
-  Curl_dynhds_init(&req->headers, 128, DYN_H2_HEADERS);
+  Curl_dynhds_init(&req->headers, 0, DYN_H2_HEADERS);
+  Curl_dynhds_init(&req->trailers, 0, DYN_H2_TRAILERS);
   result = CURLE_OK;
 
 out:
@@ -4622,6 +4623,7 @@ void Curl_http_req_free(struct http_req *req)
     free(req->authority);
     free(req->path);
     Curl_dynhds_free(&req->headers);
+    Curl_dynhds_free(&req->trailers);
     free(req);
   }
 }
@@ -4643,7 +4645,8 @@ CURLcode Curl_http_resp_make(struct http_resp **presp,
     if(!resp->description)
       goto out;
   }
-  Curl_dynhds_init(&resp->headers, 128, DYN_H2_HEADERS);
+  Curl_dynhds_init(&resp->headers, 0, DYN_H2_HEADERS);
+  Curl_dynhds_init(&resp->trailers, 0, DYN_H2_TRAILERS);
   result = CURLE_OK;
 
 out:
@@ -4658,6 +4661,7 @@ void Curl_http_resp_free(struct http_resp *resp)
   if(resp) {
     free(resp->description);
     Curl_dynhds_free(&resp->headers);
+    Curl_dynhds_free(&resp->trailers);
     if(resp->prev)
       Curl_http_resp_free(resp->prev);
     free(resp);

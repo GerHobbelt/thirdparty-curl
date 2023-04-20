@@ -29,6 +29,7 @@
 #include <pthread.h>
 #endif
 
+#include "bufq.h"
 #include "dynhds.h"
 #include "ws.h"
 
@@ -184,10 +185,6 @@ CURLcode Curl_http_auth_act(struct Curl_easy *data);
 
 #endif /* CURL_DISABLE_HTTP */
 
-#ifdef USE_NGHTTP3
-struct h3out; /* see ngtcp2 */
-#endif
-
 /****************************************************************************
  * HTTP unique setup
  ***************************************************************************/
@@ -215,6 +212,8 @@ struct HTTP {
     HTTPSEND_BODY     /* sending body */
   } sending;
 
+  void *impl_ctx;     /* context for actual HTTP implementation */
+
 #ifdef USE_WEBSOCKETS
   struct websocket ws;
 #endif
@@ -227,29 +226,23 @@ struct HTTP {
 #ifdef USE_NGHTTP2
   /*********** for HTTP/2 we store stream-local data here *************/
   int32_t stream_id; /* stream we are interested in */
-
-  /* We store non-final and final response headers here, per-stream */
-  struct dynbuf header_recvbuf;
-  size_t nread_header_recvbuf; /* number of bytes in header_recvbuf fed into
-                                  upper layer */
-  struct dynbuf trailer_recvbuf;
-  const uint8_t *pausedata; /* pointer to data received in on_data_chunk */
-  size_t pauselen; /* the number of bytes left in data */
+  struct bufq h2_sendbuf; /* request body data buffere for sending */
+  size_t h2_send_hds_len; /* amount of bytes in first cf_send() that
+                             are header bytes. Or 0 if not known. */
+  struct bufq h2_recvbuf;
+  size_t h2_recv_hds_len; /* how many bytes in recvbuf are headers */
+  struct dynhds resp_trailers;
   bool close_handled; /* TRUE if stream closure is handled by libcurl */
 
   char **push_headers;       /* allocated array */
   size_t push_headers_used;  /* number of entries filled in */
   size_t push_headers_alloc; /* number of entries allocated */
   uint32_t error; /* HTTP/2 stream error code */
-#endif
-#if defined(USE_NGHTTP2) || defined(USE_NGHTTP3)
   bool bodystarted;
   int status_code; /* HTTP status code */
   char *mem;     /* points to a buffer in memory to store received data */
   size_t len;    /* size of the buffer 'mem' points to */
   size_t memlen; /* size of data copied to mem */
-#endif
-#if defined(USE_NGHTTP2) || defined(ENABLE_QUIC)
   /* fields used by both HTTP/2 and HTTP/3 */
   const uint8_t *upload_mem; /* points to a buffer to read from */
   size_t upload_len; /* size of the buffer 'upload_mem' points to */
@@ -257,49 +250,6 @@ struct HTTP {
   bool closed; /* TRUE on stream close */
   bool reset;  /* TRUE on stream reset */
 #endif
-
-#ifdef ENABLE_QUIC
-#ifndef USE_MSH3
-  /*********** for HTTP/3 we store stream-local data here *************/
-  int64_t stream3_id; /* stream we are interested in */
-  uint64_t error3; /* HTTP/3 stream error code */
-  bool firstheader;  /* FALSE until headers arrive */
-  bool firstbody;  /* FALSE until body arrives */
-  bool h3req;    /* FALSE until request is issued */
-#endif /* !USE_MSH3 */
-  bool upload_done;
-#endif /* ENABLE_QUIC */
-#ifdef USE_NGHTTP3
-  size_t recv_buf_nonflow; /* buffered bytes, not counting for flow control */
-  struct h3out *h3out; /* per-stream buffers for upload */
-  struct dynbuf overflow; /* excess data received during a single Curl_read */
-#endif /* USE_NGHTTP3 */
-#ifdef USE_MSH3
-  struct MSH3_REQUEST *req;
-#ifdef _WIN32
-  CRITICAL_SECTION recv_lock;
-#else /* !_WIN32 */
-  pthread_mutex_t recv_lock;
-#endif /* _WIN32 */
-  /* Receive Buffer (Headers and Data) */
-  uint8_t* recv_buf;
-  size_t recv_buf_alloc;
-  size_t recv_buf_max;
-  /* Receive Headers */
-  size_t recv_header_len;
-  bool recv_header_complete;
-  /* Receive Data */
-  size_t recv_data_len;
-  bool recv_data_complete;
-  /* General Receive Error */
-  CURLcode recv_error;
-#endif /* USE_MSH3 */
-#ifdef USE_QUICHE
-  bool h3_got_header; /* TRUE when h3 stream has recvd some HEADER */
-  bool h3_recving_data; /* TRUE when h3 stream is reading DATA */
-  bool h3_body_pending; /* TRUE when h3 stream may have more body DATA */
-  struct h3_event_node *pending;
-#endif /* USE_QUICHE */
 };
 
 CURLcode Curl_http_size(struct Curl_easy *data);
@@ -346,6 +296,7 @@ struct http_req {
   char *authority;
   char *path;
   struct dynhds headers;
+  struct dynhds trailers;
 };
 
 /**
@@ -366,6 +317,7 @@ struct http_resp {
   int status;
   char *description;
   struct dynhds headers;
+  struct dynhds trailers;
   struct http_resp *prev;
 };
 
