@@ -40,7 +40,6 @@ BEGIN {
             $HOSTIP
             $HOST6IP
             $HTTPUNIXPATH
-            $testnumcheck
             $sshdid
             $SSHSRVMD5
             $SSHSRVSHA256
@@ -117,12 +116,12 @@ my $server_response_maxtime=13;
 my $httptlssrv = find_httptlssrv();
 my %run;          # running server
 my %runcert;      # cert file currently in use by an ssl running server
+my $serverstartretries=10; # number of times to attempt to start server
 
 # Variables shared with runtests.pl
 our $HOSTIP="127.0.0.1";   # address on which the test server listens
 our $HOST6IP="[::1]";      # address on which the test server listens
 our $HTTPUNIXPATH; # HTTP server Unix domain socket path
-our $testnumcheck; # test number, set in singletest sub.
 our $sshdid;      # for socks server, ssh daemon version id
 our $SSHSRVMD5 = "[uninitialized]"; # MD5 of ssh server public key
 our $SSHSRVSHA256 = "[uninitialized]"; # SHA256 of ssh server public key
@@ -190,13 +189,6 @@ sub initserverconfig {
         }
     }
     init_serverpidfile_hash();
-}
-
-#######################################################################
-# Call main's displaylogs
-# TODO: instead, make the caller call displaylogs() in case of error
-sub displaylogs {
-    return main::displaylogs(@_);
 }
 
 #######################################################################
@@ -1150,7 +1142,6 @@ sub runhttpserver {
         # it is NOT alive
         logmsg "RUN: failed to start the $srvrname server\n";
         stopserver($server, "$pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1167,7 +1158,6 @@ sub runhttpserver {
         logmsg "RUN: $srvrname server failed verification\n";
         # failed to talk to it properly. Kill the server and return failure
         stopserver($server, "$httppid $pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1220,7 +1210,7 @@ sub runhttp2server {
     my ($http2pid, $pid2);
     my $port = 23113;
     my $port2 = 23114;
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
         $port += int(rand(900));
         $port2 += int(rand(900));
         my $aflags = "--port $port --port2 $port2 $flags";
@@ -1289,7 +1279,7 @@ sub runhttp3server {
 
     my ($http3pid, $pid3);
     my $port = 24113;
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
         $port += int(rand(900));
         my $aflags = "--port $port $flags";
 
@@ -1375,7 +1365,7 @@ sub runhttpsserver {
     my $pid2;
     my $httpspid;
     my $port = 24512; # start attempt
-    for (1 .. 10) {
+    for (1 .. $serverstartretries) {
         $port += int(rand(600));
         my $options = "$flags --accept $port";
 
@@ -1385,7 +1375,6 @@ sub runhttpsserver {
         if($httpspid <= 0 || !pidexists($httpspid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $httpspid = $pid2 = 0;
             next;
@@ -1443,7 +1432,7 @@ sub runhttptlsserver {
 
     my $port = 24367;
     my ($httptlspid, $pid2);
-    for (1 .. 10) {
+    for (1 .. $serverstartretries) {
         $port += int(rand(800));
         my $allflags = "--port $port $flags";
 
@@ -1453,7 +1442,6 @@ sub runhttptlsserver {
         if($httptlspid <= 0 || !pidexists($httptlspid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $httptlspid = $pid2 = 0;
             next;
@@ -1520,7 +1508,6 @@ sub runpingpongserver {
         # it is NOT alive
         logmsg "RUN: failed to start the $srvrname server\n";
         stopserver($server, "$pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0);
     }
@@ -1536,7 +1523,6 @@ sub runpingpongserver {
         logmsg "RUN: $srvrname server failed verification\n";
         # failed to talk to it properly. Kill the server and return failure
         stopserver($server, "$ftppid $pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0);
     }
@@ -1596,7 +1582,7 @@ sub runsecureserver {
     my $pid2;
     my $port = 26713 + ord $proto;
     my %usedports = reverse %PORT;
-    for (1 .. 10) {
+    for (1 .. $serverstartretries) {
         $port += int(rand(700));
         next if exists $usedports{$port};
         my $options = "$flags --accept $port";
@@ -1606,7 +1592,6 @@ sub runsecureserver {
         if($protospid <= 0 || !pidexists($protospid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $protospid = $pid2 = 0;
             next;
@@ -1677,7 +1662,6 @@ sub runtftpserver {
         # it is NOT alive
         logmsg "RUN: failed to start the $srvrname server\n";
         stopserver($server, "$pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1690,7 +1674,6 @@ sub runtftpserver {
         logmsg "RUN: $srvrname server failed verification\n";
         # failed to talk to it properly. Kill the server and return failure
         stopserver($server, "$tftppid $pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1755,7 +1738,6 @@ sub runrtspserver {
         # it is NOT alive
         logmsg "RUN: failed to start the $srvrname server\n";
         stopserver($server, "$pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1768,7 +1750,6 @@ sub runrtspserver {
         logmsg "RUN: $srvrname server failed verification\n";
         # failed to talk to it properly. Kill the server and return failure
         stopserver($server, "$rtsppid $pid2");
-        displaylogs($testnumcheck);
         $doesntrun{$pidfile} = 1;
         return (1, 0, 0, 0);
     }
@@ -1835,7 +1816,7 @@ sub runsshserver {
 
     my $wport = 0,
     my @tports;
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
 
         # sshd doesn't have a way to pick an unused random port number, so
         # instead we iterate over possible port numbers to use until we find
@@ -2086,7 +2067,7 @@ sub rundictserver {
 
     my $port = 29000;
     my ($dictpid, $pid2);
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
         $port += int(rand(900));
         my $aflags = "--port $port $flags";
         my $cmd = "$srcdir/dictserver.py $aflags";
@@ -2095,7 +2076,6 @@ sub rundictserver {
         if($dictpid <= 0 || !pidexists($dictpid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $dictpid = $pid2 = 0;
             next;
@@ -2153,7 +2133,7 @@ sub runsmbserver {
 
     my ($smbpid, $pid2);
     my $port = 31923;
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
         $port += int(rand(760));
         my $aflags = "--port $port $flags";
         my $cmd = "$srcdir/smbserver.py $aflags";
@@ -2162,7 +2142,6 @@ sub runsmbserver {
         if($smbpid <= 0 || !pidexists($smbpid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $smbpid = $pid2 = 0;
             next;
@@ -2219,7 +2198,7 @@ sub runnegtelnetserver {
 
     my ($ntelpid, $pid2);
     my $port = 32000;
-    for(1 .. 10) {
+    for(1 .. $serverstartretries) {
         $port += int(rand(800));
         my $aflags = "--port $port $flags";
         my $cmd = "$srcdir/negtelnetserver.py $aflags";
@@ -2228,7 +2207,6 @@ sub runnegtelnetserver {
         if($ntelpid <= 0 || !pidexists($ntelpid)) {
             # it is NOT alive
             stopserver($server, "$pid2");
-            displaylogs($testnumcheck);
             $doesntrun{$pidfile} = 1;
             $ntelpid = $pid2 = 0;
             next;

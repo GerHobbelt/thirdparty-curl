@@ -101,7 +101,6 @@ use globalconfig;
 my $CLIENTIP="127.0.0.1"; # address which curl uses for incoming connections
 my $CLIENT6IP="[::1]";    # address which curl uses for incoming connections
 
-my $use_external_proxy = 0;
 my %custom_skip_reasons;
 
 my $CURLVERSION="";          # curl's reported version number
@@ -1355,10 +1354,6 @@ sub singletest_shouldrun {
         cleardir($LOGDIR);
     }
 
-    # copy test number to a global scope var, this allows
-    # testnum checking when starting test harness servers.
-    $testnumcheck = $testnum;
-
     # timestamp test preparation start
     $timeprepini{$testnum} = Time::HiRes::time();
 
@@ -1504,6 +1499,11 @@ sub singletest_startservers {
         } else {
             my $err;
             ($why, $err) = serverfortest(@what);
+            if($err == 1) {
+                # Error indicates an actual problem starting the server, so
+                # display the server logs
+                displaylogs($testnum);
+            }
         }
     }
 
@@ -1573,7 +1573,7 @@ sub singletest_setenv {
             }
         }
     }
-    if($use_external_proxy) {
+    if($proxy_address) {
         $ENV{http_proxy} = $proxy_address;
         $ENV{HTTPS_PROXY} = $proxy_address;
     }
@@ -1799,7 +1799,7 @@ sub singletest_run {
             $fail_due_event_based--;
         }
         $cmdargs .= $cmd;
-        if ($use_external_proxy) {
+        if ($proxy_address) {
             $cmdargs .= " --proxy $proxy_address ";
         }
     }
@@ -2954,7 +2954,6 @@ while(@ARGV) {
     }
     elsif($ARGV[0] eq "-P") {
         shift @ARGV;
-        $use_external_proxy=1;
         $proxy_address=$ARGV[0];
     }
     elsif($ARGV[0] eq "-L") {
