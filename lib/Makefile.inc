@@ -105,6 +105,7 @@ LIB_CFILES =         \
   asyn-ares.c        \
   asyn-thread.c      \
   base64.c           \
+  bufq.c             \
   bufref.c           \
   c-hyper.c          \
   cf-https-connect.c \
@@ -135,6 +136,7 @@ LIB_CFILES =         \
   dict.c             \
   doh.c              \
   dynbuf.c           \
+  dynhds.c           \
   easy.c             \
   easygetopt.c       \
   easyoptions.c      \
@@ -231,6 +233,7 @@ LIB_HFILES =         \
   amigaos.h          \
   arpa_telnet.h      \
   asyn.h             \
+  bufq.h             \
   bufref.h           \
   c-hyper.h          \
   cf-https-connect.h \
@@ -274,6 +277,7 @@ LIB_HFILES =         \
   dict.h             \
   doh.h              \
   dynbuf.h           \
+  dynhds.h           \
   easy_lock.h        \
   easyif.h           \
   easyoptions.h      \
