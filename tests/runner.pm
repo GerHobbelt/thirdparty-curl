@@ -37,7 +37,6 @@ BEGIN {
         restore_test_env
         runner_test_preprocess
         runner_test_run
-        use_valgrind
         checktestcmd
         $DBGCURL
         $gdbthis
@@ -51,6 +50,7 @@ BEGIN {
 
     # these are for debugging only
     our @EXPORT_OK = qw(
+        readtestkeywords
         singletest_preprocess
     );
 }
@@ -189,6 +189,21 @@ sub prepro {
         }
     }
     return @out;
+}
+
+
+#######################################################################
+# Load test keywords into %keywords hash
+#
+sub readtestkeywords {
+    my @info_keywords = getpart("info", "keywords");
+
+    # Clear the list of keywords from the last test
+    %keywords = ();
+    for my $k (@info_keywords) {
+        chomp $k;
+        $keywords{$k} = 1;
+    }
 }
 
 
@@ -350,6 +365,7 @@ sub torture {
 }
 
 
+#######################################################################
 # restore environment variables that were modified in test
 sub restore_test_env {
     my $deleteoldenv = $_[0];   # 1 to delete the saved contents after restore
@@ -370,13 +386,13 @@ sub restore_test_env {
 #######################################################################
 # Start the servers needed to run this test case
 sub singletest_startservers {
-    my ($testnum) = @_;
+    my ($testnum, $testtimings) = @_;
 
     # remove test server commands file before servers are started/verified
     unlink($FTPDCMD) if(-f $FTPDCMD);
 
     # timestamp required servers verification start
-    $timesrvrini{$testnum} = Time::HiRes::time();
+    $$testtimings{"timesrvrini"} = Time::HiRes::time();
 
     my $why;
     if (!$listonly) {
@@ -396,7 +412,7 @@ sub singletest_startservers {
     }
 
     # timestamp required servers verification end
-    $timesrvrend{$testnum} = Time::HiRes::time();
+    $$testtimings{"timesrvrend"} = Time::HiRes::time();
 
     # remove server output logfile after servers are started/verified
     unlink($SERVERIN);
@@ -567,7 +583,7 @@ sub singletest_prepare {
 #######################################################################
 # Run the test command
 sub singletest_run {
-    my $testnum = $_[0];
+    my ($testnum, $testtimings) = @_;
 
     # get the command line options to use
     my ($cmd, @blaha)= getpart("client", "command");
@@ -741,7 +757,7 @@ sub singletest_run {
     $| = 1;
 
     # timestamp starting of test command
-    $timetoolini{$testnum} = Time::HiRes::time();
+    $$testtimings{"timetoolini"} = Time::HiRes::time();
 
     # run the command line we built
     if ($torture) {
@@ -760,16 +776,16 @@ sub singletest_run {
     }
 
     # timestamp finishing of test command
-    $timetoolend{$testnum} = Time::HiRes::time();
+    $$testtimings{"timetoolend"} = Time::HiRes::time();
 
-    return (0, $cmdres, $dumped_core, $CURLOUT, $tool, $disablevalgrind);
+    return (0, $cmdres, $dumped_core, $CURLOUT, $tool, use_valgrind() && !$disablevalgrind);
 }
 
 
 #######################################################################
 # Clean up after test command
 sub singletest_clean {
-    my ($testnum, $dumped_core)=@_;
+    my ($testnum, $dumped_core, $testtimings)=@_;
 
     if(!$dumped_core) {
         if(-r "core") {
@@ -833,7 +849,7 @@ sub singletest_clean {
     portable_sleep($postcommanddelay) if($postcommanddelay);
 
     # timestamp removal of server logs advisor read lock
-    $timesrvrlog{$testnum} = Time::HiRes::time();
+    $$testtimings{"timesrvrlog"} = Time::HiRes::time();
 
     # test definition might instruct to stop some servers
     # stop also all servers relative to the given one
@@ -844,8 +860,6 @@ sub singletest_clean {
             chomp $server;
             if(stopserver($server)) {
                 logmsg " killserver FAILED\n";
-                # timestamp test result verification end
-                $timevrfyend{$testnum} = Time::HiRes::time();
                 return 1; # normal error if asked to fail on unexpected alive
             }
         }
@@ -870,8 +884,6 @@ sub singletest_postcheck {
             # to clean up, but the result can't be relied upon.
             if($rc != 0 && !$torture) {
                 logmsg " postcheck FAILED\n";
-                # timestamp test result verification end
-                $timevrfyend{$testnum} = Time::HiRes::time();
                 return -1;
             }
         }
@@ -885,22 +897,36 @@ sub singletest_postcheck {
 # Get ready to run a single test case
 sub runner_test_preprocess {
     my ($testnum)=@_;
+    my %testtimings;
+
+    # timestamp test preparation start
+    # TODO: this metric now shows only a portion of the prep time; better would
+    # be to time singletest_preprocess below instead
+    $testtimings{"timeprepini"} = Time::HiRes::time();
+
+    ###################################################################
+    # Load test metadata
+    # ignore any error here--if there were one, it would have been
+    # caught during the selection phase and this test would not be
+    # running now
+    loadtest("${TESTDIR}/test${testnum}");
+    readtestkeywords();
 
     ###################################################################
     # Start the servers needed to run this test case
-    my $why = singletest_startservers($testnum);
+    my $why = singletest_startservers($testnum, \%testtimings);
 
     if(!$why) {
 
         ###############################################################
         # Generate preprocessed test file
+        # This must be done after the servers are started so server
+        # variables are available for substitution.
         singletest_preprocess($testnum);
-
 
         ###############################################################
         # Set up the test environment to run this test case
         singletest_setenv();
-
 
         ###############################################################
         # Check that the test environment is fine to run this test case
@@ -908,7 +934,7 @@ sub runner_test_preprocess {
             $why = singletest_precheck($testnum);
         }
     }
-    return $why;
+    return ($why, \%testtimings);
 }
 
 
@@ -919,6 +945,8 @@ sub runner_test_preprocess {
 #   values when error is 0
 sub runner_test_run {
     my ($testnum)=@_;
+
+    my %testtimings;
 
     #######################################################################
     # Prepare the test environment to run this test case
@@ -933,31 +961,32 @@ sub runner_test_run {
     my $dumped_core;
     my $CURLOUT;
     my $tool;
-    my $disablevalgrind;
-    ($error, $cmdres, $dumped_core, $CURLOUT, $tool, $disablevalgrind) = singletest_run($testnum);
+    my $usedvalgrind;
+    ($error, $cmdres, $dumped_core, $CURLOUT, $tool, $usedvalgrind) = singletest_run($testnum, \%testtimings);
     if($error) {
-        return -2;
+        return (-2, \%testtimings);
     }
 
     #######################################################################
     # Clean up after test command
-    $error = singletest_clean($testnum, $dumped_core);
+    $error = singletest_clean($testnum, $dumped_core, \%testtimings);
     if($error) {
-        return $error;
+        return ($error, \%testtimings);
     }
 
     #######################################################################
     # Verify that the postcheck succeeded
     $error = singletest_postcheck($testnum);
     if($error) {
-      return $error;
+        return ($error, \%testtimings);
     }
 
     #######################################################################
     # restore environment variables that were modified
     restore_test_env(0);
 
-    return (0, $cmdres, $CURLOUT, $tool, $disablevalgrind);
+
+    return (0, \%testtimings, $cmdres, $CURLOUT, $tool, $usedvalgrind);
 }
 
 1;

@@ -139,10 +139,17 @@ my %ignored_keywords;   # key words of tests to ignore results
 my %enabled_keywords;   # key words of tests to run
 my %disabled;           # disabled test cases
 my %ignored;            # ignored results of test cases
+my %ignoretestcodes;    # if test results are to be ignored
 
 my $timestats;   # time stamping and stats generation
 my $fullstats;   # show time stats for every single test
 my %timeprepini; # timestamp for each test preparation start
+my %timesrvrini; # timestamp for each test required servers verification start
+my %timesrvrend; # timestamp for each test required servers verification end
+my %timetoolini; # timestamp for each test command run starting
+my %timetoolend; # timestamp for each test command run stopping
+my %timesrvrlog; # timestamp for each test server logs lock removal
+my %timevrfyend; # timestamp for each test result verification end
 
 #######################################################################
 # variables that command line options may set
@@ -290,6 +297,47 @@ sub cleardir {
     return $done;
 }
 
+
+#######################################################################
+# Given two array references, this function will store them in two temporary
+# files, run 'diff' on them, store the result and return the diff output!
+sub showdiff {
+    my ($logdir, $firstref, $secondref)=@_;
+
+    my $file1="$logdir/check-generated";
+    my $file2="$logdir/check-expected";
+
+    open(my $temp, ">", "$file1") || die "Failure writing diff file";
+    for(@$firstref) {
+        my $l = $_;
+        $l =~ s/\r/[CR]/g;
+        $l =~ s/\n/[LF]/g;
+        $l =~ s/([^\x20-\x7f])/sprintf "%%%02x", ord $1/eg;
+        print $temp $l;
+        print $temp "\n";
+    }
+    close($temp) || die "Failure writing diff file";
+
+    open($temp, ">", "$file2") || die "Failure writing diff file";
+    for(@$secondref) {
+        my $l = $_;
+        $l =~ s/\r/[CR]/g;
+        $l =~ s/\n/[LF]/g;
+        $l =~ s/([^\x20-\x7f])/sprintf "%%%02x", ord $1/eg;
+        print $temp $l;
+        print $temp "\n";
+    }
+    close($temp) || die "Failure writing diff file";
+    my @out = `diff -u $file2 $file1 2>/dev/null`;
+
+    if(!$out[0]) {
+        @out = `diff -c $file2 $file1 2>/dev/null`;
+    }
+
+    return @out;
+}
+
+
 #######################################################################
 # compare test results with the expected output, we might filter off
 # some pattern that is allowed to differ, output test results
@@ -317,6 +365,27 @@ sub compare {
     }
     return $result;
 }
+
+#######################################################################
+# Parse and store the protocols in curl's Protocols: line
+sub parseprotocols {
+    my ($line)=@_;
+
+    @protocols = split(' ', lc($line));
+
+    # Generate a "proto-ipv6" version of each protocol to match the
+    # IPv6 <server> name and a "proto-unix" to match the variant which
+    # uses Unix domain sockets. This works even if support isn't
+    # compiled in because the <features> test will fail.
+    push @protocols, map(("$_-ipv6", "$_-unix"), @protocols);
+
+    # 'http-proxy' is used in test cases to do CONNECT through
+    push @protocols, 'http-proxy';
+
+    # 'none' is used in test cases to mean no server
+    push @protocols, 'none';
+}
+
 
 #######################################################################
 # Check & display information about curl and the host the test suite runs on.
@@ -452,19 +521,7 @@ sub checksystemfeatures {
         }
         elsif($_ =~ /^Protocols: (.*)/i) {
             # these are the protocols compiled in to this libcurl
-            @protocols = split(' ', lc($1));
-
-            # Generate a "proto-ipv6" version of each protocol to match the
-            # IPv6 <server> name and a "proto-unix" to match the variant which
-            # uses Unix domain sockets. This works even if support isn't
-            # compiled in because the <features> test will fail.
-            push @protocols, map(("$_-ipv6", "$_-unix"), @protocols);
-
-            # 'http-proxy' is used in test cases to do CONNECT through
-            push @protocols, 'http-proxy';
-
-            # 'none' is used in test cases to mean no server
-            push @protocols, 'none';
+            parseprotocols($1);
         }
         elsif($_ =~ /^Features: (.*)/i) {
             $feat = $1;
@@ -834,6 +891,31 @@ sub citest_finishtestrun {
 }
 
 
+# add one set of test timings from the runner to global set
+sub updatetesttimings {
+    my ($testnum, %testtimings)=@_;
+
+    if(defined $testtimings{"timeprepini"}) {
+        $timeprepini{$testnum} = $testtimings{"timeprepini"};
+    }
+    if(defined $testtimings{"timesrvrini"}) {
+        $timesrvrini{$testnum} = $testtimings{"timesrvrini"};
+    }
+    if(defined $testtimings{"timesrvrend"}) {
+        $timesrvrend{$testnum} = $testtimings{"timesrvrend"};
+    }
+    if(defined $testtimings{"timetoolini"}) {
+        $timetoolini{$testnum} = $testtimings{"timetoolini"};
+    }
+    if(defined $testtimings{"timetoolend"}) {
+        $timetoolend{$testnum} = $testtimings{"timetoolend"};
+    }
+    if(defined $testtimings{"timesrvrlog"}) {
+        $timesrvrlog{$testnum} = $testtimings{"timesrvrlog"};
+    }
+}
+
+
 #######################################################################
 # Verify that this test case should be run
 sub singletest_shouldrun {
@@ -841,15 +923,6 @@ sub singletest_shouldrun {
     my $why;   # why the test won't be run
     my $errorreturncode = 1; # 1 means normal error, 2 means ignored error
     my @what;  # what features are needed
-
-    # first, remove all lingering log files
-    if(!cleardir($LOGDIR) && $clearlocks) {
-        clearlocks($LOGDIR);
-        cleardir($LOGDIR);
-    }
-
-    # timestamp test preparation start
-    $timeprepini{$testnum} = Time::HiRes::time();
 
     if($disttests !~ /test$testnum(\W|\z)/ ) {
         logmsg "Warning: test$testnum not present in tests/data/Makefile.inc\n";
@@ -867,7 +940,6 @@ sub singletest_shouldrun {
         $errorreturncode = 2;
     }
 
-    # load the test case file definition
     if(loadtest("${TESTDIR}/test${testnum}")) {
         if($verbose) {
             # this is not a test
@@ -918,9 +990,6 @@ sub singletest_shouldrun {
     if(!$why) {
         @info_keywords = getpart("info", "keywords");
 
-        # Clear the list of keywords from the last test
-        %keywords = ();
-
         if(!$info_keywords[0]) {
             $why = "missing the <keywords> section!";
         }
@@ -938,8 +1007,6 @@ sub singletest_shouldrun {
                 logmsg "Warning: test$testnum result is ignored due to $k\n";
                 $errorreturncode = 2;
             }
-
-            $keywords{$k} = 1;
         }
 
         if(!$why && !$match && %enabled_keywords) {
@@ -1014,7 +1081,7 @@ sub singletest_count {
 #######################################################################
 # Verify test succeeded
 sub singletest_check {
-    my ($testnum, $cmdres, $CURLOUT, $tool, $disablevalgrind)=@_;
+    my ($testnum, $cmdres, $CURLOUT, $tool, $usedvalgrind)=@_;
 
     # Skip all the verification on torture tests
     if ($torture) {
@@ -1462,7 +1529,7 @@ sub singletest_check {
     }
 
     if($valgrind) {
-        if(use_valgrind() && !$disablevalgrind) {
+        if($usedvalgrind) {
             if(!opendir(DIR, "$LOGDIR")) {
                 logmsg "ERROR: unable to read $LOGDIR\n";
                 # timestamp test result verification end
@@ -1500,7 +1567,7 @@ sub singletest_check {
             $ok .= "v";
         }
         else {
-            if($verbose && !$disablevalgrind) {
+            if($verbose) {
                 logmsg " valgrind SKIPPED\n";
             }
             $ok .= "-"; # skipped
@@ -1557,35 +1624,35 @@ sub singletest_success {
 sub singletest {
     my ($testnum, $count, $total)=@_;
 
-    #######################################################################
-    # Verify that the test should be run
-    my ($why, $errorreturncode) = singletest_shouldrun($testnum);
+    # first, remove all lingering log files
+    if(!cleardir($LOGDIR) && $clearlocks) {
+        clearlocks($LOGDIR);
+        cleardir($LOGDIR);
+    }
 
-
-    #######################################################################
+    ###################################################################
     # Restore environment variables that were modified in a previous run.
     # Test definition may instruct to (un)set environment vars.
-    # This is done this early so that leftover variables don't affect starting
-    # servers or CI registration.
+    # This is done this early so that leftover variables don't affect
+    # starting servers or CI registration.
     restore_test_env(1);
 
-    #######################################################################
+    ###################################################################
+    # Load test file so CI registration can get the right data before the
+    # runner is called
+    loadtest("${TESTDIR}/test${testnum}");
+
+    ###################################################################
     # Register the test case with the CI environment
     citest_starttest($testnum);
 
-    if(!$why) {
-        $why = runner_test_preprocess($testnum);
-    } else {
-
-        # set zero servers verification time when they aren't started
-        $timesrvrini{$testnum} = $timesrvrend{$testnum} = Time::HiRes::time();
-    }
+    my ($why, $testtimings) = runner_test_preprocess($testnum);
+    updatetesttimings($testnum, %$testtimings);
 
     #######################################################################
     # Print the test name and count tests
-    my $error;
-    $error = singletest_count($testnum, $why);
-    if($error || $listonly) {
+    my $error = singletest_count($testnum, $why);
+    if($error) {
         return $error;
     }
 
@@ -1594,26 +1661,32 @@ sub singletest {
     my $cmdres;
     my $CURLOUT;
     my $tool;
-    my $disablevalgrind;
-    ($error, $cmdres, $CURLOUT, $tool, $disablevalgrind) = runner_test_run($testnum);
+    my $usedvalgrind;
+    ($error, $testtimings, $cmdres, $CURLOUT, $tool, $usedvalgrind) = runner_test_run($testnum);
+    updatetesttimings($testnum, %$testtimings);
     if($error == -1) {
-      # return a test failure, either to be reported or to be ignored
-      return $errorreturncode;
+        # no further verification will occur
+        $timevrfyend{$testnum} = Time::HiRes::time();
+        # return a test failure, either to be reported or to be ignored
+        return ignoreresultcode($testnum);
     }
     elsif($error == -2) {
-      timestampskippedevents($testnum);
-      return $error;
+        # fill in the missing timings on error
+        timestampskippedevents($testnum);
+        return $error;
     }
     elsif($error > 0) {
-      return $error;
+        # no further verification will occur
+        $timevrfyend{$testnum} = Time::HiRes::time();
+        return $error;
     }
 
     #######################################################################
     # Verify that the test succeeded
-    $error = singletest_check($testnum, $cmdres, $CURLOUT, $tool, $disablevalgrind);
+    $error = singletest_check($testnum, $cmdres, $CURLOUT, $tool, $usedvalgrind);
     if($error == -1) {
-      # return a test failure, either to be reported or to be ignored
-      return $errorreturncode;
+        # return a test failure, either to be reported or to be ignored
+        return ignoreresultcode($testnum);
     }
     elsif($error == -2) {
       # torture test; there is no verification, so the run result holds the
@@ -1624,7 +1697,7 @@ sub singletest {
 
     #######################################################################
     # Report a successful test
-    singletest_success($testnum, $count, $total, $errorreturncode);
+    singletest_success($testnum, $count, $total, ignoreresultcode($testnum));
 
 
     return 0;
@@ -1765,6 +1838,19 @@ sub runtimestats {
 
     logmsg "\n";
 }
+
+#######################################################################
+# returns code indicating why a test was skipped
+# 0=unknown test, 1=use test result, 2=ignore test result
+#
+sub ignoreresultcode {
+    my ($testnum)=@_;
+    if(defined $ignoretestcodes{$testnum}) {
+        return $ignoretestcodes{$testnum};
+    }
+    return 0;
+}
+
 
 #######################################################################
 # Check options to this test program
@@ -1929,13 +2015,14 @@ while(@ARGV) {
     elsif($ARGV[0] eq "-r") {
         # run time statistics needs Time::HiRes
         if($Time::HiRes::VERSION) {
-            keys(%timeprepini) = 1000;
-            keys(%timesrvrini) = 1000;
-            keys(%timesrvrend) = 1000;
-            keys(%timetoolini) = 1000;
-            keys(%timetoolend) = 1000;
-            keys(%timesrvrlog) = 1000;
-            keys(%timevrfyend) = 1000;
+            # presize hashes appropriately to hold an entire test run
+            keys(%timeprepini) = 2000;
+            keys(%timesrvrini) = 2000;
+            keys(%timesrvrend) = 2000;
+            keys(%timetoolini) = 2000;
+            keys(%timetoolend) = 2000;
+            keys(%timesrvrlog) = 2000;
+            keys(%timevrfyend) = 2000;
             $timestats=1;
             $fullstats=0;
         }
@@ -1943,13 +2030,14 @@ while(@ARGV) {
     elsif($ARGV[0] eq "-rf") {
         # run time statistics needs Time::HiRes
         if($Time::HiRes::VERSION) {
-            keys(%timeprepini) = 1000;
-            keys(%timesrvrini) = 1000;
-            keys(%timesrvrend) = 1000;
-            keys(%timetoolini) = 1000;
-            keys(%timetoolend) = 1000;
-            keys(%timesrvrlog) = 1000;
-            keys(%timevrfyend) = 1000;
+            # presize hashes appropriately to hold an entire test run
+            keys(%timeprepini) = 2000;
+            keys(%timesrvrini) = 2000;
+            keys(%timesrvrend) = 2000;
+            keys(%timetoolini) = 2000;
+            keys(%timetoolend) = 2000;
+            keys(%timesrvrlog) = 2000;
+            keys(%timevrfyend) = 2000;
             $timestats=1;
             $fullstats=1;
         }
@@ -2381,13 +2469,30 @@ my $count=0;
 
 $start = time();
 
+# scan all tests to find ones we should try to run
+my @runtests;
 foreach my $testnum (@at) {
-
     $lasttest = $testnum if($testnum > $lasttest);
+    my ($why, $errorreturncode) = singletest_shouldrun($testnum);
+    if($why || $listonly) {
+        # Display test name now--test will be completely skipped later
+        my $error = singletest_count($testnum, $why);
+        next;
+    }
+    $ignoretestcodes{$testnum} = $errorreturncode;
+    push(@runtests, $testnum);
+}
+
+if($listonly) {
+    exit(0);
+}
+
+# run through each candidate test and execute it
+foreach my $testnum (@runtests) {
     $count++;
 
     # execute one test case
-    my $error = singletest($testnum, $count, scalar(@at));
+    my $error = singletest($testnum, $count, scalar(@runtests));
 
     # Submit the test case result with the CI environment
     citest_finishtest($testnum, $error);
