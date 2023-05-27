@@ -277,7 +277,7 @@ int main(int argc, const char** argv)
   // Initialize CURL connection
 
   if(!init(conn, argv[1])) {
-    fprintf(stderr, "Connection initializion failed\n");
+    fprintf(stderr, "Connection initialization failed\n");
     exit(EXIT_FAILURE);
   }
 
