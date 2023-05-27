@@ -616,7 +616,7 @@ cleanup:
     rc = SSH_ERROR;                                             \
   } while(0)
 
-#define MOVE_TO_LAST_AUTH do {                          \
+#define MOVE_TO_PASSWD_AUTH do {                        \
     if(sshc->auth_methods & SSH_AUTH_METHOD_PASSWORD) { \
       rc = SSH_OK;                                      \
       state(data, SSH_AUTH_PASS_INIT);                  \
@@ -626,23 +626,23 @@ cleanup:
     }                                                   \
   } while(0)
 
-#define MOVE_TO_TERTIARY_AUTH do {                              \
+#define MOVE_TO_KEY_AUTH do {                                   \
     if(sshc->auth_methods & SSH_AUTH_METHOD_INTERACTIVE) {      \
       rc = SSH_OK;                                              \
       state(data, SSH_AUTH_KEY_INIT);                           \
     }                                                           \
     else {                                                      \
-      MOVE_TO_LAST_AUTH;                                        \
+      MOVE_TO_PASSWD_AUTH;                                      \
     }                                                           \
   } while(0)
 
-#define MOVE_TO_SECONDARY_AUTH do {                             \
+#define MOVE_TO_GSSAPI_AUTH do {                                \
     if(sshc->auth_methods & SSH_AUTH_METHOD_GSSAPI_MIC) {       \
       rc = SSH_OK;                                              \
       state(data, SSH_AUTH_GSSAPI);                             \
     }                                                           \
     else {                                                      \
-      MOVE_TO_TERTIARY_AUTH;                                    \
+      MOVE_TO_KEY_AUTH;                                         \
     }                                                           \
   } while(0)
 
@@ -793,6 +793,16 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         }
 
         sshc->auth_methods = ssh_userauth_list(sshc->ssh_session, NULL);
+        if(sshc->auth_methods)
+          infof(data, "SSH authentication methods available: %s%s%s%s",
+                sshc->auth_methods & SSH_AUTH_METHOD_PUBLICKEY ?
+                "public key, ": "",
+                sshc->auth_methods & SSH_AUTH_METHOD_GSSAPI_MIC ?
+                "GSSAPI, " : "",
+                sshc->auth_methods & SSH_AUTH_METHOD_INTERACTIVE ?
+                "keyboard-interactive, " : "",
+                sshc->auth_methods & SSH_AUTH_METHOD_PASSWORD ?
+                "password": "");
         if(sshc->auth_methods & SSH_AUTH_METHOD_PUBLICKEY) {
           state(data, SSH_AUTH_PKEY_INIT);
           infof(data, "Authentication using SSH public key file");
@@ -815,7 +825,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       }
     case SSH_AUTH_PKEY_INIT:
       if(!(data->set.ssh_auth_types & CURLSSH_AUTH_PUBLICKEY)) {
-        MOVE_TO_SECONDARY_AUTH;
+        MOVE_TO_GSSAPI_AUTH;
         break;
       }
 
@@ -831,7 +841,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
           }
 
           if(rc != SSH_OK) {
-            MOVE_TO_SECONDARY_AUTH;
+            MOVE_TO_GSSAPI_AUTH;
             break;
           }
         }
@@ -866,7 +876,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
           break;
         }
 
-        MOVE_TO_SECONDARY_AUTH;
+        MOVE_TO_GSSAPI_AUTH;
       }
       break;
     case SSH_AUTH_PKEY:
@@ -884,13 +894,13 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       }
       else {
         infof(data, "Failed public key authentication (rc: %d)", rc);
-        MOVE_TO_SECONDARY_AUTH;
+        MOVE_TO_GSSAPI_AUTH;
       }
       break;
 
     case SSH_AUTH_GSSAPI:
       if(!(data->set.ssh_auth_types & CURLSSH_AUTH_GSSAPI)) {
-        MOVE_TO_TERTIARY_AUTH;
+        MOVE_TO_KEY_AUTH;
         break;
       }
 
@@ -908,7 +918,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         break;
       }
 
-      MOVE_TO_TERTIARY_AUTH;
+      MOVE_TO_KEY_AUTH;
       break;
 
     case SSH_AUTH_KEY_INIT:
@@ -916,13 +926,12 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         state(data, SSH_AUTH_KEY);
       }
       else {
-        MOVE_TO_LAST_AUTH;
+        MOVE_TO_PASSWD_AUTH;
       }
       break;
 
     case SSH_AUTH_KEY:
-
-      /* Authentication failed. Continue with keyboard-interactive now. */
+      /* keyboard-interactive authentication */
       rc = myssh_auth_interactive(conn);
       if(rc == SSH_AGAIN) {
         break;
@@ -930,13 +939,15 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       if(rc == SSH_OK) {
         sshc->authed = TRUE;
         infof(data, "completed keyboard interactive authentication");
+        state(data, SSH_AUTH_DONE);
       }
-      state(data, SSH_AUTH_DONE);
+      else {
+        MOVE_TO_PASSWD_AUTH;
+      }
       break;
 
     case SSH_AUTH_PASS_INIT:
       if(!(data->set.ssh_auth_types & CURLSSH_AUTH_PASSWORD)) {
-        /* Host key authentication is intentionally not implemented */
         MOVE_TO_ERROR_STATE(CURLE_LOGIN_DENIED);
         break;
       }
