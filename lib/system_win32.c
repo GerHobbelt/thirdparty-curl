@@ -36,8 +36,10 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
-//LARGE_INTEGER Curl_freq = { 0 };
-//bool Curl_isVistaOrGreater = FALSE;
+#if 0
+LARGE_INTEGER Curl_freq;
+bool Curl_isVistaOrGreater;
+#endif
 
 /* Handle of iphlpapp.dll */
 static HMODULE s_hIpHlpApiDll = NULL;

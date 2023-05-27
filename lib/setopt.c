@@ -1302,7 +1302,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_FTP_SKIP_PASV_IP:
     /*
-     * Set up how to handle the IP that is returned by the server for PASV
+     * Set up how to handle the IP address that is returned by the server for PASV responses.
      */
     data->set.ftp_pasvp_ip_rule = va_arg(param, long);
     break;

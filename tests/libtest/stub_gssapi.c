@@ -57,20 +57,6 @@ static const char *min_err_table[] = {
   NULL
 };
 
-#if defined(_MSC_VER)
-// provide missing strndup
-char* strndup(const char* src, size_t maxlen)
-{
-	size_t len = strnlen(src, maxlen);
-	char* p = malloc(len + 1);
-	if (p) {
-		memcpy(p, src, len);
-		p[len] = 0;
-	}
-	return p;
-}
-#endif
-
 struct gss_ctx_id_t_desc_struct {
   enum { NONE, KRB5, NTLM1, NTLM3 } sent;
   int have_krb5;

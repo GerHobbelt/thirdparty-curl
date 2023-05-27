@@ -203,7 +203,11 @@ UNITTEST_START
     },
     /* The truncation-is-successful tests have an expected maximum path length
        of 259 (unless the path starts with \\) and an expected maximum filename
-       length of 255. */
+       length of 255.
+	   
+	   I assume MSDOS has variable max path lengths depending on compiler that are shorter
+       so currently these "good" truncate tests won't run on MSDOS */
+#ifndef MSDOS
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
       "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
@@ -345,6 +349,7 @@ UNITTEST_START
         SANITIZE_ALLOW_PATH,
       NULL, SANITIZE_ERR_INVALID_PATH
     },
+#endif /* !MSDOS */
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
       "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"

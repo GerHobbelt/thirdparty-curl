@@ -1505,7 +1505,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'p': /* --progress-percent */
         global->progressmode = CURL_PROGRESS_PERCENT;
         break;
-	  default:  /* --progress-bar */
+      default:  /* --progress-bar */
         global->progressmode =
           toggle ? CURL_PROGRESS_BAR : CURL_PROGRESS_STATS;
         break;

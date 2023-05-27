@@ -277,7 +277,7 @@ int main(int argc, const char** argv)
   /* Initialize the curl library - do not call any libcurl functions before
      this point */
   result = main_init(&global);
-  if (!result) {
+  if(!result) {
     /* Start our curl operation */
     result = operate(&global, argc, argv);
 

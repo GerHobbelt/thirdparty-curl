@@ -103,7 +103,7 @@ UNITTEST_START
   fail_if(result, "Curl_altsvc_parse(6) failed!");
   fail_unless(asi->list.size == 10, "wrong number of entries");
 
-  Curl_altsvc_save(NULL, asi, outname);
+  Curl_altsvc_save(curl, asi, outname);
 
   curl_easy_cleanup(curl);
   fail:

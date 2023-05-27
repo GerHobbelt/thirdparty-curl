@@ -44,6 +44,10 @@
 #include <inet.h>
 #endif
 
+#if defined(USE_THREADS_POSIX) && defined(HAVE_PTHREAD_H)
+#  include <pthread.h>
+#endif
+
 #ifdef HAVE_GETADDRINFO
 #  define RESOLVER_ENOMEM  EAI_MEMORY
 #else

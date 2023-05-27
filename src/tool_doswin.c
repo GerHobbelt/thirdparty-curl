@@ -238,7 +238,7 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
 }
 
 /*
-Return the maximum sanitized length of the unsanitized 'file_name'.
+Return the maximum allowed length of the (to-be-)sanitized 'file_name'.
 
 This is a supporting function for any function that returns a sanitized
 filename.
@@ -500,10 +500,10 @@ that some path information may pass through. For example drive letter names
 (C:, D:, etc) are allowed to pass through. For sanitizing a filename use
 sanitize_file_name.
 
-This function does not rename reserved device names in special paths, which is
+This function does not rename reserved device names in special paths, where a
 'file_name' starts with \\ and 'flags' contains SANITIZE_ALLOW_PATH. For
 example C:\COM1 is surely unintended and would be renamed in any case, but
-\\.\COM1 wouldn't be renamed when paths are allowed.
+\\.\COM1 wouldn't be renamed when UNC paths are allowed.
 
 Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
 Failure: (!= SANITIZE_ERR_OK) *sanitized is NULL.

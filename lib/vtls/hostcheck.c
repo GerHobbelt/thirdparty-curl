@@ -71,7 +71,12 @@ static bool pmatch(const char *hostname, size_t hostlen,
  * apparent distinction between a name and an IP. We need to detect the use of
  * an IP address and not wildcard match on such names.
  *
+ * Only match on "*" being used for the leftmost label, not "a*", "a*b" nor
+ * "*b".
+ *
  * Return TRUE on a match. FALSE if not.
+ *
+ * @unittest: 1397
  */
 
 static bool hostmatch(const char *hostname,

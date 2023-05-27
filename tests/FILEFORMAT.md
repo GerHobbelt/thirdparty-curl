@@ -564,6 +564,7 @@ stripped off.
 
 Use the mode="text" attribute if the file is in text mode on platforms that
 have a text/binary difference.
+
 ### `<stdin [nonewline="yes"]>`
 Pass this given data on stdin to the tool.
 

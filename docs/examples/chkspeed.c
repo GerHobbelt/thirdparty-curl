@@ -41,13 +41,6 @@
 
 #include <curl/curl.h>
 
-#if defined(_MSC_VER)
-static int strncasecmp(const char* a, const char* b, size_t n)
-{
-	return strnicmp(a, b, n);
-}
-#endif
-
 #define URL_BASE "http://speedtest.your.domain/"
 #define URL_1M   URL_BASE "file_1M.bin"
 #define URL_2M   URL_BASE "file_2M.bin"

@@ -206,6 +206,7 @@ Curl_clone_primary_ssl_config(struct ssl_primary_config *source,
   CLONE_BLOB(issuercert_blob);
   CLONE_STRING(CApath);
   CLONE_STRING(CAfile);
+  CLONE_STRING(issuercert);
   CLONE_STRING(clientcert);
   CLONE_STRING(cipher_list);
   CLONE_STRING(cipher_list13);
@@ -224,6 +225,7 @@ void Curl_free_primary_ssl_config(struct ssl_primary_config *sslc)
 {
   Curl_safefree(sslc->CApath);
   Curl_safefree(sslc->CAfile);
+  Curl_safefree(sslc->issuercert);
   Curl_safefree(sslc->clientcert);
   Curl_safefree(sslc->cipher_list);
   Curl_safefree(sslc->cipher_list13);

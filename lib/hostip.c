@@ -1086,7 +1086,6 @@ CURLcode Curl_loadhostpairs(struct Curl_easy *data)
 {
   struct curl_slist *hostp;
   char *host_end;
-  size_t hlen;
 
   /* Default is no wildcard found */
   data->state.wildcard_resolve = false;
