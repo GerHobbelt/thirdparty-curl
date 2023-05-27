@@ -150,6 +150,7 @@ my %timetoolini; # timestamp for each test command run starting
 my %timetoolend; # timestamp for each test command run stopping
 my %timesrvrlog; # timestamp for each test server logs lock removal
 my %timevrfyend; # timestamp for each test result verification end
+my $runnerid;    # ID for runner async calls
 
 #######################################################################
 # variables that command line options may set
@@ -182,21 +183,16 @@ sub logmsg {
     }
 }
 
-# enable memory debugging if curl is compiled with it
-$ENV{'CURL_MEMDEBUG'} = $memdump;
-$ENV{'CURL_ENTROPY'}="12345678";
-$ENV{'CURL_FORCETIME'}=1; # for debug NTLM magic
-$ENV{'CURL_GLOBAL_INIT'}=1; # debug curl_global_init/cleanup use
-$ENV{'HOME'}=$pwd;
-$ENV{'CURL_HOME'}=$ENV{'HOME'};
-$ENV{'XDG_CONFIG_HOME'}=$ENV{'HOME'};
-$ENV{'COLUMNS'}=79; # screen width!
-
 sub catch_zap {
     my $signame = shift;
     logmsg "runtests.pl received SIG$signame, exiting\n";
-    my ($unexpected, $logs) = runner_stopservers();
-    logmsg $logs;
+    # TODO: make this set a flag that is checked in the main test loop
+    if($runnerid) {
+        runnerac_stopservers($runnerid);
+        runnerar();  # ignore the results
+        # Kill the runner entirely
+        runnerac_shutdown($runnerid);
+    }
     die "Somebody sent me a SIG$signame";
 }
 $SIG{INT} = \&catch_zap;
@@ -277,7 +273,7 @@ sub cleardir {
         return 0; # can't open dir
     while($file = readdir($dh)) {
         # Don't clear the $PIDDIR since those need to live beyond one test
-        if(($file !~ /^(\.|\.\.)\z/) && "$dir/$file" ne $PIDDIR) {
+        if(($file !~ /^(\.|\.\.)\z/) && "$file" ne $PIDDIR) {
             if(-d "$dir/$file") {
                 if(!cleardir("$dir/$file")) {
                     $done = 0;
@@ -778,17 +774,6 @@ sub displayserverfeatures {
     logmsg sprintf("%s", $http_ipv6?"HTTP-IPv6 ":"");
     logmsg sprintf("%s", $http_unix?"HTTP-unix ":"");
     logmsg sprintf("%s\n", $ftp_ipv6?"FTP-IPv6 ":"");
-
-    if($verbose) {
-        if($feature{"unix-sockets"}) {
-            logmsg "* Unix socket paths:\n";
-            if($http_unix) {
-                logmsg sprintf("*   HTTP-Unix:%s\n", $HTTPUNIXPATH);
-                logmsg sprintf("*   Socks-Unix:%s\n", $SOCKSUNIXPATH);
-            }
-        }
-    }
-
     logmsg "***************************************** \n";
 }
 
@@ -1226,7 +1211,7 @@ sub singletest_check {
     my @protocol= getpart("verify", "protocol");
     if(@protocol) {
         # Verify the sent request
-        my @out = loadarray($SERVERIN);
+        my @out = loadarray("$logdir/$SERVERIN");
 
         # check if there's any attributes on the verify/protocol section
         my %hash = getpartattr("verify", "protocol");
@@ -1257,7 +1242,7 @@ sub singletest_check {
 
         if((!$out[0] || ($out[0] eq "")) && $protocol[0]) {
             logmsg "\n $testnum: protocol FAILED!\n".
-                " There was no content at all in the file $SERVERIN.\n".
+                " There was no content at all in the file $logdir/$SERVERIN.\n".
                 " Server glitch? Total curl failure? Returned: $cmdres\n";
             # timestamp test result verification end
             $timevrfyend{$testnum} = Time::HiRes::time();
@@ -1381,7 +1366,7 @@ sub singletest_check {
             chomp($proxyprot[-1]);
         }
 
-        my @out = loadarray($PROXYIN);
+        my @out = loadarray("$logdir/$PROXYIN");
         for(@strip) {
             # strip off all lines that match the patterns from both arrays
             chomp $_;
@@ -1424,7 +1409,8 @@ sub singletest_check {
             if(!$filename) {
                 logmsg "ERROR: section verify=>file$partsuffix ".
                        "has no name attribute\n";
-                my ($unexpected, $logs) = runner_stopservers();
+                runnerac_stopservers($runnerid);
+                my ($rid, $unexpected, $logs) = runnerar();
                 logmsg $logs;
                 # timestamp test result verification end
                 $timevrfyend{$testnum} = Time::HiRes::time();
@@ -1476,7 +1462,7 @@ sub singletest_check {
     my @socksprot = getpart("verify", "socks");
     if(@socksprot) {
         # Verify the sent SOCKS proxy details
-        my @out = loadarray($SOCKSIN);
+        my @out = loadarray("$logdir/$SOCKSIN");
         $res = compare($testnum, $testname, "socks", \@out, \@socksprot);
         if($res) {
             return -1;
@@ -1509,14 +1495,14 @@ sub singletest_check {
     }
 
     if($feature{"TrackMemory"}) {
-        if(! -f $memdump) {
+        if(! -f "$logdir/$MEMDUMP") {
             my %cmdhash = getpartattr("client", "command");
             my $cmdtype = $cmdhash{'type'} || "default";
             logmsg "\n** ALERT! memory tracking with no output file?\n"
                 if(!$cmdtype eq "perl");
         }
         else {
-            my @memdata=`$memanalyze $memdump`;
+            my @memdata=`$memanalyze "$logdir/$MEMDUMP"`;
             my $leak=0;
             for(@memdata) {
                 if($_ ne "") {
@@ -1641,7 +1627,8 @@ sub singletest {
 
     # first, remove all lingering log files
     if(!cleardir($logdir) && $clearlocks) {
-        my $logs = runner_clearlocks($logdir);
+        runnerac_clearlocks($runnerid, $logdir);
+        my ($rid, $logs) = runnerar();
         logmsg $logs;
         cleardir($logdir);
     }
@@ -1662,7 +1649,8 @@ sub singletest {
     # Register the test case with the CI environment
     citest_starttest($testnum);
 
-    my ($why, $error, $logs, $testtimings) = runner_test_preprocess($testnum);
+    runnerac_test_preprocess($runnerid, $testnum);
+    my ($rid, $why, $error, $logs, $testtimings) = runnerar();
     logmsg $logs;
     if($error == -2) {
         if($postmortem) {
@@ -1677,6 +1665,8 @@ sub singletest {
     # Print the test name and count tests
     $error = singletest_count($testnum, $why);
     if($error) {
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $error);
         return $error;
     }
 
@@ -1686,23 +1676,31 @@ sub singletest {
     my $CURLOUT;
     my $tool;
     my $usedvalgrind;
-    ($error, $logs, $testtimings, $cmdres, $CURLOUT, $tool, $usedvalgrind) = runner_test_run($testnum);
+    runnerac_test_run($runnerid, $testnum);
+    ($rid, $error, $logs, $testtimings, $cmdres, $CURLOUT, $tool, $usedvalgrind) = runnerar();
     logmsg $logs;
     updatetesttimings($testnum, %$testtimings);
     if($error == -1) {
         # no further verification will occur
         $timevrfyend{$testnum} = Time::HiRes::time();
+        my $err = ignoreresultcode($testnum);
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $err);
         # return a test failure, either to be reported or to be ignored
-        return ignoreresultcode($testnum);
+        return $err;
     }
     elsif($error == -2) {
         # fill in the missing timings on error
         timestampskippedevents($testnum);
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $error);
         return $error;
     }
     elsif($error > 0) {
         # no further verification will occur
         $timevrfyend{$testnum} = Time::HiRes::time();
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $error);
         return $error;
     }
 
@@ -1710,13 +1708,18 @@ sub singletest {
     # Verify that the test succeeded
     $error = singletest_check($testnum, $cmdres, $CURLOUT, $tool, $usedvalgrind);
     if($error == -1) {
+        my $err = ignoreresultcode($testnum);
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $err);
         # return a test failure, either to be reported or to be ignored
-        return ignoreresultcode($testnum);
+        return $err;
     }
     elsif($error == -2) {
-      # torture test; there is no verification, so the run result holds the
-      # test success code
-      return $cmdres;
+        # torture test; there is no verification, so the run result holds the
+        # test success code
+        # Submit the test case result with the CI environment
+        citest_finishtest($testnum, $cmdres);
+        return $cmdres;
     }
 
 
@@ -1724,6 +1727,8 @@ sub singletest {
     # Report a successful test
     singletest_success($testnum, $count, $total, ignoreresultcode($testnum));
 
+    # Submit the test case result with the CI environment
+    citest_finishtest($testnum, 0);
 
     return 0;
 }
@@ -2242,7 +2247,6 @@ if ($gdbthis) {
 
 cleardir($LOGDIR);
 mkdir($LOGDIR, 0777);
-mkdir($PIDDIR, 0777);
 
 #######################################################################
 # initialize some variables
@@ -2257,7 +2261,6 @@ setlogfunc(\&logmsg);
 #
 
 if(!$listonly) {
-    unlink($memdump);  # remove this if there was one left
     checksystemfeatures();
 }
 
@@ -2479,11 +2482,7 @@ sub displaylogs {
 }
 
 #######################################################################
-# Setup CI Test Run
-citest_starttestrun();
-
-#######################################################################
-# The main test-loop
+# Scan tests to find suitable candidates
 #
 
 my $failed;
@@ -2515,15 +2514,25 @@ if($listonly) {
     exit(0);
 }
 
+#######################################################################
+# Setup CI Test Run
+citest_starttestrun();
+
+#######################################################################
+# Initialize the runner to prepare to run tests
+cleardir($LOGDIR);
+mkdir($LOGDIR, 0777);
+$runnerid = runner_init($LOGDIR);
+
+#######################################################################
+# The main test-loop
+#
 # run through each candidate test and execute it
 foreach my $testnum (@runtests) {
     $count++;
 
     # execute one test case
     my $error = singletest($testnum, $count, scalar(@runtests));
-
-    # Submit the test case result with the CI environment
-    citest_finishtest($testnum, $error);
 
     if($error < 0) {
         # not a test we can run
@@ -2567,8 +2576,16 @@ my $sofar = time() - $start;
 citest_finishtestrun();
 
 # Tests done, stop the servers
-my ($unexpected, $logs) = runner_stopservers();
+runnerac_stopservers($runnerid);
+my ($rid, $unexpected, $logs) = runnerar();
 logmsg $logs;
+
+# Kill the runner
+# There is a race condition here since we don't know exactly when the runner
+# has finished shutting itself down
+runnerac_shutdown($runnerid);
+undef $runnerid;
+sleep 0;  # give runner a chance to run
 
 my $numskipped = %skipped ? sum values %skipped : 0;
 my $all = $total + $numskipped;
