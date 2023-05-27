@@ -889,7 +889,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         ParameterError pe = GetSizeParameter(global, nextarg, "rate", &value);
 
         if(pe != PARAM_OK)
-           return pe;
+          return pe;
         config->recvpersecond = value;
         config->sendpersecond = value;
       }
@@ -1075,7 +1075,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
             GetSizeParameter(global, nextarg, "max-filesize", &value);
 
           if(pe != PARAM_OK)
-             return pe;
+            return pe;
           config->max_filesize = value;
         }
         break;
