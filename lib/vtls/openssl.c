@@ -1500,7 +1500,7 @@ int cert_stuff(struct Curl_easy *data,
       }
 
       cert_done = 1;
-    fail:
+fail:
       EVP_PKEY_free(pri);
       X509_free(x509);
       sk_X509_pop_free(ca, X509_free);
@@ -4505,7 +4505,7 @@ static ssize_t ossl_send(struct Curl_cfilter *cf,
   }
   *curlcode = CURLE_OK;
 
-  out:
+out:
   return (ssize_t)rc; /* number of bytes */
 }
 
@@ -4607,7 +4607,7 @@ static ssize_t ossl_recv(struct Curl_cfilter *cf,
     }
   }
 
-  out:
+out:
   return nread;
 }
 

@@ -500,7 +500,7 @@ static ssize_t write_behind(struct testcase *test, int convert)
        putc(c, file); */
     if(1 != write(test->ofile, &c, 1))
       break;
-    skipit:
+skipit:
     prevchar = c;
   }
   return count;
@@ -1205,7 +1205,7 @@ static void sendtftp(struct testcase *test, const struct formats *pf)
       wait_ms(1000*test->writedelay);
     }
 
-    send_data:
+send_data:
     logmsg("write");
     if(swrite(peer, sdp, size + 4) != size + 4) {
       logmsg("write: fail");

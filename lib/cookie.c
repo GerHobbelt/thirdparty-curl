@@ -1416,7 +1416,7 @@ static struct Cookie *dup_cookie(struct Cookie *src)
   }
   return d;
 
-  fail:
+fail:
   freecookie(d);
   return NULL;
 }
