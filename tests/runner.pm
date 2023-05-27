@@ -22,7 +22,15 @@
 #
 ###########################################################################
 
-# This module contains entry points to run a single test
+# This module contains entry points to run a single test. runner_init
+# determines whether they will run in a separate process or in the process of
+# the caller. The relevant interface is asynchronous so it will work in either
+# case. Program arguments are marshalled and then written to the end of a pipe
+# (in controlleripccall) which is later read from and the arguments
+# unmarshalled (in ipcrecv) before the desired function is called normally.
+# The function return values are then marshalled and written into another pipe
+# (again in ipcrecv) when is later read from and unmarshalled (in runnerar)
+# before being returned to the caller.
 
 package runner;
 
@@ -36,6 +44,7 @@ BEGIN {
     our @EXPORT = qw(
         checktestcmd
         prepro
+        readtestkeywords
         restore_test_env
         runner_init
         runnerac_clearlocks
@@ -59,7 +68,6 @@ BEGIN {
 
     # these are for debugging only
     our @EXPORT_OK = qw(
-        readtestkeywords
         singletest_preprocess
     );
 }
@@ -92,6 +100,7 @@ use testutil qw(
     clearlogs
     logmsg
     runclient
+    shell_quote
     subbase64
     subnewlines
     );
@@ -99,6 +108,7 @@ use testutil qw(
 
 #######################################################################
 # Global variables set elsewhere but used only by this package
+# These may only be set *before* runner_init is called
 our $DBGCURL=$CURL; #"../src/.libs/curl";  # alternative for debugging
 our $valgrind_logfile="--log-file";  # the option name for valgrind >=3
 our $valgrind_tool="--tool=memcheck";
@@ -117,11 +127,15 @@ my $CURLLOG="$LOGDIR/commands.log"; # all command lines run
 my $SERVERLOGS_LOCK="$LOGDIR/serverlogs.lock"; # server logs advisor read lock
 my $defserverlogslocktimeout = 2; # timeout to await server logs lock removal
 my $defpostcommanddelay = 0; # delay between command and postcheck sections
-my $controllerw;    # pipe that controller writes to
+my $multiprocess;   # nonzero with a separate test runner process
+
+# pipes
 my $runnerr;        # pipe that runner reads from
 my $runnerw;        # pipe that runner writes to
-my $controllerr;    # pipe that controller reads from
 
+# per-runner variables, indexed by runner ID; these are used by controller only
+my %controllerr;    # pipe that controller reads from
+my %controllerw;    # pipe that controller writes to
 
 # redirected stdout/stderr to these files
 sub stdoutfilename {
@@ -140,12 +154,9 @@ sub stderrfilename {
 # runnerac_* functions
 # Called by controller
 sub runner_init {
-    my ($logdir)=@_;
+    my ($logdir, $jobs)=@_;
 
-    # Set this directory as ours
-    # TODO: This will need to be uncommented once there are multiple runners
-    #$LOGDIR = $logdir;
-    mkdir("$LOGDIR/$PIDDIR", 0777);
+    $multiprocess = !!$jobs;
 
     # enable memory debugging if curl is compiled with it
     $ENV{'CURL_MEMDEBUG'} = "$LOGDIR/$MEMDUMP";
@@ -158,11 +169,70 @@ sub runner_init {
     $ENV{'COLUMNS'}=79; # screen width!
 
     # create pipes for communication with runner
-    pipe $runnerr, $controllerw;
-    pipe $controllerr, $runnerw;
+    my ($thisrunnerr, $thiscontrollerw, $thiscontrollerr, $thisrunnerw);
+    pipe $thisrunnerr, $thiscontrollerw;
+    pipe $thiscontrollerr, $thisrunnerw;
 
-    # There is only one runner right now
-    return "singleton";
+    my $thisrunnerid;
+    if($multiprocess) {
+        # Create a separate process in multiprocess mode
+        my $child = fork();
+        if(0 == $child) {
+            # TODO: set up a better signal handler
+            $SIG{INT} = 'IGNORE';
+            $SIG{TERM} = 'IGNORE';
+
+            $thisrunnerid = $$;
+            print "Runner $thisrunnerid starting\n" if($verbose);
+
+            # Here we are the child (runner).
+            close($thiscontrollerw);
+            close($thiscontrollerr);
+            $runnerr = $thisrunnerr;
+            $runnerw = $thisrunnerw;
+
+            # Set this directory as ours
+            $LOGDIR = $logdir;
+            mkdir("$LOGDIR/$PIDDIR", 0777);
+
+            # handle IPC calls
+            event_loop();
+
+            # Can't rely on logmsg here in case it's buffered
+            print "Runner $thisrunnerid exiting\n" if($verbose);
+            exit 0;
+        }
+
+        # Here we are the parent (controller).
+        close($thisrunnerw);
+        close($thisrunnerr);
+
+        $thisrunnerid = $child;
+
+    } else {
+        # Create our pid directory
+        mkdir("$LOGDIR/$PIDDIR", 0777);
+
+        # Don't create a separate process
+        $thisrunnerid = "integrated";
+    }
+
+    $controllerw{$thisrunnerid} = $thiscontrollerw;
+    $runnerr = $thisrunnerr;
+    $runnerw = $thisrunnerw;
+    $controllerr{$thisrunnerid} = $thiscontrollerr;
+
+    return $thisrunnerid;
+}
+
+#######################################################################
+# Loop to execute incoming IPC calls until the shutdown call
+sub event_loop {
+    while () {
+        if(ipcrecv()) {
+            last;
+        }
+    }
 }
 
 #######################################################################
@@ -779,7 +849,7 @@ sub singletest_run {
     }
 
     if(!$tool) {
-        $CMDLINE="$CURL";
+        $CMDLINE=shell_quote($CURL);
     }
 
     if(use_valgrind() && !$disablevalgrind) {
@@ -826,11 +896,11 @@ sub singletest_run {
     if ($torture) {
         $cmdres = torture($CMDLINE,
                           $testnum,
-                          "$gdb --directory $LIBDIR $DBGCURL -x $LOGDIR/gdbcmd");
+                          "$gdb --directory $LIBDIR " . shell_quote($DBGCURL) . " -x $LOGDIR/gdbcmd");
     }
     elsif($gdbthis) {
         my $GDBW = ($gdbxwin) ? "-w" : "";
-        runclient("$gdb --directory $LIBDIR $DBGCURL $GDBW -x $LOGDIR/gdbcmd");
+        runclient("$gdb --directory $LIBDIR " . shell_quote($DBGCURL) . " $GDBW -x $LOGDIR/gdbcmd");
         $cmdres=0; # makes it always continue after a debugged run
     }
     else {
@@ -864,7 +934,7 @@ sub singletest_clean {
             open(my $gdbcmd, ">", "$LOGDIR/gdbcmd2") || die "Failure writing gdb file";
             print $gdbcmd "bt\n";
             close($gdbcmd) || die "Failure writing gdb file";
-            runclient("$gdb --directory libtest -x $LOGDIR/gdbcmd2 -batch $DBGCURL core ");
+            runclient("$gdb --directory libtest -x $LOGDIR/gdbcmd2 -batch " . shell_quote($DBGCURL) . " core ");
      #       unlink("$LOGDIR/gdbcmd2");
         }
     }
@@ -980,6 +1050,11 @@ sub runner_test_preprocess {
     readtestkeywords();
 
     ###################################################################
+    # Restore environment variables that were modified in a previous run.
+    # Test definition may instruct to (un)set environment vars.
+    restore_test_env(1);
+
+    ###################################################################
     # Start the servers needed to run this test case
     my ($why, $error) = singletest_startservers($testnum, \%testtimings);
 
@@ -1070,13 +1145,14 @@ sub runnerac_clearlocks {
 # received.
 # Called by controller
 sub runnerac_shutdown {
+    my ($runnerid)=$_[0];
     controlleripccall(\&runner_shutdown, @_);
 
     # These have no more use
-    close($controllerw);
-    undef $controllerw;
-    close($controllerr);
-    undef $controllerr;
+    close($controllerw{$runnerid});
+    undef $controllerw{$runnerid};
+    close($controllerr{$runnerid});
+    undef $controllerr{$runnerid};
 }
 
 # Async call of runner_stopservers
@@ -1113,12 +1189,12 @@ sub controlleripccall {
     my $margs = freeze \@_;
 
     # Send IPC call via pipe
-    syswrite($controllerw, (pack "L", length($margs)) . $margs);
+    syswrite($controllerw{$runnerid}, (pack "L", length($margs)) . $margs);
 
-    # Call the remote function
-    # TODO: this will eventually be done in a separate runner process
-    # kicked off by runner_init()
-    ipcrecv();
+    if(!$multiprocess) {
+        # Call the remote function here in single process mode
+        ipcrecv();
+     }
 }
 
 ###################################################################
@@ -1126,13 +1202,14 @@ sub controlleripccall {
 # The first return value is the runner ID
 # Called by controller
 sub runnerar {
+    my ($runnerid) = @_;
     my $datalen;
-    if (sysread($controllerr, $datalen, 4) <= 0) {
+    if (sysread($controllerr{$runnerid}, $datalen, 4) <= 0) {
         die "error in runnerar\n";
     }
     my $len=unpack("L", $datalen);
     my $buf;
-    if (sysread($controllerr, $buf, $len) <= 0) {
+    if (sysread($controllerr{$runnerid}, $buf, $len) <= 0) {
         die "error in runnerar\n";
     }
 
@@ -1140,18 +1217,41 @@ sub runnerar {
     my $resarrayref = thaw $buf;
 
     # First argument is runner ID
-    unshift @$resarrayref, "singleton";
+    # TODO: remove this; it's unneeded since it's passed in
+    unshift @$resarrayref, $runnerid;
     return @$resarrayref;
 }
 
 ###################################################################
-# Returns nonzero if a response from an async call is ready
+# Returns runnder ID if a response from an async call is ready
+# argument is 0 for nonblocking, undef for blocking, anything else for timeout
 # Called by controller
 sub runnerar_ready {
     my ($blocking) = @_;
     my $rin = "";
-    vec($rin, fileno($controllerr), 1) = 1;
-    return select(my $rout=$rin, undef, my $eout=$rin, $blocking ? undef : 0);
+    my %idbyfileno;
+    my $maxfileno=0;
+    foreach my $p (keys(%controllerr)) {
+        my $fd = fileno($controllerr{$p});
+        vec($rin, $fd, 1) = 1;
+        $idbyfileno{$fd} = $p;  # save the runner ID for each pipe fd
+        if($fd > $maxfileno) {
+            $maxfileno = $fd;
+        }
+    }
+
+    # Wait for any pipe from any runner to be ready
+    # TODO: this is relatively slow with hundreds of fds
+    # TODO: handle errors
+    if(select(my $rout=$rin, undef, undef, $blocking)) {
+        for my $fd (0..$maxfileno) {
+            if(vec($rin, $fd, 1)) {
+                return $idbyfileno{$fd};
+            }
+        }
+        die "Internal pipe readiness inconsistency\n";
+    }
+    return undef;
 }
 
 ###################################################################
@@ -1184,7 +1284,7 @@ sub ipcrecv {
     elsif($funcname eq "runner_shutdown") {
         runner_shutdown(@$argsarrayref);
         # Special case: no response
-        return;
+        return 1;
     }
     elsif($funcname eq "runner_stopservers") {
         @res = runner_stopservers(@$argsarrayref);
@@ -1203,6 +1303,8 @@ sub ipcrecv {
     $buf = freeze \@res;
 
     syswrite($runnerw, (pack "L", length($buf)) . $buf);
+
+    return 0;
 }
 
 ###################################################################
