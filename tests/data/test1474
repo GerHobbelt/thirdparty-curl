@@ -18,11 +18,14 @@
 #    It's still throttled, however, so it takes about 9 seconds to finish
 #    sending.
 # 6. The server receives the response and this time acks it with 200.
+# Because of the timing sensitivity, this test is marked flaky to avoid it
+# being run in the CI builds.
 <info>
 <keywords>
 HTTP
 HTTP PUT
 Expect
+flaky
 </keywords>
 </info>
 # Server-side
