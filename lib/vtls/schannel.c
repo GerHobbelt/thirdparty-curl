@@ -1674,7 +1674,6 @@ struct Adder_args
   struct Curl_easy *data;
   CURLcode result;
   int idx;
-  int certs_count;
 };
 
 static bool
@@ -1827,7 +1826,6 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
       struct Adder_args args;
       args.data = data;
       args.idx = 0;
-      args.certs_count = certs_count;
       traverse_cert_store(ccert_context, add_cert_to_certinfo, &args);
       result = args.result;
     }
