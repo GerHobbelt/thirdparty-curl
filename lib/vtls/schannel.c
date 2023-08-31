@@ -1017,7 +1017,9 @@ schannel_acquire_credential_handle(struct Curl_cfilter *cf,
                                          &backend->cred->time_stamp);
   }
   else {
-    /* Pre-Windows 10 1809 or the user set a legacy algorithm list */
+    /* Pre-Windows 10 1809 or the user set a legacy algorithm list. Although MS
+       doesn't document it, currently Schannel will not negotiate TLS 1.3 when
+       SCHANNEL_CRED is used. */
     ALG_ID algIds[NUM_CIPHERS];
     char *ciphers = conn_config->cipher_list;
     SCHANNEL_CRED schannel_cred = { 0 };
@@ -1026,6 +1028,11 @@ schannel_acquire_credential_handle(struct Curl_cfilter *cf,
     schannel_cred.grbitEnabledProtocols = enabled_protocols;
 
     if(ciphers) {
+      if((enabled_protocols & SP_PROT_TLS1_3_CLIENT)) {
+        infof(data, "schannel: WARNING: This version of Schannel may "
+              "negotiate a less-secure TLS version than TLS 1.3 because the "
+              "user set an algorithm cipher list.");
+      }
       if(conn_config->cipher_list13) {
         failf(data, "schannel: This version of Schannel does not support "
               "setting an algorithm cipher list and TLS 1.3 cipher list at "
