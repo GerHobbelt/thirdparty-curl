@@ -268,6 +268,7 @@ DPAGES = \
   tlsv1.d \
   tr-encoding.d \
   trace-ascii.d \
+  trace-ids.d \
   trace-time.d \
   trace.d \
   unix-socket.d \
