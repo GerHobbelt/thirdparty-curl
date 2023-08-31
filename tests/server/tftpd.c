@@ -651,8 +651,8 @@ int main(int argc, const char** argv)
     }
   }
 
-  msnprintf(loglockfile, sizeof(loglockfile), "%s/%s",
-            logdir, SERVERLOGS_LOCK);
+  msnprintf(loglockfile, sizeof(loglockfile), "%s/%s/tftp-%s.lock",
+            logdir, SERVERLOGS_LOCKDIR, ipv_inuse);
 
 #ifdef WIN32
   win32_init();
