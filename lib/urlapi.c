@@ -1408,6 +1408,7 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
   bool urldecode = (flags & CURLU_URLDECODE)?1:0;
   bool urlencode = (flags & CURLU_URLENCODE)?1:0;
   bool punycode = FALSE;
+  bool depunyfy = FALSE;
   bool plusdecode = FALSE;
   (void)flags;
   if(!u)
@@ -1438,6 +1439,7 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
     ptr = u->host;
     ifmissing = CURLUE_NO_HOST;
     punycode = (flags & CURLU_PUNYCODE)?1:0;
+    depunyfy = (flags & CURLU_PUNY2IDN)?1:0;
     break;
   case CURLUPART_ZONEID:
     ptr = u->zoneid;
@@ -1488,6 +1490,7 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
     char *port = u->port;
     char *allochost = NULL;
     punycode = (flags & CURLU_PUNYCODE)?1:0;
+    depunyfy = (flags & CURLU_PUNY2IDN)?1:0;
     if(u->scheme && strcasecompare("file", u->scheme)) {
       url = aprintf("file://%s%s%s",
                     u->path,
@@ -1548,6 +1551,17 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
           return CURLUE_LACKS_IDN;
 #else
           allochost = Curl_idn_decode(u->host);
+          if(!allochost)
+            return CURLUE_OUT_OF_MEMORY;
+#endif
+        }
+      }
+      else if(depunyfy) {
+        if(Curl_is_ASCII_name(u->host) && !strncmp("xn--", u->host, 4)) {
+#ifndef USE_IDN
+          return CURLUE_LACKS_IDN;
+#else
+          allochost = Curl_idn_encode(u->host);
           if(!allochost)
             return CURLUE_OUT_OF_MEMORY;
 #endif
@@ -1624,6 +1638,19 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
         return CURLUE_LACKS_IDN;
 #else
         char *allochost = Curl_idn_decode(*part);
+        if(!allochost)
+          return CURLUE_OUT_OF_MEMORY;
+        free(*part);
+        *part = allochost;
+#endif
+      }
+    }
+    else if(depunyfy) {
+      if(Curl_is_ASCII_name(u->host)  && !strncmp("xn--", u->host, 4)) {
+#ifndef USE_IDN
+        return CURLUE_LACKS_IDN;
+#else
+        char *allochost = Curl_idn_encode(*part);
         if(!allochost)
           return CURLUE_OUT_OF_MEMORY;
         free(*part);
