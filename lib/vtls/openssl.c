@@ -194,11 +194,12 @@
  * Whether SSL_CTX_set_keylog_callback is available.
  * OpenSSL: supported since 1.1.1 https://github.com/openssl/openssl/pull/2287
  * BoringSSL: supported since d28f59c27bac (committed 2015-11-19)
- * LibreSSL: unsupported in at least 2.7.2 (explicitly check for it since it
- *           lies and pretends to be OpenSSL 2.0.0).
+ * LibreSSL: supported since 3.5.0 (released 2022-02-24)
  */
 #if (OPENSSL_VERSION_NUMBER >= 0x10101000L && \
      !defined(LIBRESSL_VERSION_NUMBER)) || \
+    (defined(LIBRESSL_VERSION_NUMBER) && \
+     LIBRESSL_VERSION_NUMBER >= 0x3050000fL) || \
     defined(OPENSSL_IS_BORINGSSL)
 #define HAVE_KEYLOG_CALLBACK
 #endif
@@ -206,11 +207,13 @@
 /* Whether SSL_CTX_set_ciphersuites is available.
  * OpenSSL: supported since 1.1.1 (commit a53b5be6a05)
  * BoringSSL: no
- * LibreSSL: no
+ * LibreSSL: supported since 3.4.1 (released 2021-10-14)
  */
-#if ((OPENSSL_VERSION_NUMBER >= 0x10101000L) && \
-     !defined(LIBRESSL_VERSION_NUMBER) &&       \
-     !defined(OPENSSL_IS_BORINGSSL))
+#if ((OPENSSL_VERSION_NUMBER >= 0x10101000L && \
+      !defined(LIBRESSL_VERSION_NUMBER)) || \
+     (defined(LIBRESSL_VERSION_NUMBER) && \
+      LIBRESSL_VERSION_NUMBER >= 0x3040100fL)) && \
+    !defined(OPENSSL_IS_BORINGSSL)
   #define HAVE_SSL_CTX_SET_CIPHERSUITES
   #if !defined(OPENSSL_IS_AWSLC)
     #define HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
@@ -1695,7 +1698,7 @@ static int x509_name_oneline(X509_NAME *a, char *buf, size_t size)
 static int ossl_init(void)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L) &&  \
-  !defined(LIBRESSL_VERSION_NUMBER)
+  (!defined(LIBRESSL_VERSION_NUMBER) || LIBRESSL_VERSION_NUMBER >= 0x2070000fL)
   const uint64_t flags =
 #ifdef OPENSSL_INIT_ENGINE_ALL_BUILTIN
     /* not present in BoringSSL */
@@ -4734,7 +4737,10 @@ static CURLcode ossl_sha256sum(const unsigned char *tmp, /* input */
   mdctx = EVP_MD_CTX_create();
   if(!mdctx)
     return CURLE_OUT_OF_MEMORY;
-  EVP_DigestInit(mdctx, EVP_sha256());
+  if(!EVP_DigestInit(mdctx, EVP_sha256())) {
+    EVP_MD_CTX_destroy(mdctx);
+    return CURLE_FAILED_INIT;
+  }
   EVP_DigestUpdate(mdctx, tmp, tmplen);
   EVP_DigestFinal_ex(mdctx, sha256sum, &len);
   EVP_MD_CTX_destroy(mdctx);
