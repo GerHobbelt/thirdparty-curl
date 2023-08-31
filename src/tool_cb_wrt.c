@@ -290,7 +290,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   if(!fname || !*fname) {
-    warnf(global, "Remote filename has no length!\n");
+    warnf(global, "Remote filename has no length");
     return FALSE;
   }
 
@@ -298,7 +298,7 @@ bool tool_create_output_file(struct OutStruct *outs,
     /* default behaviour: don't overwrite existing files */
     aname = aprintf("%s/%s", config->output_dir, fname);
     if(!aname) {
-      errorf(global, "out of memory\n");
+      errorf(global, "out of memory");
       return FALSE;
     }
 
@@ -361,7 +361,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 
 	  /* Guard against wraparound in new filename */
       if(newlen < len) {
-		errorf(global, "overflow in filename generation\n");
+        errorf(global, "overflow in filename generation");
 		free(aname);
 		free(fn_ext);
 		return FALSE;
@@ -376,7 +376,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 		free(newname);
 		newname = aprintf("%.*s%s.%02d%s", (int)fn_ext_pos, fname, (has_risky_filename ? "__download__" : ""), next_num, fn_ext);
 		if (!newname) {
-			errorf(global, "out of memory\n");
+            errorf(global, "out of memory");
 			free(aname);
 			free(fn_ext);
 			return FALSE;
@@ -410,7 +410,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   if(!file) {
-    warnf(global, "Failed to open the file %s: %s\n", outs->filename,
+    warnf(global, "Failed to open the file %s: %s", outs->filename,
           strerror(errno));
 	free(aname);
 	return FALSE;
@@ -466,13 +466,13 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
   if(config->show_headers) {
     if(bytes > (size_t)CURL_MAX_HTTP_HEADER) {
       warnf(config->global, "Header data size exceeds single call write "
-            "limit!\n");
+            "limit");
       return CURL_WRITEFUNC_ERROR;
     }
   }
   else {
     if(bytes > (size_t)CURL_MAX_WRITE_SIZE) {
-      warnf(config->global, "Data size exceeds single call write limit!\n");
+      warnf(config->global, "Data size exceeds single call write limit");
       return CURL_WRITEFUNC_ERROR;
     }
   }
@@ -501,7 +501,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
         check_fails = TRUE;
     }
     if(check_fails) {
-      warnf(config->global, "Invalid output struct data for write callback\n");
+      warnf(config->global, "Invalid output struct data for write callback");
       return CURL_WRITEFUNC_ERROR;
     }
   }
@@ -515,14 +515,14 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
     if(memchr(buffer, 0, bytes)) {
       warnf(config->global, "Binary output can mess up your terminal. "
             "Use \"--output -\" to tell curl to output it to your terminal "
-            "anyway, or consider \"--output <FILE>\" to save to a file.\n");
+            "anyway, or consider \"--output <FILE>\" to save to a file.");
 
 	  if (config->output_dir) {
 		  warnf(config->global, "\n");
 		  warnf(config->global, "By the way: you specified --output-dir "
 			  "but output is still written to stdout as you apperently did not "
 			  "specify an --output or --remote-name-all option. Might be you "
-			  "wanted to do that?\n");
+			  "wanted to do that?");
 	  }
       config->synthetic_error = TRUE;
       return CURL_WRITEFUNC_ERROR;
