@@ -363,8 +363,9 @@ static CURLcode recvmmsg_packets(struct Curl_cfilter *cf,
   }
 
 out:
-  CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
-              pkts, total_nread, result);
+  if(total_nread || result)
+    CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
+                pkts, total_nread, result);
   return result;
 }
 
@@ -429,8 +430,9 @@ static CURLcode recvmsg_packets(struct Curl_cfilter *cf,
   }
 
 out:
-  CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
-              pkts, total_nread, result);
+  if(total_nread || result)
+    CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
+                pkts, total_nread, result);
   return result;
 }
 
@@ -488,8 +490,9 @@ static CURLcode recvfrom_packets(struct Curl_cfilter *cf,
   }
 
 out:
-  CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
-              pkts, total_nread, result);
+  if(total_nread || result)
+    CURL_TRC_CF(data, cf, "recvd %zu packets with %zu bytes -> %d",
+                pkts, total_nread, result);
   return result;
 }
 #endif /* !HAVE_SENDMMSG && !HAVE_SENDMSG */
