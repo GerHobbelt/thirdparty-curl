@@ -31,6 +31,7 @@ check_PROGRAMS = \
   chkspeed \
   cookie_interface \
   debug \
+  default-scheme \
   externalsocket \
   fileupload \
   ftp-wildcard \
@@ -46,6 +47,8 @@ check_PROGRAMS = \
   getredirect \
   getreferrer \
   headerapi \
+  hsts-preload \
+  http-options \
   http-post \
   http2-download \
   http2-pushinmemory \
