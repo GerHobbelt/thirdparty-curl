@@ -425,10 +425,6 @@ static ssize_t stream_resp_read(void *reader_ctx,
     *err = CURLE_OK;
     return nread;
   }
-  else if(nread < 0) {
-    *err = CURLE_AGAIN;
-    return -1;
-  }
   else {
     *err = stream->resp_got_header? CURLE_PARTIAL_FILE : CURLE_RECV_ERROR;
     return -1;
@@ -826,7 +822,7 @@ static ssize_t cf_quiche_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
 
   if(!stream) {
     *err = CURLE_RECV_ERROR;
-    goto out;
+    return -1;
   }
 
   if(!Curl_bufq_is_empty(&stream->recvbuf)) {
@@ -884,8 +880,9 @@ out:
   if(nread > 0)
     ctx->data_recvd += nread;
   DEBUGF(LOG_CF(data, cf, "[h3sid=%"PRId64"] cf_recv(total=%"
-                          CURL_FORMAT_CURL_OFF_T ") -> %zd, %d",
-                stream->id, ctx->data_recvd, nread, *err));
+                CURL_FORMAT_CURL_OFF_T ") -> %zd, %d",
+                stream ? stream->id : (int64_t)0,
+                ctx->data_recvd, nread, *err));
   return nread;
 }
 
@@ -910,8 +907,7 @@ static ssize_t h3_open_stream(struct Curl_cfilter *cf,
   if(!stream) {
     *err = h3_data_setup(cf, data);
     if(*err) {
-      nwritten = -1;
-      goto out;
+      return -1;
     }
     stream = H3_STREAM_CTX(data);
     DEBUGASSERT(stream);
