@@ -962,6 +962,7 @@ static bool extract_if_dead(struct connectdata *conn,
     else {
       bool input_pending;
 
+      Curl_attach_connection(data, conn);
       dead = !Curl_conn_is_alive(data, conn, &input_pending);
       if(input_pending) {
         /* For reuse, we want a "clean" connection state. The includes
@@ -974,6 +975,7 @@ static bool extract_if_dead(struct connectdata *conn,
          */
         dead = TRUE;
       }
+      Curl_detach_connection(data);
     }
 
     if(dead) {

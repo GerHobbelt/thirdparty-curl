@@ -588,7 +588,6 @@ static bool http2_connisalive(struct Curl_cfilter *cf, struct Curl_easy *data,
     ssize_t nread = -1;
 
     *input_pending = FALSE;
-    Curl_attach_connection(data, cf->conn);
     nread = Curl_bufq_slurp(&ctx->inbufq, nw_in_reader, cf, &result);
     if(nread != -1) {
       DEBUGF(LOG_CF(data, cf, "%zd bytes stray data read before trying "
@@ -600,11 +599,10 @@ static bool http2_connisalive(struct Curl_cfilter *cf, struct Curl_easy *data,
         alive = !should_close_session(ctx);
       }
     }
-    else {
+    else if(result != CURLE_AGAIN) {
       /* the read failed so let's say this is dead anyway */
       alive = FALSE;
     }
-    Curl_detach_connection(data);
   }
 
   return alive;
@@ -1584,16 +1582,16 @@ static ssize_t http2_handle_stream_close(struct Curl_cfilter *cf,
     *err = CURLE_SEND_ERROR; /* trigger Curl_retry_request() later */
     return -1;
   }
-  else if(stream->reset) {
-    failf(data, "HTTP/2 stream %u was reset", stream->id);
-    *err = stream->bodystarted? CURLE_PARTIAL_FILE : CURLE_RECV_ERROR;
-    return -1;
-  }
   else if(stream->error != NGHTTP2_NO_ERROR) {
     failf(data, "HTTP/2 stream %u was not closed cleanly: %s (err %u)",
           stream->id, nghttp2_http2_strerror(stream->error),
           stream->error);
     *err = CURLE_HTTP2_STREAM;
+    return -1;
+  }
+  else if(stream->reset) {
+    failf(data, "HTTP/2 stream %u was reset", stream->id);
+    *err = stream->bodystarted? CURLE_PARTIAL_FILE : CURLE_RECV_ERROR;
     return -1;
   }
 
