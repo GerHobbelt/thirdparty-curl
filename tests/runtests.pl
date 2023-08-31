@@ -165,8 +165,7 @@ my %singletest_logs;   # log messages while in singletest array ref by runner
 my $singletest_bufferedrunner; # runner ID which is buffering logs
 my %runnerids;         # runner IDs by number
 my @runnersidle;       # runner IDs idle and ready to execute a test
-my %runnerfortest;     # runner IDs by testnum
-my %countfortest;      # test count by testnum
+my %countforrunner;    # test count by runner ID
 my %runnersrunning;    # tests currently running by runner ID
 
 #######################################################################
@@ -399,7 +398,7 @@ sub showdiff {
 # some pattern that is allowed to differ, output test results
 #
 sub compare {
-    my ($testnum, $testname, $subject, $firstref, $secondref)=@_;
+    my ($runnerid, $testnum, $testname, $subject, $firstref, $secondref)=@_;
 
     my $result = compareparts($firstref, $secondref);
 
@@ -409,7 +408,7 @@ sub compare {
 
         if(!$short) {
             logmsg "\n $testnum: $subject FAILED:\n";
-            my $logdir = getlogdir($testnum);
+            my $logdir = getrunnerlogdir($runnerid);
             logmsg showdiff($logdir, $firstref, $secondref);
         }
         elsif(!$automakestyle) {
@@ -967,11 +966,26 @@ sub updatetesttimings {
 
 
 #######################################################################
-# Return the log directory for the given test
-# There is only one directory for the moment
-sub getlogdir {
-    my $testnum = $_[0];
-    return $LOGDIR;
+# Return the log directory for the given test runner
+sub getrunnernumlogdir {
+    my $runnernum = $_[0];
+    return $jobs > 1 ? $LOGDIR . $runnernum : $LOGDIR;
+}
+
+#######################################################################
+# Return the log directory for the given test runner ID
+sub getrunnerlogdir {
+    my $runnerid = $_[0];
+    if($jobs <= 1) {
+        return $LOGDIR;
+    }
+    # TODO: speed up this O(n) operation
+    for my $runnernum (keys %runnerids) {
+        if($runnerid eq $runnerids{$runnernum}) {
+            return $LOGDIR . $runnernum;
+        }
+    }
+    die "Internal error: runner ID $runnerid not found";
 }
 
 
@@ -1149,7 +1163,7 @@ sub singletest_check {
         return -2;
     }
 
-    my $logdir = getlogdir($testnum);
+    my $logdir = getrunnerlogdir($runnerid);
     my @err = getpart("verify", "errorcode");
     my $errorcode = $err[0] || "0";
     my $ok="";
@@ -1202,7 +1216,7 @@ sub singletest_check {
             subnewlines(0, \$_) for @validstdout;
         }
 
-        $res = compare($testnum, $testname, "stdout", \@actual, \@validstdout);
+        $res = compare($runnerid, $testnum, $testname, "stdout", \@actual, \@validstdout);
         if($res) {
             return -1;
         }
@@ -1254,7 +1268,7 @@ sub singletest_check {
             chomp($validstderr[-1]);
         }
 
-        $res = compare($testnum, $testname, "stderr", \@actual, \@validstderr);
+        $res = compare($runnerid, $testnum, $testname, "stderr", \@actual, \@validstderr);
         if($res) {
             return -1;
         }
@@ -1312,7 +1326,7 @@ sub singletest_check {
             return -1;
         }
 
-        $res = compare($testnum, $testname, "protocol", \@out, \@protocol);
+        $res = compare($runnerid, $testnum, $testname, "protocol", \@out, \@protocol);
         if($res) {
             return -1;
         }
@@ -1378,7 +1392,7 @@ sub singletest_check {
     if(!$replyattr{'nocheck'} && (@reply || $replyattr{'sendzero'})) {
         # verify the received data
         my @out = loadarray($CURLOUT);
-        $res = compare($testnum, $testname, "data", \@out, \@reply);
+        $res = compare($runnerid, $testnum, $testname, "data", \@out, \@reply);
         if ($res) {
             return -1;
         }
@@ -1406,7 +1420,7 @@ sub singletest_check {
             }
         }
 
-        $res = compare($testnum, $testname, "upload", \@out, \@upload);
+        $res = compare($runnerid, $testnum, $testname, "upload", \@out, \@upload);
         if ($res) {
             return -1;
         }
@@ -1449,7 +1463,7 @@ sub singletest_check {
             subnewlines(0, \$_) for @proxyprot;
         }
 
-        $res = compare($testnum, $testname, "proxy", \@out, \@proxyprot);
+        $res = compare($runnerid, $testnum, $testname, "proxy", \@out, \@proxyprot);
         if($res) {
             return -1;
         }
@@ -1513,7 +1527,7 @@ sub singletest_check {
                 @generated = @newgen;
             }
 
-            $res = compare($testnum, $testname, "output ($filename)",
+            $res = compare($runnerid, $testnum, $testname, "output ($filename)",
                            \@generated, \@outfile);
             if($res) {
                 return -1;
@@ -1529,7 +1543,7 @@ sub singletest_check {
     if(@socksprot) {
         # Verify the sent SOCKS proxy details
         my @out = loadarray("$logdir/$SOCKSIN");
-        $res = compare($testnum, $testname, "socks", \@out, \@socksprot);
+        $res = compare($runnerid, $testnum, $testname, "socks", \@out, \@socksprot);
         if($res) {
             return -1;
         }
@@ -1701,7 +1715,7 @@ sub singletest {
     }
 
     if($singletest_state{$runnerid} == ST_INIT) {
-        my $logdir = getlogdir($testnum);
+        my $logdir = getrunnerlogdir($runnerid);
         # first, remove all lingering log files
         if(!cleardir($logdir) && $clearlocks) {
             runnerac_clearlocks($runnerid, $logdir);
@@ -1716,7 +1730,7 @@ sub singletest {
     } elsif($singletest_state{$runnerid} == ST_CLEARLOCKS) {
         my ($rid, $logs) = runnerar($runnerid);
         logmsg $logs;
-        my $logdir = getlogdir($testnum);
+        my $logdir = getrunnerlogdir($runnerid);
         cleardir($logdir);
         $singletest_state{$runnerid} = ST_INITED;
         # Recursively call the state machine again because there is no
@@ -1751,13 +1765,13 @@ sub singletest {
             if($postmortem) {
                 # Error indicates an actual problem starting the server, so
                 # display the server logs
-                displaylogs($testnum);
+                displaylogs($rid, $testnum);
             }
         }
 
         #######################################################################
         # Load test file for this test number
-        my $logdir = getlogdir($testnum);
+        my $logdir = getrunnerlogdir($runnerid);
         loadtest("${logdir}/test${testnum}");
 
         #######################################################################
@@ -1818,7 +1832,7 @@ sub singletest {
         # Verify that the test succeeded
         #
         # Load test file for this test number
-        my $logdir = getlogdir($testnum);
+        my $logdir = getrunnerlogdir($runnerid);
         loadtest("${logdir}/test${testnum}");
         readtestkeywords();
 
@@ -2019,12 +2033,17 @@ sub runnerready {
 #
 sub createrunners {
     my ($numrunners)=@_;
-    # No runners have been created; create one now
-    my $runnernum = 1;
-    cleardir($LOGDIR);
-    mkdir($LOGDIR, 0777);
-    $runnerids{$runnernum} = runner_init($LOGDIR, $jobs);
-    runnerready($runnerids{$runnernum});
+    if(! $numrunners) {
+        $numrunners++;
+    }
+    # create $numrunners runners with minimum 1
+    for my $runnernum (1..$numrunners) {
+        my $dir = getrunnernumlogdir($runnernum);
+        cleardir($dir);
+        mkdir($dir, 0777);
+        $runnerids{$runnernum} = runner_init($dir, $jobs);
+        runnerready($runnerids{$runnernum});
+    }
 }
 
 #######################################################################
@@ -2258,7 +2277,7 @@ Usage: runtests.pl [options] [test selection(s)]
   -g       run the test case with gdb
   -gw      run the test case with gdb as a windowed application
   -h       this help text
-  -j[N]    spawn this number of processes to run tests (default 0, max. 1)
+  -j[N]    spawn this number of processes to run tests (default 0)
   -k       keep stdout and stderr files present after tests
   -L path  require an additional perl library file to replace certain functions
   -l       list all test case names/descriptions
@@ -2409,6 +2428,8 @@ if ($gdbthis) {
 # clear and create logging directory:
 #
 
+# TODO: figure how to get around this. This dir is needed for checksystemfeatures()
+# Maybe create & use & delete a temporary directory in that function
 cleardir($LOGDIR);
 mkdir($LOGDIR, 0777);
 
@@ -2591,8 +2612,8 @@ sub displaylogcontent {
 }
 
 sub displaylogs {
-    my ($testnum)=@_;
-    my $logdir = getlogdir($testnum);
+    my ($runnerid, $testnum)=@_;
+    my $logdir = getrunnerlogdir($runnerid);
     opendir(DIR, "$logdir") ||
         die "can't open dir: $!";
     my @logs = readdir(DIR);
@@ -2727,16 +2748,13 @@ while () {
 
         # pick a runner for this new test
         my $runnerid = pickrunner($testnum);
-        exists $runnerfortest{$testnum} && die "Internal error: test already running";
-        $runnerfortest{$testnum} = $runnerid;
-        $countfortest{$testnum} = $count;
+        $countforrunner{$runnerid} = $count;
 
         # Start the test
-        my $rid = $runnerfortest{$testnum};
-        my ($error, $again) = singletest($rid, $testnum, $countfortest{$testnum}, $totaltests);
+        my ($error, $again) = singletest($runnerid, $testnum, $countforrunner{$runnerid}, $totaltests);
         if($again) {
             # this runner is busy running a test
-            $runnersrunning{$rid} = $testnum;
+            $runnersrunning{$runnerid} = $testnum;
         } else {
             # We make this assumption to avoid having to handle $error here
             die "Internal error: test must not complete on first call";
@@ -2760,7 +2778,7 @@ while () {
         # This runner is ready to be serviced
         my $testnum = $runnersrunning{$ridready};
         delete $runnersrunning{$ridready};
-        my ($error, $again) = singletest($ridready, $testnum, $countfortest{$testnum}, $totaltests);
+        my ($error, $again) = singletest($ridready, $testnum, $countforrunner{$ridready}, $totaltests);
         if($again) {
             # this runner is busy running a test
             $runnersrunning{$ridready} = $testnum;
@@ -2786,7 +2804,7 @@ print "COMPLETED $testnum \n" if($verbose); #. join(",", keys(%runnersrunning)) 
                 }
                 if($postmortem) {
                     # display all files in $LOGDIR/ in a nice way
-                    displaylogs($testnum);
+                    displaylogs($ridready, $testnum);
                 }
                 if($error==2) {
                     $ign++; # ignored test result counter
