@@ -1647,10 +1647,12 @@ struct UserDefined {
                                of strlen(), and then the data *may* be binary
                                (contain zero bytes) */
   unsigned short safe_auth; /* Do not use unsafe auth mechs (bitmask) */
+#ifndef CURL_DISABLE_BINDLOCAL
   unsigned short localport; /* local port number to bind to */
   unsigned short localportrange; /* number of additional port numbers to test
                                     in case the 'localport' one can't be
                                     bind()ed */
+#endif
   curl_write_callback fwrite_func;   /* function that stores the output */
   curl_write_callback fwrite_header; /* function that stores headers */
   curl_write_callback fwrite_rtp;    /* function that stores interleaved RTP */
