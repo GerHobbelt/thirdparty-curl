@@ -41,13 +41,10 @@
 
 /* curl stuff */
 
-typedef char bool;
 #define TRUE 1
 
-static
-void dump(const char *text,
-          FILE *stream, unsigned char *ptr, size_t size,
-          bool nohex)
+static void dump(const char *text, FILE *stream, unsigned char *ptr,
+                 size_t size, char nohex)
 {
   size_t i;
   size_t c;
