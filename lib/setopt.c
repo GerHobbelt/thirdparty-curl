@@ -1246,6 +1246,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.out = va_arg(param, void *);
     break;
 
+#ifdef CURL_LIST_ONLY_PROTOCOL
   case CURLOPT_DIRLISTONLY:
     /*
      * An option that changes the command to one that asks for a list only, no
@@ -1253,7 +1254,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     data->set.list_only = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
-
+#endif
   case CURLOPT_APPEND:
     /*
      * We want to upload and append to an existing file. Used for FTP and
