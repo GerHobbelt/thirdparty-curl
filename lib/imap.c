@@ -667,8 +667,53 @@ static CURLcode imap_perform_list(struct Curl_easy *data)
     free(mailbox);
   }
 
-  if(!result)
-    imap_state(data, IMAP_LIST);
+  if(!result) {
+    bool isFetch = FALSE;
+
+    /* Switch state to be FETCH if custom command is a fetch command */
+    /* so output is handled correctly. */
+
+    if(imap->custom) {
+      if(strncasecompare(imap->custom, "FETCH", 5)) {
+        isFetch = true;
+      }
+
+      /* e.g. "UID FETCH 107 BODY.PEEK[]" */
+
+      else if(imap->custom_params &&
+              strncasecompare(imap->custom, "UID", 3) &&
+              strncasecompare(imap->custom_params, " FETCH", 6)) {
+        isFetch = true;
+      }
+
+      if(isFetch && imap->custom_params) {
+        /*
+          if we have FETCH with range, we need a LIST state,
+          otherwise FETCH state, e.g.
+          FETCH 175 BODY.PEEK[]
+          to get one email
+          vs.
+          UID FETCH 1:* (FLAGS INTERNALDATE RFC822.SIZE
+          BODY.PEEK[HEADER.FIELDS (Message-Id DATE FROM
+          SUBJECT TO SENDER REPLY-TO CC BCC)])
+          to get the list of emails
+        */
+        const char *positionColon = strchr(imap->custom_params, ':');
+        if(positionColon) {
+          const char *paren = strchr(imap->custom_params, '(');
+          if(!paren || paren > positionColon)
+            isFetch = FALSE;
+        }
+      }
+
+      if(!isFetch) {
+        imap_state(data, IMAP_LIST);
+      }
+      else {
+        imap_state(data, IMAP_FETCH);
+      }
+    }
+  }
 
   return result;
 }
