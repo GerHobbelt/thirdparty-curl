@@ -1569,6 +1569,8 @@ enum dupstring {
   STRING_DNS_LOCAL_IP4,
   STRING_DNS_LOCAL_IP6,
   STRING_SSL_EC_CURVES,
+  STRING_AWS_SIGV4,             /* Parameters for V4 signature */
+  STRING_HAPROXY_CLIENT_IP,     /* CURLOPT_HAPROXY_CLIENT_IP */
 
   /* -- end of null-terminated strings -- */
 
@@ -1577,8 +1579,6 @@ enum dupstring {
   /* -- below this are pointers to binary data that cannot be strdup'ed. --- */
 
   STRING_COPYPOSTFIELDS,  /* if POST, set the fields' values here */
-
-  STRING_AWS_SIGV4, /* Parameters for V4 signature */
 
   STRING_LAST /* not used, just an end-of-list marker */
 };
