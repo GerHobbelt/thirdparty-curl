@@ -1688,7 +1688,9 @@ add_cert_to_certinfo(const CERT_CONTEXT *ccert_context, void *raw_arg)
     /* Windows prior to 11 22H2 returned certificates in reverse order. */
     if(curlx_verify_windows_version(10, 0, 22621, PLATFORM_WINNT,
                                     VERSION_LESS_THAN)) {
-      insert_index = (args->certs_count - 1) - insert_index;
+        int certs_count = 0;
+        traverse_cert_store(ccert_context, cert_counter_callback, &certs_count);
+        insert_index = (certs_count - 1) - insert_index;
     }
     args->result = Curl_extract_certinfo(args->data, insert_index,
                                          beg, end);
