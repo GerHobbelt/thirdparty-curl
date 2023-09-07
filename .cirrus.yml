@@ -46,14 +46,11 @@ freebsd_task:
     - name: FreeBSD 13.2
       freebsd_instance:
         image_family: freebsd-13-2
-    - name: FreeBSD 12.4
-      freebsd_instance:
-        image_family: freebsd-12-4
 
   env:
     CIRRUS_CLONE_DEPTH: 10
     CRYPTOGRAPHY_DONT_BUILD_RUST: 1
-    MAKE_FLAGS: -j 3
+    MAKEFLAGS: -j 3
 
   pkginstall_script:
     - pkg update -f
@@ -253,38 +250,3 @@ macos_task:
     - make V=1 test-ci
   install_script:
     - sudo -H make V=1 install
-
-linux_musl_task:
-  skip: "changesIncludeOnly(
-    '**/CMakeLists.txt',
-    '.azure-pipelines.yml',
-    '.circleci/**',
-    '.github/**',
-    'appveyor.yml',
-    'CMake/**',
-    'packages/**',
-    'plan9/**',
-    'projects/**',
-    'winbuild/**'
-    )"
-  name: Linux MUSL
-  container:
-    image: alpine:3.18
-    memory: 800M
-
-  env:
-    CIRRUS_CLONE_DEPTH: 10
-    MAKEFLAGS: -j 3
-
-  pkginstall_script:
-    - apk add --no-cache build-base autoconf automake libtool perl openssl-dev libssh2-dev zlib-dev brotli-dev zstd-dev libidn2-dev openldap-dev heimdal-dev libpsl-dev py3-impacket py3-asn1 py3-six py3-pycryptodomex perl-time-hires openssh stunnel sudo
-  configure_script:
-    - autoreconf -fi
-    - ./configure --enable-warnings --enable-debug --enable-websockets --with-ssl --with-libssh2 --with-libidn2 --with-gssapi --enable-ldap --with-libpsl
-  compile_script:
-    - make V=1 && make V=1 examples && make -C tests V=1
-  test_script:
-    # TODO: ssh tests don't work, likely because we're running as root
-    - USER=nobody make V=1 test-ci
-  install_script:
-    - make V=1 install
