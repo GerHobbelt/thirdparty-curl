@@ -35,6 +35,7 @@ struct var {
 };
 
 struct GlobalConfig;
+struct curlx_dynbuf;
 
 ParameterError setvariable(struct GlobalConfig *global, const char *input);
 ParameterError varexpand(struct GlobalConfig *global,
