@@ -62,41 +62,12 @@ SONAME=`sed -e '/^VERSIONCHANGE=/!d;s/^.*=\([0-9]*\).*/\1/'             \
                                         < "${TOPDIR}/lib/Makefile.soname"`
 export SONAME
 
+#       Get OS/400 configuration parameters.
 
-################################################################################
-#
-#                       Tunable configuration parameters.
-#
-################################################################################
-
-setenv TARGETLIB        'CURL'                  # Target OS/400 program library.
-setenv STATBNDDIR       'CURL_A'                # Static binding directory.
-setenv DYNBNDDIR        'CURL'                  # Dynamic binding directory.
-setenv SRVPGM           "CURL.${SONAME}"        # Service program.
-setenv TGTCCSID         '500'                   # Target CCSID of objects.
-setenv DEBUG            '*ALL'                  # Debug level.
-setenv OPTIMIZE         '10'                    # Optimization level
-setenv OUTPUT           '*NONE'                 # Compilation output option.
-setenv TGTRLS           '*CURRENT'              # Target OS release.
-setenv IFSDIR           '/curl'                 # Installation IFS directory.
-setenv QADRTDIR         '/QIBM/ProdData/qadrt'  # QADRT IFS directory.
-
-#       Define ZLIB availability and locations.
-
-setenv WITH_ZLIB        0                       # Define to 1 to enable.
-setenv ZLIB_INCLUDE     '/zlib/include'         # ZLIB include IFS directory.
-setenv ZLIB_LIB         'ZLIB'                  # ZLIB library.
-setenv ZLIB_BNDDIR      'ZLIB_A'                # ZLIB binding directory.
-
-#       Define LIBSSH2 availability and locations.
-
-setenv WITH_LIBSSH2     0                       # Define to 1 to enable.
-setenv LIBSSH2_INCLUDE  '/libssh2/include'      # LIBSSH2 include IFS directory.
-setenv LIBSSH2_LIB      'LIBSSH2'               # LIBSSH2 library.
-setenv LIBSSH2_BNDDIR   'LIBSSH2_A'             # LIBSSH2 binding directory.
-
-
-################################################################################
+. "${SCRIPTDIR}/config400.default"
+if [ -f "${SCRIPTDIR}/config400.override" ]
+then    . "${SCRIPTDIR}/config400.override"
+fi
 
 #       Need to get the version definitions.
 
@@ -214,8 +185,9 @@ make_module()
         echo "#line 1" >> __tmpsrcf.c
         cat "${2}" >> __tmpsrcf.c
         CMD="CRTCMOD MODULE(${TARGETLIB}/${1}) SRCSTMF('__tmpsrcf.c')"
-#       CMD="${CMD} SYSIFCOPT(*IFS64IO) OPTION(*INCDIRFIRST *SHOWINC *SHOWSYS)"
-        CMD="${CMD} SYSIFCOPT(*IFS64IO) OPTION(*INCDIRFIRST)"
+        CMD="${CMD} SYSIFCOPT(*IFS64IO *ASYNCSIGNAL)"
+#       CMD="${CMD} OPTION(*INCDIRFIRST *SHOWINC *SHOWSYS)"
+        CMD="${CMD} OPTION(*INCDIRFIRST)"
         CMD="${CMD} LOCALETYPE(*LOCALE) FLAG(10)"
         CMD="${CMD} INCDIR('${QADRTDIR}/include'"
         CMD="${CMD} '${TOPDIR}/include/curl' '${TOPDIR}/include' '${SRCDIR}'"
@@ -294,6 +266,7 @@ versioned_copy()
 #       The `sed' statement works as follows:
 #       - Join \nl-separated lines.
 #       - Retain only lines that begins with "identifier =".
+#       - Replace @...@ sustitutions by shell variable references.
 #       - Turn these lines into shell variable assignments.
 
 get_make_vars()
@@ -306,6 +279,7 @@ get_make_vars()
                 -e 'b begin'                                            \
                 -e '}'                                                  \
                 -e '/^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/!d'           \
+                -e 's/@\\([A-Za-z0-9_]*\\)@/${\\1}/g'                   \
                 -e 's/[[:space:]]*=[[:space:]]*/=/'                     \
                 -e 's/=\\(.*[^[:space:]]\\)[[:space:]]*$/=\\"\\1\\"/'   \
                 -e 's/\\\$(\\([^)]*\\))/\${\\1}/g'                      \

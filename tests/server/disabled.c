@@ -98,6 +98,10 @@ static const char *disabled[]={
 int main(int argc, const char** argv)
 {
   int i;
+
+  (void) argc;
+  (void) argv;
+
   for(i = 0; disabled[i]; i++)
     printf("%s\n", disabled[i]);
 
