@@ -396,6 +396,7 @@ static int init_ngh3_conn(struct Curl_cfilter *cf);
 static CURLcode quic_ssl_ctx(SSL_CTX **pssl_ctx,
                              struct Curl_cfilter *cf, struct Curl_easy *data)
 {
+  struct cf_ngtcp2_ctx *ctx = cf->ctx;
   struct connectdata *conn = cf->conn;
   CURLcode result = CURLE_FAILED_INIT;
   SSL_CTX *ssl_ctx = SSL_CTX_new(TLS_method());
@@ -453,6 +454,15 @@ static CURLcode quic_ssl_ctx(SSL_CTX **pssl_ctx,
 
   /* give application a chance to interfere with SSL set up. */
   if(data->set.ssl.fsslctx) {
+    /* When a user callback is installed to modify the SSL_CTX,
+     * we need to do the full initialization before calling it.
+     * See: #11800 */
+    if(!ctx->x509_store_setup) {
+      result = Curl_ssl_setup_x509_store(cf, data, ssl_ctx);
+      if(result)
+        goto out;
+      ctx->x509_store_setup = TRUE;
+    }
     Curl_set_in_callback(data, true);
     result = (*data->set.ssl.fsslctx)(data, ssl_ctx,
                                       data->set.ssl.fsslctxp);
@@ -1645,13 +1655,6 @@ static ssize_t h3_stream_open(struct Curl_cfilter *cf,
   stream = H3_STREAM_CTX(data);
   DEBUGASSERT(stream);
 
-  rc = ngtcp2_conn_open_bidi_stream(ctx->qconn, &stream->id, NULL);
-  if(rc) {
-    failf(data, "can get bidi streams");
-    *err = CURLE_SEND_ERROR;
-    goto out;
-  }
-
   nwritten = Curl_h1_req_parse_read(&stream->h1, buf, len, NULL, 0, err);
   if(nwritten < 0)
     goto out;
@@ -1684,6 +1687,13 @@ static ssize_t h3_stream_open(struct Curl_cfilter *cf,
     nva[i].value = (unsigned char *)e->value;
     nva[i].valuelen = e->valuelen;
     nva[i].flags = NGHTTP3_NV_FLAG_NONE;
+  }
+
+  rc = ngtcp2_conn_open_bidi_stream(ctx->qconn, &stream->id, NULL);
+  if(rc) {
+    failf(data, "can get bidi streams");
+    *err = CURLE_SEND_ERROR;
+    goto out;
   }
 
   switch(data->state.httpreq) {
