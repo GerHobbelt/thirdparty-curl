@@ -423,4 +423,3 @@ CURLcode Curl_read(struct Curl_easy *data,   /* transfer */
 out:
   return result;
 }
-
