@@ -82,6 +82,16 @@ User name to use when invoking the \fIntlm-wb\fP tool, if \fINTLMUSER\fP and
 .SH "Debug Variables"
 There is a set of variables only recognized and used if libcurl was built
 "debug enabled", which should never be true for a library used in production.
+.IP "CURL_DBG_SOCK_WBLOCK"
+Percentage of send() calls that should be answered with a EAGAIN at random. For
+TCP/UNIX sockets.
+.IP "CURL_DBG_SOCK_WPARTIAL"
+Percentage of data that shall be written to the network. For TCP/UNIX sockets.
+This is applied to every send. Example: CURL_DBG_SOCK_WPARTIAL=80 means a send
+with 1000 bytes would only send 800.
+.IP "CURL_DBG_QUIC_WBLOCK"
+Percentage of send() calls that should be answered with EAGAIN at random. QUIC
+only.
 .IP "CURL_GETHOSTNAME"
 Debug-only variable.
 .IP "CURL_FORCETIME"
