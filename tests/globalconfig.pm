@@ -38,10 +38,10 @@ BEGIN {
         $automakestyle
         $CURL
         $CURLVERSION
-        $FTPDCMD
         $has_shared
         $LIBDIR
         $listonly
+        $LOCKDIR
         $LOGDIR
         $memanalyze
         $MEMDUMP
@@ -52,6 +52,7 @@ BEGIN {
         $pwd
         $randseed
         $run_event_based
+        $SERVERCMD
         $SERVERIN
         $srcdir
         $TESTDIR
@@ -100,11 +101,12 @@ our $memanalyze="$perl $srcdir/memanalyze.pl";
 our $valgrind;     # path to valgrind, or empty if disabled
 
 # paths in $LOGDIR
+our $LOCKDIR = "lock";          # root of the server directory with lock files
 our $PIDDIR = "server";         # root of the server directory with PID files
 our $SERVERIN="server.input";   # what curl sent the server
 our $PROXYIN="proxy.input";     # what curl sent the proxy
 our $MEMDUMP="memdump";         # file that the memory debugging creates
-our $FTPDCMD="ftpserver.cmd";   # copy server instructions here
+our $SERVERCMD="server.cmd";    # copy server instructions here
 
 # other config variables
 our @protocols;   # array of lowercase supported protocol servers

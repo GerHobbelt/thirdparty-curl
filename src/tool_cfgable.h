@@ -313,6 +313,7 @@ struct GlobalConfig {
   bool trace_fopened;
   trace tracetype;
   bool tracetime;                 /* include timestamp? */
+  bool traceids;                  /* include xfer-/conn-id? */
   int progressmode;               /* CURL_PROGRESS_BAR / CURL_PROGRESS_STATS / CURL_PROGRESS_PERCENT */
   char *libcurl;                  /* Output libcurl code to this file name */
   bool fail_early;                /* exit on first transfer error */

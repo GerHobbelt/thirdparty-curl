@@ -1152,7 +1152,7 @@ sub runhttpserver {
     $flags .= "--pidfile \"$pidfile\" --logfile \"$logfile\" ";
     $flags .= "--logdir \"$LOGDIR\" ";
     $flags .= "--portfile $portfile ";
-    $flags .= "--config $LOGDIR/$FTPDCMD ";
+    $flags .= "--config $LOGDIR/$SERVERCMD ";
     $flags .= "--id $idnum " if($idnum > 1);
     if($ipvnum eq "unix") {
         $flags .= "--unix-socket '$port_or_path' ";
@@ -1914,7 +1914,7 @@ sub runmqttserver {
         " --port 0 ".
         " --pidfile $pidfile".
         " --portfile $portfile".
-        " --config $LOGDIR/$FTPDCMD".
+        " --config $LOGDIR/$SERVERCMD".
         " --logfile $logfile".
         " --logdir $LOGDIR";
     my ($sockspid, $pid2) = startnew($cmd, $pidfile, 30, 0);
@@ -1975,7 +1975,7 @@ sub runsocksserver {
             " --logfile $logfile".
             " --unix-socket $SOCKSUNIXPATH".
             " --backend $HOSTIP".
-            " --config $LOGDIR/$FTPDCMD";
+            " --config $LOGDIR/$SERVERCMD";
     } else {
         $cmd="server/socksd".exe_ext('SRV').
             " --port 0 ".
@@ -1984,7 +1984,7 @@ sub runsocksserver {
             " --reqfile $LOGDIR/$SOCKSIN".
             " --logfile $logfile".
             " --backend $HOSTIP".
-            " --config $LOGDIR/$FTPDCMD";
+            " --config $LOGDIR/$SERVERCMD";
     }
     my ($sockspid, $pid2) = startnew($cmd, $pidfile, 30, 0);
 
