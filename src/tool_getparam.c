@@ -286,7 +286,7 @@ static const struct LongShort aliases[]= {
   {"E7", "proxy-capath",             ARG_FILENAME},
   {"E8", "proxy-insecure",           ARG_BOOL},
   {"E9", "proxy-tlsv1",              ARG_NONE},
-  {"EG", "proxy-safe-auth",          ARG_BOOL},
+  {"EI", "proxy-safe-auth",          ARG_BOOL},
   {"EA", "socks5-basic",             ARG_BOOL},
   {"EB", "socks5-gssapi",            ARG_BOOL},
   {"EC", "etag-save",                ARG_FILENAME},
@@ -2047,7 +2047,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         GetStr(&config->ssl_ec_curves, nextarg);
         break;
 
-      case 'G': /* --proxy-safe-auth, disable clear password authentication. */
+      case 'I': /* --proxy-safe-auth, disable clear password authentication. */
         config->safeauth &= ~CURLSAFE_PROXYAUTH;
         if(toggle)
           config->safeauth |= CURLSAFE_PROXYAUTH;
