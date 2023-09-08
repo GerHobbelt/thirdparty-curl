@@ -871,7 +871,7 @@ static void cf_socket_close(struct Curl_cfilter *cf, struct Curl_easy *data)
       /* this is our local socket, we did never publish it */
       DEBUGF(LOG_CF(data, cf, "cf_socket_close(%" CURL_FORMAT_SOCKET_T
                     ", not active)", ctx->sock));
-      sclose(ctx->sock);
+      socket_close(data, cf->conn, !ctx->accepted, ctx->sock);
       ctx->sock = CURL_SOCKET_BAD;
     }
     Curl_bufq_reset(&ctx->recvbuf);
@@ -1360,8 +1360,8 @@ out:
 static void conn_set_primary_ip(struct Curl_cfilter *cf,
                                 struct Curl_easy *data)
 {
-  struct cf_socket_ctx *ctx = cf->ctx;
 #ifdef HAVE_GETPEERNAME
+  struct cf_socket_ctx *ctx = cf->ctx;
   if(!(data->conn->handler->protocol & CURLPROTO_TFTP)) {
     /* TFTP does not connect the endpoint: getpeername() failed with errno
        107: Transport endpoint is not connected */
