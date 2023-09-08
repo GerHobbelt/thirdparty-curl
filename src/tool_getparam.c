@@ -124,6 +124,7 @@ static const struct LongShort aliases[]= {
   {"*x", "krb4",                     ARG_STRING},
          /* 'krb4' is the previous name */
   {"*X", "haproxy-protocol",         ARG_BOOL},
+  {"*P", "haproxy-clientip",         ARG_STRING},
   {"*y", "max-filesize",             ARG_STRING},
   {"*z", "disable-eprt",             ARG_BOOL},
   {"*Z", "eprt",                     ARG_BOOL},
@@ -1069,6 +1070,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         break;
       case 'X': /* --haproxy-protocol */
         config->haproxy_protocol = toggle;
+        break;
+      case 'P': /* --haproxy-clientip */
+        GetStr(&config->haproxy_clientip, nextarg);
         break;
       case 'y': /* --max-filesize */
         {
@@ -2534,7 +2538,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           global->parallel_max = (unsigned short)val;
         break;
       }
-      case 'c':   /* --parallel-connect */
+      case 'c':   /* --parallel-immediate */
         global->parallel_connect = toggle;
         break;
       }

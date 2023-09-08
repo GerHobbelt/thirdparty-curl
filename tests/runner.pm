@@ -89,6 +89,7 @@ use processhelp qw(
 use servers qw(
     checkcmd
     clearlocks
+    initserverconfig
     serverfortest
     stopserver
     stopservers
@@ -159,7 +160,7 @@ sub runner_init {
     $multiprocess = !!$jobs;
 
     # enable memory debugging if curl is compiled with it
-    $ENV{'CURL_MEMDEBUG'} = "$LOGDIR/$MEMDUMP";
+    $ENV{'CURL_MEMDEBUG'} = "$logdir/$MEMDUMP";
     $ENV{'CURL_ENTROPY'}="12345678";
     $ENV{'CURL_FORCETIME'}=1; # for debug NTLM magic
     $ENV{'CURL_GLOBAL_INIT'}=1; # debug curl_global_init/cleanup use
@@ -167,6 +168,13 @@ sub runner_init {
     $ENV{'CURL_HOME'}=$ENV{'HOME'};
     $ENV{'XDG_CONFIG_HOME'}=$ENV{'HOME'};
     $ENV{'COLUMNS'}=79; # screen width!
+
+    # Incorporate the $logdir into the random seed and re-seed the PRNG.
+    # This gives each runner a unique yet consistent seed which provides
+    # more unique port number selection in each runner, yet is deterministic
+    # across runs.
+    $randseed += unpack('%16C*', $logdir);
+    srand $randseed;
 
     # create pipes for communication with runner
     my ($thisrunnerr, $thiscontrollerw, $thiscontrollerr, $thisrunnerw);
@@ -194,6 +202,9 @@ sub runner_init {
             # Set this directory as ours
             $LOGDIR = $logdir;
             mkdir("$LOGDIR/$PIDDIR", 0777);
+
+            # Initialize various server variables
+            initserverconfig();
 
             # handle IPC calls
             event_loop();

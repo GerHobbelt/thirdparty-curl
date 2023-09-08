@@ -806,7 +806,7 @@ typedef enum {
   CURLPROXY_HTTP_1_0 = 1,   /* added in 7.19.4, force to use CONNECT
                                HTTP/1.0  */
   CURLPROXY_HTTPS = 2,  /* HTTPS but stick to HTTP/1 added in 7.52.0 */
-  CURLPROXY_HTTPS2 = 3, /* HTTPS and attempt HTTP/2 added in 8.1.0 */
+  CURLPROXY_HTTPS2 = 3, /* HTTPS and attempt HTTP/2 added in 8.2.0 */
   CURLPROXY_SOCKS4 = 4, /* support added in 7.15.2, enum existed already
                            in 7.10 */
   CURLPROXY_SOCKS5 = 5, /* added in 7.10 */
@@ -2266,6 +2266,9 @@ typedef enum {
 
   /* Sanitize without extreme prejudice */
   CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 327),
+
+  /* set a specific client IP for HAProxy PROXY protocol header? */
+  CURLOPT(CURLOPT_HAPROXY_CLIENT_IP, CURLOPTTYPE_STRINGPOINT, 323),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
