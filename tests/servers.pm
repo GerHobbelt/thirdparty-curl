@@ -182,6 +182,8 @@ sub getfreeport {
     return $server->sockport();
 }
 
+use File::Temp qw/ tempfile/;
+
 #######################################################################
 # Initialize configuration variables
 sub initserverconfig {

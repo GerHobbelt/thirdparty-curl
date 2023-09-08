@@ -1890,7 +1890,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               (config->proxy_ssl_allow_beast ?
                CURLSSLOPT_ALLOW_BEAST : 0) |
               (config->proxy_ssl_auto_client_cert ?
-               CURLSSLOPT_AUTO_CLIENT_CERT : 0);
+               CURLSSLOPT_AUTO_CLIENT_CERT : 0) |
+              (config->proxy_native_ca_store ?
+               CURLSSLOPT_NATIVE_CA : 0);
 
             if(mask)
               my_setopt_bitmask(curl, CURLOPT_PROXY_SSL_OPTIONS, mask);
@@ -2165,8 +2167,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           my_setopt_slist(curl, CURLOPT_MAIL_RCPT, config->mail_rcpt);
 
         /* curl 7.69.x */
-        my_setopt(curl, CURLOPT_MAIL_RCPT_ALLLOWFAILS,
-          config->mail_rcpt_allowfails ? 1L : 0L);
+        my_setopt(curl, CURLOPT_MAIL_RCPT_ALLOWFAILS,
+                  config->mail_rcpt_allowfails ? 1L : 0L);
 
         /* curl 7.20.x */
         if(config->ftp_pret)
