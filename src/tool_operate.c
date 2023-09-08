@@ -321,6 +321,17 @@ static CURLcode pre_transfer(struct GlobalConfig *global,
     if(S_ISREG(fileinfo.st_mode))
       uploadfilesize = fileinfo.st_size;
 
+#ifdef DEBUGBUILD
+    /* allow dedicated test cases to override */
+    {
+      char *ev = getenv("CURL_UPLOAD_SIZE");
+      if(ev) {
+        int sz = atoi(ev);
+        uploadfilesize = (curl_off_t)sz;
+      }
+    }
+#endif
+
     if(uploadfilesize != -1) {
       struct OperationConfig *config = per->config; /* for the macro below */
 #ifdef CURL_DISABLE_LIBCURL_OPTION
@@ -329,8 +340,8 @@ static CURLcode pre_transfer(struct GlobalConfig *global,
 #endif
       my_setopt(per->curl, CURLOPT_INFILESIZE_LARGE, uploadfilesize);
     }
-    per->input.fd = per->infd;
   }
+  per->uploadfilesize = uploadfilesize;
   per->start = tvnow();
   return result;
 }
@@ -942,7 +953,6 @@ static CURLcode single_transfer(struct GlobalConfig *global,
       if(state->up < state->infilenum) {
         struct per_transfer *per = NULL;
         struct OutStruct *outs;
-        struct InStruct *input;
         struct OutStruct *heads;
         struct OutStruct *etag_save;
         struct HdrCbData *hdrcbdata = NULL;
@@ -1105,7 +1115,6 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         hdrcbdata = &per->hdrcbdata;
 
         outs = &per->outs;
-        input = &per->input;
 
         per->outfile = NULL;
         per->infdopen = FALSE;
@@ -1381,9 +1390,6 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         /* what call to write */
         my_setopt(curl, CURLOPT_WRITEFUNCTION, tool_write_cb);
 
-        /* for uploads */
-        input->config = config;
-        input->per = per;
         /* Note that if CURLOPT_READFUNCTION is fread (the default), then
          * lib/telnet.c will Curl_poll() on the input file descriptor
          * rather than calling the READFUNCTION at regular intervals.
@@ -1391,13 +1397,13 @@ static CURLcode single_transfer(struct GlobalConfig *global,
          * behavior, by omitting to set the READFUNCTION & READDATA options,
          * have not been determined.
          */
-        my_setopt(curl, CURLOPT_READDATA, input);
+        my_setopt(curl, CURLOPT_READDATA, per);
         /* what call to read */
         my_setopt(curl, CURLOPT_READFUNCTION, tool_read_cb);
 
         /* in 7.18.0, the CURLOPT_SEEKFUNCTION/DATA pair is taking over what
            CURLOPT_IOCTLFUNCTION/DATA pair previously provided for seeking */
-        my_setopt(curl, CURLOPT_SEEKDATA, input);
+        my_setopt(curl, CURLOPT_SEEKDATA, per);
         my_setopt(curl, CURLOPT_SEEKFUNCTION, tool_seek_cb);
 
         {
