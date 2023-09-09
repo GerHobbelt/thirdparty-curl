@@ -1240,8 +1240,6 @@ const struct Curl_ssl *Curl_ssl =
   &Curl_ssl_sectransp;
 #elif defined(USE_GNUTLS)
   &Curl_ssl_gnutls;
-#elif defined(USE_GSKIT)
-  &Curl_ssl_gskit;
 #elif defined(USE_MBEDTLS)
   &Curl_ssl_mbedtls;
 #elif defined(USE_RUSTLS)
@@ -1265,9 +1263,6 @@ static const struct Curl_ssl *available_backends[] = {
 #endif
 #if defined(USE_GNUTLS)
   &Curl_ssl_gnutls,
-#endif
-#if defined(USE_GSKIT)
-  &Curl_ssl_gskit,
 #endif
 #if defined(USE_MBEDTLS)
   &Curl_ssl_mbedtls,
@@ -1596,7 +1591,7 @@ static ssize_t ssl_cf_recv(struct Curl_cfilter *cf,
     /* eof */
     *err = CURLE_OK;
   }
-  DEBUGF(LOG_CF(data, cf, "cf_recv(len=%zu) -> %zd, %d", len, nread, *err));
+  CURL_TRC_CF(data, cf, "cf_recv(len=%zu) -> %zd, %d", len, nread, *err);
   CF_DATA_RESTORE(cf, save);
   return nread;
 }
@@ -1697,7 +1692,7 @@ static bool cf_ssl_is_alive(struct Curl_cfilter *cf, struct Curl_easy *data,
 struct Curl_cftype Curl_cft_ssl = {
   "SSL",
   CF_TYPE_SSL,
-  CURL_LOG_DEFAULT,
+  CURL_LOG_LVL_NONE,
   ssl_cf_destroy,
   ssl_cf_connect,
   ssl_cf_close,
@@ -1715,7 +1710,7 @@ struct Curl_cftype Curl_cft_ssl = {
 struct Curl_cftype Curl_cft_ssl_proxy = {
   "SSL-PROXY",
   CF_TYPE_SSL,
-  CURL_LOG_DEFAULT,
+  CURL_LOG_LVL_NONE,
   ssl_cf_destroy,
   ssl_cf_connect,
   ssl_cf_close,
