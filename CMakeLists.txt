@@ -50,7 +50,6 @@
 #
 # The following variables are available:
 #   HAVE_SSL_SET0_WBIO: `SSL_set0_wbio` present in OpenSSL
-#   HAVE_RAND_EGD: `RAND_egd` present in OpenSSL
 #   HAVE_AWSLC: OpenSSL is AWS-LC
 #   HAVE_BORINGSSL: OpenSSL is BoringSSL
 #   HAVE_SSL_CTX_SET_QUIC_METHOD: `SSL_CTX_set_quic_method` present in OpenSSL/wolfSSL
@@ -598,9 +597,6 @@ if(USE_OPENSSL OR USE_WOLFSSL)
   if(NOT DEFINED HAVE_SSL_SET0_WBIO)
     openssl_check_symbol_exists(SSL_set0_wbio "openssl/ssl.h" HAVE_SSL_SET0_WBIO)
   endif()
-  if(NOT DEFINED HAVE_RAND_EGD)
-    openssl_check_symbol_exists(RAND_egd "${CURL_INCLUDES}" HAVE_RAND_EGD)
-  endif()
 endif()
 
 option(USE_NGHTTP2 "Use Nghttp2 library" OFF)
@@ -1042,7 +1038,6 @@ check_include_file_concat("poll.h"           HAVE_POLL_H)
 check_include_file_concat("pwd.h"            HAVE_PWD_H)
 check_include_file_concat("setjmp.h"         HAVE_SETJMP_H)
 check_include_file_concat("signal.h"         HAVE_SIGNAL_H)
-check_include_file_concat("ssl.h"            HAVE_SSL_H)
 check_include_file_concat("stdatomic.h"      HAVE_STDATOMIC_H)
 check_include_file_concat("socket.h"         HAVE_SOCKET_H)
 check_include_file_concat("stdbool.h"        HAVE_STDBOOL_H)
@@ -1058,7 +1053,6 @@ check_include_file_concat("unistd.h"         HAVE_UNISTD_H)
 check_include_file_concat("utime.h"          HAVE_UTIME_H)
 
 check_include_file_concat("stddef.h"         HAVE_STDDEF_H)
-check_include_file_concat("sys/utsname.h"   HAVE_SYS_UTSNAME_H)
 
 check_type_size(size_t  SIZEOF_SIZE_T)
 check_type_size(ssize_t  SIZEOF_SSIZE_T)

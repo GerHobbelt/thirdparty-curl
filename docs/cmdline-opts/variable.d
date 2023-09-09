@@ -14,8 +14,8 @@ if set to a single dash (-)). The name is a case sensitive identifier that
 must consist of no other letters than a-z, A-Z, 0-9 or underscore. The
 specified content is then associated with this identifier.
 
-The name must be unique within a command line invoke, setting the same
-variable name again will be ignored.
+Setting the same variable name again will overwrite the old contents with the
+new.
 
 The contents of a variable can be referenced in a later command line option
 when that option name is prefixed with "--expand-", and the name is used as
@@ -26,7 +26,7 @@ require the environment variable to be set or provide a default value for the
 variable in case it is not already set.
 
 --variable %name imports the variable called 'name' but exits with an error if
-that environment variable is not alreadty set. To provide a default value if
+that environment variable is not already set. To provide a default value if
 the environment variable is not set, use --variable %name=content or
 --variable %name@content. Note that on some systems - but not all -
 environment variables are case insensitive.
@@ -34,7 +34,7 @@ environment variables are case insensitive.
 When expanding variables, curl supports a set of functions that can make the
 variable contents more convenient to use. You apply a function to a variable
 expansion by adding a colon and then list the desired functions in a
-comma-separted list that is evaluated in a left-to-right order. Variable
+comma-separated list that is evaluated in a left-to-right order. Variable
 content holding null bytes that are not encoded when expanded, will cause
 error.
 
