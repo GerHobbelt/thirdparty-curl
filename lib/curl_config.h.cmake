@@ -50,6 +50,9 @@
 /* disables FILE */
 #cmakedefine CURL_DISABLE_FILE 1
 
+/* disables form api */
+#cmakedefine CURL_DISABLE_FORM_API 1
+
 /* disables FTP */
 #cmakedefine CURL_DISABLE_FTP 1
 
@@ -729,12 +732,6 @@ ${SIZEOF___INT64_CODE}
 
 /* If you want to build curl with the built-in manual */
 #cmakedefine USE_MANUAL 1
-
-/* if NSS is enabled */
-#cmakedefine USE_NSS 1
-
-/* if you have the PK11_CreateManagedGenericObject function */
-#cmakedefine HAVE_PK11_CREATEMANAGEDGENERICOBJECT 1
 
 /* if you want to use OpenLDAP code instead of legacy ldap implementation */
 #cmakedefine USE_OPENLDAP 1
