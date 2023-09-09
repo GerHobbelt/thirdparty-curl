@@ -671,6 +671,7 @@ static ParameterError data_urlencode(struct GlobalConfig *global,
   *postp = postdata;
   *lenp = size;
   return PARAM_OK;
+
 error:
   return err;
 }
@@ -771,7 +772,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       goto error;
     }
     else if(expand) {
-      struct curlx_dynbuf nbuf;
+      struct dynbuf nbuf;
       bool replaced;
 
       if(aliases[hit].desc != ARG_STRING) {
@@ -781,11 +782,11 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       }
       err = varexpand(global, nextarg, &nbuf, &replaced);
       if(err) {
-        curlx_dyn_free(&nbuf);
+        Curl_dyn_free(&nbuf);
         goto error;
       }
       if(replaced) {
-        nextarg = curlx_dyn_ptr(&nbuf);
+        nextarg = Curl_dyn_ptr(&nbuf);
         nextalloc = TRUE;
       }
     }
@@ -2707,7 +2708,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 
 error:
   if(nextalloc)
-    free(nextarg);
+    free((void *)nextarg);
   return err;
 }
 

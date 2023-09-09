@@ -39,7 +39,7 @@
    Return 0 on success, non-zero on error.
 */
 int jsonquoted(const char *in, size_t len,
-               struct curlx_dynbuf *out, bool lowercase)
+               struct dynbuf *out, bool lowercase)
 {
   const char *i = in;
   const char *in_end = &in[len];
@@ -48,35 +48,35 @@ int jsonquoted(const char *in, size_t len,
   for(; (i < in_end) && !result; i++) {
     switch(*i) {
     case '\\':
-      result = curlx_dyn_addn(out, "\\\\", 2);
+      result = Curl_dyn_addn(out, "\\\\", 2);
       break;
     case '\"':
-      result = curlx_dyn_addn(out, "\\\"", 2);
+      result = Curl_dyn_addn(out, "\\\"", 2);
       break;
     case '\b':
-      result = curlx_dyn_addn(out, "\\b", 2);
+      result = Curl_dyn_addn(out, "\\b", 2);
       break;
     case '\f':
-      result = curlx_dyn_addn(out, "\\f", 2);
+      result = Curl_dyn_addn(out, "\\f", 2);
       break;
     case '\n':
-      result = curlx_dyn_addn(out, "\\n", 2);
+      result = Curl_dyn_addn(out, "\\n", 2);
       break;
     case '\r':
-      result = curlx_dyn_addn(out, "\\r", 2);
+      result = Curl_dyn_addn(out, "\\r", 2);
       break;
     case '\t':
-      result = curlx_dyn_addn(out, "\\t", 2);
+      result = Curl_dyn_addn(out, "\\t", 2);
       break;
     default:
       if(*i < 32)
-        result = curlx_dyn_addf(out, "\\u%04x", *i);
+        result = Curl_dyn_addf(out, "\\u%04x", *i);
       else {
         char o = *i;
         if(lowercase && (o >= 'A' && o <= 'Z'))
           /* do not use tolower() since that's locale specific */
           o |= ('a' - 'A');
-        result = curlx_dyn_addn(out, &o, 1);
+        result = Curl_dyn_addn(out, &o, 1);
       }
       break;
     }
@@ -88,16 +88,16 @@ int jsonquoted(const char *in, size_t len,
 
 void jsonWriteString(FILE *stream, const char *in, bool lowercase)
 {
-  struct curlx_dynbuf out;
-  curlx_dyn_init(&out, MAX_JSON_STRING);
+  struct dynbuf out;
+  Curl_dyn_init(&out, MAX_JSON_STRING);
 
   if(!jsonquoted(in, strlen(in), &out, lowercase)) {
     fputc('\"', stream);
-    if(curlx_dyn_len(&out))
-      fputs(curlx_dyn_ptr(&out), stream);
+    if(Curl_dyn_len(&out))
+      fputs(Curl_dyn_ptr(&out), stream);
     fputc('\"', stream);
   }
-  curlx_dyn_free(&out);
+  Curl_dyn_free(&out);
 }
 
 void ourWriteOutJSON(FILE *stream, const struct writeoutvar mappings[],

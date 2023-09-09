@@ -35,10 +35,11 @@ struct var {
 };
 
 struct GlobalConfig;
+struct dynbuf;
 
 ParameterError setvariable(struct GlobalConfig *global, const char *input);
 ParameterError varexpand(struct GlobalConfig *global,
-                         const char *line, struct curlx_dynbuf *out,
+                         const char *line, struct dynbuf *out,
                          bool *replaced);
 
 /* free everything */

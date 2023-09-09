@@ -2892,8 +2892,7 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
         if(!result) {
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
-          curl_share_setopt(share, CURLSHOPT_SHARE,
-                            CURL_LOCK_DATA_SSL_SESSION);
+          curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_PSL);
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
