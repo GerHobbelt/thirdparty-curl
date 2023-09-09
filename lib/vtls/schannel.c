@@ -1665,7 +1665,8 @@ valid_cert_encoding(const CERT_CONTEXT *cert_context)
     (cert_context->cbCertEncoded > 0);
 }
 
-typedef bool(*Read_crt_func)(const CERT_CONTEXT *ccert_context, void *arg);
+typedef bool(*Read_crt_func)(const CERT_CONTEXT *ccert_context,
+                             bool reverse_order, void *arg);
 
 static void
 traverse_cert_store(const CERT_CONTEXT *context, Read_crt_func func,
@@ -1673,19 +1674,32 @@ traverse_cert_store(const CERT_CONTEXT *context, Read_crt_func func,
 {
   const CERT_CONTEXT *current_context = NULL;
   bool should_continue = true;
+  bool first = true;
+  bool reverse_order = false;
   while(should_continue &&
         (current_context = CertEnumCertificatesInStore(
           context->hCertStore,
-          current_context)) != NULL)
-    should_continue = func(current_context, arg);
+          current_context)) != NULL) {
+    /* Windows 11 22H2 OS Build 22621.674 or higher enumerates certificates in
+       leaf-to-root order while all previous versions of Windows enumerate
+       certificates in root-to-leaf order. Determine the order of enumeration
+       by comparing SECPKG_ATTR_REMOTE_CERT_CONTEXT's pbCertContext with the
+       first certificate's pbCertContext. */
+    if(first && context->pbCertEncoded != current_context->pbCertEncoded)
+      reverse_order = true;
+    should_continue = func(current_context, reverse_order, arg);
+    first = false;
+  }
 
   if(current_context)
     CertFreeCertificateContext(current_context);
 }
 
 static bool
-cert_counter_callback(const CERT_CONTEXT *ccert_context, void *certs_count)
+cert_counter_callback(const CERT_CONTEXT *ccert_context, bool reverse_order,
+                      void *certs_count)
 {
+  (void)reverse_order; /* unused */
   if(valid_cert_encoding(ccert_context))
     (*(int *)certs_count)++;
   return true;
@@ -1696,24 +1710,20 @@ struct Adder_args
   struct Curl_easy *data;
   CURLcode result;
   int idx;
+  int certs_count;
 };
 
 static bool
-add_cert_to_certinfo(const CERT_CONTEXT *ccert_context, void *raw_arg)
+add_cert_to_certinfo(const CERT_CONTEXT *ccert_context, bool reverse_order,
+                     void *raw_arg)
 {
   struct Adder_args *args = (struct Adder_args*)raw_arg;
   args->result = CURLE_OK;
   if(valid_cert_encoding(ccert_context)) {
     const char *beg = (const char *) ccert_context->pbCertEncoded;
     const char *end = beg + ccert_context->cbCertEncoded;
-    int insert_index = args->idx;
-    /* Windows prior to 11 22H2 returned certificates in reverse order. */
-    if(curlx_verify_windows_version(10, 0, 22621, PLATFORM_WINNT,
-                                    VERSION_LESS_THAN)) {
-        int certs_count = 0;
-        traverse_cert_store(ccert_context, cert_counter_callback, &certs_count);
-        insert_index = (certs_count - 1) - insert_index;
-    }
+    int insert_index = reverse_order ? (args->certs_count - 1) - args->idx :
+                       args->idx;
     args->result = Curl_extract_certinfo(args->data, insert_index,
                                          beg, end);
     args->idx++;
@@ -1850,6 +1860,7 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
       struct Adder_args args;
       args.data = data;
       args.idx = 0;
+      args.certs_count = certs_count;
       traverse_cert_store(ccert_context, add_cert_to_certinfo, &args);
       result = args.result;
     }
