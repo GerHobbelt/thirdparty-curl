@@ -541,7 +541,8 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
 
 #define IS_TRAILING_BYTE(x) (0x80 <= (x) && (x) < 0xC0)
 
-    /* attempt to complete an incomplete UTF-8 sequence from previous call */
+    /* attempt to complete an incomplete UTF-8 sequence from previous call.
+       the sequence does not have to be well-formed. */
     if(outs->utf8seq[0] && rlen) {
       bool complete = false;
       /* two byte sequence (lead byte 110yyyyy) */
