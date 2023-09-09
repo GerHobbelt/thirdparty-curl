@@ -278,6 +278,7 @@ DPAGES = \
   use-ascii.d \
   user-agent.d \
   user.d \
+  variable.d \
   verbose.d \
   version.d \
   write-out.d \

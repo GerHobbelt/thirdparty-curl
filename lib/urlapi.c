@@ -1114,6 +1114,7 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
     if('/' == path[0] && STARTS_WITH_URL_DRIVE_PREFIX(&path[1])) {
       /* This cannot be done with strcpy, as the memory chunks overlap! */
       path++;
+      pathlen--;
     }
 #endif
 
@@ -1389,6 +1390,7 @@ CURLU *curl_url_dup(const CURLU *in)
     DUP(u, in, path);
     DUP(u, in, query);
     DUP(u, in, fragment);
+    DUP(u, in, zoneid);
     u->portnum = in->portnum;
   }
   return u;
