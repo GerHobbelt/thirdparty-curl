@@ -459,7 +459,7 @@ struct Curl_multi *curl_multi_init(void)
                            CURL_DNS_HASH_SIZE);
 }
 
-#ifdef DEBUGBUILD
+#if defined(DEBUGBUILD) && !defined(CURL_DISABLE_VERBOSE_STRINGS)
 static void multi_warn_debug(struct Curl_multi *multi, struct Curl_easy *data)
 {
   if(!multi->warned) {
@@ -752,7 +752,7 @@ static CURLcode multi_done(struct Curl_easy *data,
 
      if premature is TRUE, it means this connection was said to be DONE before
      the entire request operation is complete and thus we can't know in what
-     state it is for re-using, so we're forced to close it. In a perfect world
+     state it is for reusing, so we're forced to close it. In a perfect world
      we can add code that keep track of if we really must close it here or not,
      but currently we have no such detail knowledge.
   */
@@ -769,7 +769,7 @@ static CURLcode multi_done(struct Curl_easy *data,
 #endif
      ) || conn->bits.close
        || (premature && !Curl_conn_is_multiplex(conn, FIRSTSOCKET))) {
-    DEBUGF(infof(data, "multi_done, not re-using connection=%"
+    DEBUGF(infof(data, "multi_done, not reusing connection=%"
                        CURL_FORMAT_CURL_OFF_T ", forbid=%d"
                        ", close=%d, premature=%d, conn_multiplex=%d",
                  conn->connection_id,
@@ -1801,9 +1801,8 @@ static CURLcode protocol_connect(struct Curl_easy *data,
  */
 static CURLcode readrewind(struct Curl_easy *data)
 {
-  struct connectdata *conn = data->conn;
   curl_mimepart *mimepart = &data->set.mimepost;
-  DEBUGASSERT(conn);
+  DEBUGASSERT(data->conn);
 
   data->state.rewindbeforesend = FALSE; /* we rewind now */
 
@@ -1816,12 +1815,12 @@ static CURLcode readrewind(struct Curl_easy *data)
   /* We have sent away data. If not using CURLOPT_POSTFIELDS or
      CURLOPT_HTTPPOST, call app to rewind
   */
-  if(conn->handler->protocol & PROTO_FAMILY_HTTP) {
-    struct HTTP *http = data->req.p.http;
-
-    if(http->sendit)
-      mimepart = http->sendit;
+#ifndef CURL_DISABLE_HTTP
+  if(data->conn->handler->protocol & PROTO_FAMILY_HTTP) {
+    if(data->state.mimepost)
+      mimepart = data->state.mimepost;
   }
+#endif
   if(data->set.postfields ||
      (data->state.httpreq == HTTPREQ_GET) ||
      (data->state.httpreq == HTTPREQ_HEAD))
@@ -2477,7 +2476,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
 
       if(done || (result == CURLE_RECV_ERROR)) {
         /* If CURLE_RECV_ERROR happens early enough, we assume it was a race
-         * condition and the server closed the re-used connection exactly when
+         * condition and the server closed the reused connection exactly when
          * we wanted to use it, so figure out if that is indeed the case.
          */
         CURLcode ret = Curl_retry_request(data, &newurl);
@@ -2519,7 +2518,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
       if(result) {
         /*
          * The transfer phase returned error, we mark the connection to get
-         * closed to prevent being re-used. This is because we can't possibly
+         * closed to prevent being reused. This is because we can't possibly
          * know if the connection is in a good shape or not now.  Unless it is
          * a protocol which uses two "channels" like FTP, as then the error
          * happened in the data connection.

@@ -677,11 +677,13 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 #ifndef CURL_DISABLE_FORM_API
   case CURLOPT_HTTPPOST:
     /*
-     * Set to make us do HTTP POST
+     * Set to make us do HTTP POST. Legacy API-style.
      */
     data->set.httppost = va_arg(param, struct curl_httppost *);
     data->set.method = HTTPREQ_POST_FORM;
     data->set.opt_no_body = FALSE; /* this is implied */
+    Curl_mime_cleanpart(data->state.formp);
+    Curl_safefree(data->state.formp);
     break;
 #endif
 
@@ -994,6 +996,10 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     if(!result) {
       data->set.method = HTTPREQ_POST_MIME;
       data->set.opt_no_body = FALSE; /* this is implied */
+#ifndef CURL_DISABLE_FORM_API
+      Curl_mime_cleanpart(data->state.formp);
+      Curl_safefree(data->state.formp);
+#endif
     }
     break;
 
@@ -1246,6 +1252,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.out = va_arg(param, void *);
     break;
 
+#ifdef CURL_LIST_ONLY_PROTOCOL
   case CURLOPT_DIRLISTONLY:
     /*
      * An option that changes the command to one that asks for a list only, no
@@ -1253,7 +1260,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     data->set.list_only = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
-
+#endif
   case CURLOPT_APPEND:
     /*
      * We want to upload and append to an existing file. Used for FTP and
@@ -1924,6 +1931,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     result = Curl_setstropt(&data->set.str[STRING_DEVICE],
                             va_arg(param, char *));
     break;
+#ifndef CURL_DISABLE_BINDLOCAL
   case CURLOPT_LOCALPORT:
     /*
      * Set what local port to bind the socket to when performing an operation.
@@ -1942,6 +1950,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       return CURLE_BAD_FUNCTION_ARGUMENT;
     data->set.localportrange = curlx_sltous(arg);
     break;
+#endif
   case CURLOPT_GSSAPI_DELEGATION:
     /*
      * GSS-API credential delegation bitmask
