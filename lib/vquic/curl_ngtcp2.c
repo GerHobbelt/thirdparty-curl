@@ -1106,6 +1106,7 @@ static int cb_h3_stream_close(nghttp3_conn *conn, int64_t stream_id,
   else {
     CURL_TRC_CF(data, cf, "[%" PRId64 "] CLOSED", stream->id);
   }
+  data->req.keepon &= ~KEEP_SEND_HOLD;
   h3_drain_stream(cf, data);
   return 0;
 }
@@ -1785,6 +1786,18 @@ static ssize_t cf_ngtcp2_send(struct Curl_cfilter *cf, struct Curl_easy *data,
     stream->upload_blocked_len = 0;
   }
   else if(stream->closed) {
+    if(stream->resp_hds_complete) {
+      /* Server decided to close the stream after having sent us a final
+       * response. This is valid if it is not interested in the request
+       * body. This happens on 30x or 40x responses.
+       * We silently discard the data sent, since this is not a transport
+       * error situation. */
+      CURL_TRC_CF(data, cf, "[%" PRId64 "] discarding data"
+                  "on closed stream with response", stream->id);
+      *err = CURLE_OK;
+      sent = (ssize_t)len;
+      goto out;
+    }
     *err = CURLE_HTTP3;
     sent = -1;
     goto out;
@@ -2245,9 +2258,16 @@ static CURLcode cf_ngtcp2_data_event(struct Curl_cfilter *cf,
     }
     break;
   }
-  case CF_CTRL_DATA_IDLE:
-    result = check_and_set_expiry(cf, data, NULL);
+  case CF_CTRL_DATA_IDLE: {
+    struct h3_stream_ctx *stream = H3_STREAM_CTX(data);
+    CURL_TRC_CF(data, cf, "data idle");
+    if(stream && !stream->closed) {
+      result = check_and_set_expiry(cf, data, NULL);
+      if(result)
+        CURL_TRC_CF(data, cf, "data idle, check_and_set_expiry -> %d", result);
+    }
     break;
+  }
   default:
     break;
   }
@@ -2349,7 +2369,7 @@ static CURLcode cf_connect_start(struct Curl_cfilter *cf,
   int rc;
   int rv;
   CURLcode result;
-  const struct Curl_sockaddr_ex *sockaddr;
+  const struct Curl_sockaddr_ex *sockaddr = NULL;
   int qfd;
 
   ctx->version = NGTCP2_PROTO_VER_MAX;
@@ -2395,6 +2415,8 @@ static CURLcode cf_connect_start(struct Curl_cfilter *cf,
 
   Curl_cf_socket_peek(cf->next, data, &ctx->q.sockfd,
                       &sockaddr, NULL, NULL, NULL, NULL);
+  if(!sockaddr)
+    return CURLE_QUIC_CONNECT_ERROR;
   ctx->q.local_addrlen = sizeof(ctx->q.local_addr);
   rv = getsockname(ctx->q.sockfd, (struct sockaddr *)&ctx->q.local_addr,
                    &ctx->q.local_addrlen);
@@ -2525,8 +2547,8 @@ out:
 
 #ifndef CURL_DISABLE_VERBOSE_STRINGS
   if(result) {
-    const char *r_ip;
-    int r_port;
+    const char *r_ip = NULL;
+    int r_port = 0;
 
     Curl_cf_socket_peek(cf->next, data, NULL, NULL,
                         &r_ip, &r_port, NULL, NULL);

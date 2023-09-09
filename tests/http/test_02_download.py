@@ -200,6 +200,7 @@ class TestDownload:
         ])
         r.check_response(count=count, http_status=200)
 
+    @pytest.mark.skipif(condition=Env.slow_network, reason="not suitable for slow network tests")
     @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
     def test_02_10_10MB_serial(self, env: Env,
                               httpd, nghttpx, repeat, proto):
@@ -211,6 +212,7 @@ class TestDownload:
         r = curl.http_download(urls=[urln], alpn_proto=proto)
         r.check_response(count=count, http_status=200)
 
+    @pytest.mark.skipif(condition=Env.slow_network, reason="not suitable for slow network tests")
     @pytest.mark.parametrize("proto", ['h2', 'h3'])
     def test_02_11_10MB_parallel(self, env: Env,
                               httpd, nghttpx, repeat, proto):
@@ -252,6 +254,7 @@ class TestDownload:
         ])
         r.check_response(count=count, http_status=200)
 
+    @pytest.mark.skipif(condition=Env.slow_network, reason="not suitable for slow network tests")
     def test_02_20_h2_small_frames(self, env: Env, httpd, repeat):
         # Test case to reproduce content corruption as observed in
         # https://github.com/curl/curl/issues/10525
@@ -376,10 +379,7 @@ class TestDownload:
         if not client.exists():
             pytest.skip(f'example client not built: {client.name}')
         r = client.run(args=[url])
-        if env.curl_uses_lib('wolfssl'):
-            assert r.exit_code != 0, f'unexpected success for wolfSSL session share'
-        else:
-            r.check_exit_code(0)
+        r.check_exit_code(0)
 
     def check_downloads(self, client, srcfile: str, count: int,
                         complete: bool = True):
