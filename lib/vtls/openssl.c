@@ -1885,7 +1885,6 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
         ERR_clear_error();
         if(SSL_shutdown(backend->handle)) {
           CURL_TRC_CF(data, cf, "SSL_shutdown() finished successfully");
-          done = TRUE;
           break;
         }
 
