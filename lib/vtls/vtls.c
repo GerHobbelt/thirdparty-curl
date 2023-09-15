@@ -1421,7 +1421,6 @@ static void cf_close(struct Curl_cfilter *cf, struct Curl_easy *data)
 {
   struct ssl_connect_data *connssl = cf->ctx;
   if(connssl) {
-    Curl_ssl->shut_down(cf, data);
     Curl_ssl->close(cf, data);
     connssl->state = ssl_connection_none;
     free_hostname(connssl);
@@ -1495,7 +1494,8 @@ static void ssl_cf_close(struct Curl_cfilter *cf,
 
   CF_DATA_SAVE(save, cf, data);
   cf_close(cf, data);
-  cf->next->cft->do_close(cf->next, data);
+  if(cf->next)
+    cf->next->cft->do_close(cf->next, data);
   CF_DATA_RESTORE(cf, save);
 }
 

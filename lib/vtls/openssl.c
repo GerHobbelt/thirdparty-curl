@@ -1878,15 +1878,44 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
 
   if(backend->handle) {
     if(cf->next && cf->next->connected) {
-      char buf[32];
-      /* Maybe the server has already sent a close notify alert.
-         Read it to avoid an RST on the TCP connection. */
-      (void)SSL_read(backend->handle, buf, (int)sizeof(buf));
+      char buf[1024];
+      int nread, i, err, done = FALSE;
+      CURL_TRC_CF(data, cf, "SSL_shutdown() initiate");
+      for(i = 0; !done && i < 100; ++i) {
+        ERR_clear_error();
+        if(SSL_shutdown(backend->handle)) {
+          CURL_TRC_CF(data, cf, "SSL_shutdown() finished successfully");
+          done = TRUE;
+          break;
+        }
 
-      (void)SSL_shutdown(backend->handle);
+        nread = SSL_read(backend->handle, buf, (int)sizeof(buf));
+        err = SSL_get_error(backend->handle, nread);
+        switch(err) {
+        case SSL_ERROR_NONE: /* this is not an error */
+        case SSL_ERROR_ZERO_RETURN: /* no more data */
+          CURL_TRC_CF(data, cf, "SSL_shutdown() seeing EOF from server");
+          done = TRUE;
+          break;
+        case SSL_ERROR_WANT_READ:
+          /* SSL has send its notify and now wants to read the reply
+           * from the server. We are not really interested in that. */
+          CURL_TRC_CF(data, cf, "SSL_shutdown() has sent everything, "
+                      "not waiting for the answer");
+          done = TRUE;
+          break;
+        case SSL_ERROR_WANT_WRITE:
+          CURL_TRC_CF(data, cf, "SSL_shutdown() still wants to send");
+          Curl_wait_ms(10);
+          break;
+        default: /* error */
+          fprintf(stderr, "SSL_shutdown() returned error, leaving\n");
+          done = TRUE;
+          break;
+        }
+      }
 
       ERR_clear_error();
-
       SSL_set_connect_state(backend->handle);
     }
 
