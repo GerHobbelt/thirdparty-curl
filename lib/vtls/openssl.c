@@ -1882,7 +1882,8 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
       int nread, err;
       long sslerr;
 
-      /* Do a read to catch any pending data in SSL or on the socket */
+      /* Maybe the server has already sent a close notify alert.
+         Read it to avoid an RST on the TCP connection. */
       (void)SSL_read(backend->handle, buf, (int)sizeof(buf));
       ERR_clear_error();
       if(SSL_shutdown(backend->handle)) {
