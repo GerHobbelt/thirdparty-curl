@@ -1882,6 +1882,8 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
       int nread, err;
       long sslerr;
 
+      /* Do a read to catch any pending data in SSL or on the socket */
+      (void)SSL_read(backend->handle, buf, (int)sizeof(buf));
       ERR_clear_error();
       if(SSL_shutdown(backend->handle)) {
         CURL_TRC_CF(data, cf, "SSL shutdown finished");
