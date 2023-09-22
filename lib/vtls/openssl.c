@@ -1886,7 +1886,7 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
          Read it to avoid an RST on the TCP connection. */
       (void)SSL_read(backend->handle, buf, (int)sizeof(buf));
       ERR_clear_error();
-      if(SSL_shutdown(backend->handle)) {
+      if(SSL_shutdown(backend->handle) == 1) {
         CURL_TRC_CF(data, cf, "SSL shutdown finished");
       }
       else {
