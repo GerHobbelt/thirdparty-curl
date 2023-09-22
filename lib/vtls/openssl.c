@@ -1900,17 +1900,17 @@ static void ossl_close(struct Curl_cfilter *cf, struct Curl_easy *data)
         case SSL_ERROR_WANT_READ:
           /* SSL has send its notify and now wants to read the reply
            * from the server. We are not really interested in that. */
-          CURL_TRC_CF(data, cf, "SSL shutdown, sent, leaving");
+          CURL_TRC_CF(data, cf, "SSL shutdown sent");
           break;
         case SSL_ERROR_WANT_WRITE:
-          CURL_TRC_CF(data, cf, "SSL shutdown, blocked send, leaving");
+          CURL_TRC_CF(data, cf, "SSL shutdown send blocked");
           break;
         default:
           sslerr = ERR_get_error();
           CURL_TRC_CF(data, cf, "SSL shutdown, error: '%s', errno %d",
                       (sslerr ?
-                        ossl_strerror(sslerr, buf, sizeof(buf)) :
-                        SSL_ERROR_to_str(err)),
+                       ossl_strerror(sslerr, buf, sizeof(buf)) :
+                       SSL_ERROR_to_str(err)),
                       SOCKERRNO);
           break;
         }
