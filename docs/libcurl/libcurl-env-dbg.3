@@ -1,0 +1,81 @@
+.\" **************************************************************************
+.\" *                                  _   _ ____  _
+.\" *  Project                     ___| | | |  _ \| |
+.\" *                             / __| | | | |_) | |
+.\" *                            | (__| |_| |  _ <| |___
+.\" *                             \___|\___/|_| \_\_____|
+.\" *
+.\" * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" *
+.\" * This software is licensed as described in the file COPYING, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at https://curl.se/docs/copyright.html.
+.\" *
+.\" * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+.\" * copies of the Software, and permit persons to whom the Software is
+.\" * furnished to do so, under the terms of the COPYING file.
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" * SPDX-License-Identifier: curl
+.\" *
+.\" **************************************************************************
+.TH libcurl-env-dbg 3 "18 September 2023" "libcurl" "libcurl"
+.SH NAME
+libcurl-env-dbg \- environment variables libcurl DEBUGBUILD understands
+.SH DESCRIPTION
+This is a set of variables only recognized and used if libcurl was built
+"debug enabled", which should never be true for a library used in production.
+These variables are intended for internal use only, subject to change and have
+many effects on the behavior of libcurl. Refer to the source code to determine
+how exactly they are being used.
+.RS
+.IP "CURL_ALTSVC_HTTP"
+Used to circumvent the AltSvc HTTPS protocol restriction.
+.IP "CURL_DBG_SOCK_WBLOCK"
+Percentage of send() calls that should be answered with a EAGAIN at random. For
+TCP/UNIX sockets.
+.IP "CURL_DBG_SOCK_WPARTIAL"
+Percentage of data that shall be written to the network. For TCP/UNIX sockets.
+This is applied to every send. Example: CURL_DBG_SOCK_WPARTIAL=80 means a send
+with 1000 bytes would only send 800.
+.IP "CURL_DBG_QUIC_WBLOCK"
+Percentage of send() calls that should be answered with EAGAIN at random. QUIC
+only.
+.IP "CURL_DEBUG"
+Used to configure trace logging behavior as an alternative to calling
+\fIcurl_global_trace(3)\fP. For example CURL_DEBUG=http/2
+.IP "CURL_DEBUG_SIZE"
+Used to fake the size returned by CURLINFO_HEADER_SIZE and
+CURLINFO_REQUEST_SIZE.
+.IP "CURL_GETHOSTNAME"
+Used to override the local machine's unqualified hostname for NTLM and SMTP.
+.IP "CURL_HSTS_HTTP"
+Used to circumvent the HSTS HTTPS protocol restriction.
+.IP "CURL_FORCETIME"
+Used to set a time of 0 for AWS signatures and NTLM.
+.IP "CURL_ENTROPY"
+Used to set a fixed faked value to use instead of a proper random number so
+that functions in libcurl that are otherwise getting random outputs can be
+tested for what they generate.
+.IP "CURL_SMALLREQSEND"
+Used to set an alternative size of HTTP data to be sent at a time only if
+smaller than the current.
+.IP "CURL_SMALLSENDS"
+Used to set an alternative size of socket data to be sent at a time only if
+smaller than the current.
+.IP "CURL_TIME"
+Used to fake time of AltSvc, HSTS and CURLINFO variables that are time related.
+This variable is also used to fake the data returned by some CURLINFO variables
+that are not time-related, and in that case the value is not a time string. For
+example CURLINFO_LOCAL_PORT data can be set.
+.IP "CURL_TRACE"
+Used for debugging the lib/ldap implementation.
+.IP "CURL_NTLM_WB_FILE"
+Used to set to a debug-version of the \fIntlm-wb\fP executable.
+.IP "CURL_OPENLDAP_TRACE"
+Used for debugging the OpenLDAP implementation.
+.RE
+.SH "SEE ALSO"
+.BR libcurl-env "(3)"
