@@ -1153,6 +1153,8 @@ CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
                 data->state.authproblem = TRUE;
               }
             }
+#else
+           ;
 #endif
 
     /* there may be multiple methods on one line, so keep reading */
