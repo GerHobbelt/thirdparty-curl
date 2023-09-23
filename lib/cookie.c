@@ -1295,8 +1295,8 @@ struct CookieInfo *Curl_cookie_init(struct Curl_easy *data,
         fclose(handle);
     }
     data->state.cookie_engine = TRUE;
-    c->running = TRUE;          /* now, we're running */
   }
+  c->running = TRUE;          /* now, we're running */
 
   return c;
 
