@@ -88,7 +88,6 @@ EXTRA_DIST =                                    \
  RUSTLS.md                                      \
  ROADMAP.md                                     \
  SECURITY-ADVISORY.md                           \
- SECURITY-PROCESS.md                            \
  SSL-PROBLEMS.md                                \
  SSLCERTS.md                                    \
  THANKS                                         \
@@ -97,6 +96,7 @@ EXTRA_DIST =                                    \
  TheArtOfHttpScripting.md                       \
  URL-SYNTAX.md                                  \
  VERSIONS.md                                    \
+ VULN-DISCLOSURE-POLICY.md                      \
  WEBSOCKET.md
 
 MAN2HTML= roffit $< >$@
