@@ -52,6 +52,8 @@ const char *proto_scp = NULL;
 const char *proto_sftp = NULL;
 const char *proto_tftp = NULL;
 const char *proto_ssh = NULL;
+const char *proto_ipfs = "ipfs";
+const char *proto_ipns = "ipns";
 
 static struct proto_name_tokenp {
   const char   *proto_name;

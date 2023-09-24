@@ -45,8 +45,6 @@
 #  include <proto/dos.h>
 #endif
 
-#include "strcase.h"
-
 #define ENABLE_CURLX_PRINTF
 /* use our own printf() functions */
 #include "curlx.h"
@@ -709,117 +707,243 @@ noretry:
 
 static char *ipfs_gateway(void)
 {
-  char *gateway;
-  char *ipfs_path;
-  char *gateway_file_path;
-  FILE *gateway_file;
+  char *gateway = NULL;
+  char *ipfs_path = NULL;
+  char *gateway_composed_file_path = NULL;
+  FILE *gateway_file = NULL;
 
   gateway = curlx_getenv("IPFS_GATEWAY");
 
   /* Gateway is found from environment variable. */
-  if(gateway) {
+  if(gateway && strlen(gateway)) {
+    char *composed_gateway = NULL;
     bool add_slash = (gateway[strlen(gateway) - 1] == '/') ? FALSE : TRUE;
-    gateway = aprintf("%s%s", gateway, (add_slash) ? "/" : "");
+    composed_gateway = aprintf("%s%s", gateway, (add_slash) ? "/" : "");
+    Curl_safefree(gateway);
+    gateway = aprintf("%s", composed_gateway);
+    Curl_safefree(composed_gateway);
     return gateway;
   }
 
   /* Try to find the gateway in the IPFS data folder. */
-
   ipfs_path = curlx_getenv("IPFS_PATH");
 
   if(!ipfs_path) {
+    char *home = NULL;
+    home = curlx_getenv("HOME");
     /* Empty path, fallback to "~/.ipfs", as that's the default location. */
-    ipfs_path = aprintf("%s/.ipfs/", curlx_getenv("HOME"));
+    ipfs_path = aprintf("%s/.ipfs/", home);
+    Curl_safefree(home);
   }
 
-  gateway_file_path = aprintf("%sgateway", ipfs_path);
-  gateway_file = fopen(gateway_file_path, FOPEN_READTEXT);
+  if(!ipfs_path) {
+    Curl_safefree(gateway);
+    Curl_safefree(ipfs_path);
+    return NULL;
+  }
+
+  gateway_composed_file_path = aprintf("%sgateway", ipfs_path);
+
+  if(!gateway_composed_file_path) {
+    Curl_safefree(gateway);
+    Curl_safefree(ipfs_path);
+    return NULL;
+  }
+
+  gateway_file = fopen(gateway_composed_file_path, FOPEN_READTEXT);
+  Curl_safefree(gateway_composed_file_path);
 
   if(gateway_file) {
-    char gateway_buffer[255];
-    if(!fgets(gateway_buffer, sizeof(gateway_buffer) - 1, gateway_file)) {
-      fclose(gateway_file);
-      return NULL;
-    }
-    fclose(gateway_file);
+    char *gateway_buffer = NULL;
 
-    /* Replace the last char with \0 */
-    gateway_buffer[sizeof(gateway_buffer) - 1] = 0;
-
-    /* Replace first occurence of end of line with \0 */
-    gateway_buffer[strcspn(gateway_buffer, "\r")] = 0;
-    gateway_buffer[strcspn(gateway_buffer, "\n")] = 0;
-
-    if(strlen(gateway_buffer) > 1) {
+    if((PARAM_OK == file2string(&gateway_buffer, gateway_file)) &&
+       gateway_buffer) {
       bool add_slash = (gateway_buffer[strlen(gateway_buffer) - 1] == '/')
         ? FALSE
         : TRUE;
 
       gateway = aprintf("%s%s", gateway_buffer, (add_slash) ? "/" : "");
-      return gateway;
+      Curl_safefree(gateway_buffer);
     }
+
+    if(gateway_file)
+      fclose(gateway_file);
+
+    if(!gateway) {
+      Curl_safefree(gateway);
+      Curl_safefree(ipfs_path);
+      return NULL;
+    }
+
+    Curl_safefree(ipfs_path);
+    return gateway;
   }
 
+  Curl_safefree(gateway);
+  Curl_safefree(ipfs_path);
   return NULL;
 }
 
 /*
- * Rewrite ipfs://<cid> and ipns://<cid> to be a normal
+ * Rewrite ipfs://<cid> and ipns://<cid> to a HTTP(S)
  * URL that can be handled by an IPFS gateway.
  */
-static void ipfs_url_rewrite(char **url)
+static CURLcode ipfs_url_rewrite(CURLU *uh, const char *protocol, char **url,
+                                 struct OperationConfig *config)
 {
-  char *inner = *url;
-  char *gateway;
-  const char *protocol;
-  char *everything_after_scheme;
-  char *urlbuffer;
+  CURLcode result = CURLE_URL_MALFORMAT;
+  CURLUcode urlGetResult;
+  char *gateway = NULL;
+  char *cid = NULL;
+  char *pathbuffer = NULL;
+  CURLU *ipfsurl = curl_url();
 
-  /* 7 is "ipfs://" and "ipns://", it needs to be at least 7 characters*/
-  if(strlen(inner) < 7) {
-    return;
+  if(!ipfsurl) {
+    result = CURLE_FAILED_INIT;
+    goto clean;
   }
 
-  /* Get IPFS gateway from environment variable */
-  gateway = ipfs_gateway();
-  protocol = (curl_strnequal(inner, "ipfs", 4)) ? "ipfs" : "ipns";
+  urlGetResult = curl_url_get(uh, CURLUPART_HOST, &cid, CURLU_URLDECODE);
 
-  everything_after_scheme = &inner[7];
-  urlbuffer = aprintf("%s%s/%s", gateway, protocol, everything_after_scheme);
+  if(urlGetResult) {
+    goto clean;
+  }
 
-  *url = urlbuffer; /* use our new URL instead! */
+  if(!cid) {
+    goto clean;
+  }
+
+  /* We might have a --ipfs-gateway argument. Check it first and use it. Error
+   * if we do have something but if it's an invalid url.
+   */
+  if(config->ipfs_gateway) {
+    if(curl_url_set(ipfsurl, CURLUPART_URL, config->ipfs_gateway,
+                    CURLU_GUESS_SCHEME)
+                    == CURLUE_OK) {
+      gateway = strdup(config->ipfs_gateway);
+      if(!gateway) {
+        result = CURLE_URL_MALFORMAT;
+        goto clean;
+      }
+
+    }
+    else {
+      result = CURLE_BAD_FUNCTION_ARGUMENT;
+      goto clean;
+    }
+  }
+  else {
+    gateway = ipfs_gateway();
+    if(!gateway) {
+      result = CURLE_FILE_COULDNT_READ_FILE;
+      goto clean;
+    }
+
+    if(curl_url_set(ipfsurl, CURLUPART_URL, gateway, CURLU_GUESS_SCHEME
+                    | CURLU_NON_SUPPORT_SCHEME) != CURLUE_OK) {
+      goto clean;
+    }
+  }
+
+  pathbuffer = aprintf("%s/%s", protocol, cid);
+  if(!pathbuffer) {
+    goto clean;
+  }
+
+  if(curl_url_set(ipfsurl, CURLUPART_PATH, pathbuffer, CURLU_URLENCODE)
+                  != CURLUE_OK) {
+    goto clean;
+  }
+
+  /* Free whatever it has now, rewriting is next */
+  Curl_safefree(*url);
+
+  if(curl_url_get(ipfsurl, CURLUPART_URL, url, CURLU_URLENCODE)
+                  != CURLUE_OK) {
+    goto clean;
+  }
+
+  result = CURLE_OK;
+
+clean:
+  curl_free(gateway);
+  curl_free(cid);
+  curl_free(pathbuffer);
+
+  if(ipfsurl) {
+    curl_url_cleanup(ipfsurl);
+  }
+
+  switch(result) {
+  case CURLE_URL_MALFORMAT:
+    helpf(stderr, "malformed URL. Visit https://curl.se/"
+          "docs/ipfs.html#Gateway-file-and-"
+          "environment-variable for more "
+          "information for more information");
+    break;
+  case CURLE_FILE_COULDNT_READ_FILE:
+    helpf(stderr, "IPFS automatic gateway detection "
+          "failure. Visit https://curl.se/docs/"
+          "ipfs.html#Malformed-gateway-URL for "
+          "more information for more "
+          "information");
+    break;
+  case CURLE_BAD_FUNCTION_ARGUMENT:
+    helpf(stderr, "--ipfs-gateway argument results in "
+          "malformed URL. Visit https://curl.se/"
+          "docs/ipfs.html#Malformed-gateway-URL "
+          "for more information for more "
+          "information");
+    break;
+  default:
+    break;
+  }
+
+  return result;
 }
 
 /*
  * Return the protocol token for the scheme used in the given URL
  */
-static const char *url_proto(char *url, struct OperationConfig* config)
+static CURLcode url_proto(char **url,
+                          struct OperationConfig *config,
+                          const char **scheme)
 {
+  CURLcode result = CURLE_OK;
   CURLU *uh = curl_url();
   const char *proto = NULL;
-
-  /* Before we do anything, see if we need to rewrite the URL.*/
-  if(curl_strnequal(url, "ipfs", 4) || curl_strnequal(url, "ipns", 4)) {
-    ipfs_url_rewrite(&url);
-    config->followlocation = TRUE;
-  }
+  *scheme = NULL;
 
   if(uh) {
-    if(url) {
-      if(!curl_url_set(uh, CURLUPART_URL, url,
-                       CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME | CURLU_ALLOW_SPACE)) {
-        char *schemep = NULL;
-        if(!curl_url_get(uh, CURLUPART_SCHEME, &schemep,
-                         CURLU_DEFAULT_SCHEME) &&
-           schemep) {
-          proto = proto_token(schemep);
-          curl_free(schemep);
+    if(*url) {
+      char *schemep = NULL;
+
+      if(!curl_url_set(uh, CURLUPART_URL, *url,
+                       CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME | CURLU_ALLOW_SPACE) &&
+         !curl_url_get(uh, CURLUPART_SCHEME, &schemep,
+                       CURLU_DEFAULT_SCHEME)) {
+        if(curl_strequal(schemep, proto_ipfs) ||
+           curl_strequal(schemep, proto_ipns)) {
+          result = ipfs_url_rewrite(uh, schemep, url, config);
+
+          /* short-circuit proto_token, we know it's ipfs or ipns */
+          if(curl_strequal(schemep, proto_ipfs))
+            proto = proto_ipfs;
+          else if(curl_strequal(schemep, proto_ipns))
+            proto = proto_ipns;
+
         }
+        else
+          proto = proto_token(schemep);
+
+        curl_free(schemep);
       }
     }
     curl_url_cleanup(uh);
   }
-  return proto? proto: "???";   /* Never match if not found. */
+
+  *scheme = (proto? proto: "???");   /* Never match if not found. */
+  return result;
 }
 
 /* create the next (singular) transfer */
@@ -835,6 +959,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
   bool orig_isatty = global->isatty;
   struct State *state = &config->state;
   char *httpgetfields = state->httpgetfields;
+
   *added = FALSE; /* not yet */
 
   if(config->postfields) {
@@ -1372,7 +1497,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result)
           break;
 
-        use_proto = url_proto(per->this_url, config);
+        /* result is only used when for ipfs and ipns, ignored otherwise */
+        result = url_proto(&per->this_url, config, &use_proto);
+        if(result && (use_proto == proto_ipfs || use_proto == proto_ipns))
+          break;
 
         /* On most modern OSes, exiting works thoroughly,
            we'll clean everything up via exit(), so don't bother with
@@ -1633,7 +1761,6 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt_str(curl, CURLOPT_PROXY_KEYPASSWD, config->proxy_key_passwd);
 
         if(use_proto == proto_scp || use_proto == proto_sftp || use_proto == proto_ssh) {
-
           /* SSH and SSL private key uses same command-line option */
           /* new in libcurl 7.16.1 */
           my_setopt_str(curl, CURLOPT_SSH_PRIVATE_KEYFILE, config->key);

@@ -117,7 +117,7 @@ static const struct LongShort aliases[]= {
   {"*r", "create-dirs",              ARG_BOOL},
   {"*R", "create-file-mode",         ARG_STRING},
   {"*s", "max-redirs",               ARG_STRING},
-  {"*S", "sanitize-with-extreme-prejudice", ARG_NONE},
+  {"*S", "ipfs-gateway",             ARG_STRING},
   {"*t", "proxy-ntlm",               ARG_BOOL},
   {"*u", "crlf",                     ARG_BOOL},
   {"*v", "stderr",                   ARG_FILENAME},
@@ -364,6 +364,7 @@ static const struct LongShort aliases[]= {
   {"#p", "progress-percent",         ARG_BOOL},
   {":",  "next",                     ARG_NONE},
   {":a", "variable",                 ARG_STRING},
+  {":S", "sanitize-with-extreme-prejudice", ARG_NONE},
 };
 
 /* Split the argument of -E to 'certname' and 'passphrase' separated by colon.
@@ -1149,9 +1150,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           err = PARAM_BAD_NUMERIC;
         break;
 
-	  case 'S': /* --sanitize-with-extreme-prejudice */
-		config->sanitize_with_extreme_prejudice = toggle;
-		break;
+      case 'S': /* ipfs gateway url */
+        GetStr(&config->ipfs_gateway, nextarg);
+        break;
 
       case 't': /* --proxy-ntlm */
         if(!feature_ntlm) {
@@ -1640,6 +1641,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'a': /* --variable */
         err = setvariable(global, nextarg);
         break;
+	  case 'S': /* --sanitize-with-extreme-prejudice */
+		config->sanitize_with_extreme_prejudice = toggle;
+		break;
       default:  /* --next */
         err = PARAM_NEXT_OPERATION;
         break;
