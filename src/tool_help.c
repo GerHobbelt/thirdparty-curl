@@ -126,7 +126,7 @@ static void get_categories(void)
 
 void tool_help(const char * const category)
 {
-  /* Lets handle the string "category" differently to not print an errormsg */
+  /* Lets handle the string "category" differently so as not to print an errormsg */
   if(category && curl_strequal(category, "category")) {
     get_categories();
     return;

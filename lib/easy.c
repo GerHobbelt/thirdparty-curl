@@ -674,9 +674,9 @@ static CURLcode easy_transfer(struct Curl_multi *multi)
   data = multi->easyp;
 
   {
-	  char* cleaned_url = curl_clean_for_printing_to_console(data->state.url);
-	  Curl_infof(data, "Processing URL: %s", cleaned_url);
-	  free(cleaned_url);
+	char* cleaned_url = curl_clean_for_printing_to_console(data->state.url);
+	Curl_infof(data, "Processing URL: %s", cleaned_url);
+	free(cleaned_url);
   }
 
   while(!done && !mcode) {

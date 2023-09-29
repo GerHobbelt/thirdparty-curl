@@ -371,8 +371,7 @@ static int data_pending(struct Curl_easy *data)
 
   /* in the case of libssh2, we can never be really sure that we have emptied
      its internal buffers so we MUST always try until we get EAGAIN back */
-  return conn->handler->protocol&(CURLPROTO_SCP|CURLPROTO_SFTP|
-    CURLPROTO_SSH) ||
+  return conn->handler->protocol&(CURLPROTO_SCP|CURLPROTO_SFTP|CURLPROTO_SSH) ||
     Curl_conn_data_pending(data, FIRSTSOCKET);
 }
 

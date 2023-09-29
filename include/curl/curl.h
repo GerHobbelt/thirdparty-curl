@@ -2228,47 +2228,47 @@ typedef enum {
   /* Set MIME option flags. */
   CURLOPT(CURLOPT_MIME_OPTIONS, CURLOPTTYPE_LONG, 315),
 
-  /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 316),
-
-  /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
-  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 317),
-  
   /* set the SSH host key callback, must point to a curl_sshkeycallback
      function */
-  CURLOPT(CURLOPT_SSH_HOSTKEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 318),
+  CURLOPT(CURLOPT_SSH_HOSTKEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 316),
 
   /* set the SSH host key callback custom pointer */
-  CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 319),
+  CURLOPT(CURLOPT_SSH_HOSTKEYDATA, CURLOPTTYPE_CBPOINT, 317),
 
   /* specify which protocols that are allowed to be used for the transfer,
      which thus helps the app which takes URLs from users or other external
      inputs and want to restrict what protocol(s) to deal with. Defaults to
      all built-in protocols. */
-  CURLOPT(CURLOPT_PROTOCOLS_STR, CURLOPTTYPE_STRINGPOINT, 320),
+  CURLOPT(CURLOPT_PROTOCOLS_STR, CURLOPTTYPE_STRINGPOINT, 318),
 
   /* specify which protocols that libcurl is allowed to follow directs to */
-  CURLOPT(CURLOPT_REDIR_PROTOCOLS_STR, CURLOPTTYPE_STRINGPOINT, 321),
+  CURLOPT(CURLOPT_REDIR_PROTOCOLS_STR, CURLOPTTYPE_STRINGPOINT, 319),
 
   /* websockets options */
-  CURLOPT(CURLOPT_WS_OPTIONS, CURLOPTTYPE_LONG, 322),
-
-  /* Set secure authentication mechanisms flags. */
-  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 323),
+  CURLOPT(CURLOPT_WS_OPTIONS, CURLOPTTYPE_LONG, 320),
 
   /* CA cache timeout */
-  CURLOPT(CURLOPT_CA_CACHE_TIMEOUT, CURLOPTTYPE_LONG, 324),
+  CURLOPT(CURLOPT_CA_CACHE_TIMEOUT, CURLOPTTYPE_LONG, 321),
 
-  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 325),
-	  
   /* Can leak things, gonna exit() soon */
-  CURLOPT(CURLOPT_QUICK_EXIT, CURLOPTTYPE_LONG, 326),
-
-  /* Sanitize without extreme prejudice */
-  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 327),
+  CURLOPT(CURLOPT_QUICK_EXIT, CURLOPTTYPE_LONG, 322),
 
   /* set a specific client IP for HAProxy PROXY protocol header? */
-  CURLOPT(CURLOPT_HAPROXY_CLIENT_IP, CURLOPTTYPE_STRINGPOINT, 328),
+  CURLOPT(CURLOPT_HAPROXY_CLIENT_IP, CURLOPTTYPE_STRINGPOINT, 323),
+
+  /* Connection timeout per address attempt in milliseconds */
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 324),
+
+  /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 325),
+  
+  /* Set secure authentication mechanisms flags. */
+  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 326),
+
+  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 327),
+	  
+  /* Sanitize without extreme prejudice */
+  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 328),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
@@ -2741,7 +2741,6 @@ CURL_EXTERN char *curl_easy_unescape(CURL *handle,
 /* the previous version */
 CURL_EXTERN char *curl_unescape(const char *string,
                                 int length);
-
 
 /*
 * Clean single line input for display on the stdout: replace control characters,

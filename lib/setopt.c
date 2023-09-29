@@ -616,8 +616,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
   {
     bool clear;
     uarg = va_arg(param, unsigned long);
-    data->set.http_follow_location =
-      (uarg & (CURLFOLLOW_ENABLE|CURLFOLLOW_NO_CUSTOMMETHOD)) ? TRUE : FALSE;
+    data->set.http_follow_location = (uarg & (CURLFOLLOW_ENABLE|CURLFOLLOW_NO_CUSTOMMETHOD)) ? TRUE : FALSE;
     clear = (uarg & CURLFOLLOW_NO_CUSTOMMETHOD) ? TRUE : FALSE;
     data->set.redirect_clears_method = clear;
   }

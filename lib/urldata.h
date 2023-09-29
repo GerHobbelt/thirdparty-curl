@@ -1401,7 +1401,7 @@ struct UrlState {
                             Copied from set.filesize at start of operation */
 #if defined(USE_HTTP2) || defined(USE_HTTP3)
   size_t drain; /* Increased when this stream has data to read, even if its
-                   socket is not necessarily is readable. Decreased when
+                   socket is not necessarily readable. Decreased when
                    checked. */
   struct Curl_data_priority priority; /* shallow copy of data->set */
 #endif

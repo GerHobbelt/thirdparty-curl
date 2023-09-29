@@ -3621,10 +3621,8 @@ static CURLcode create_conn(struct Curl_easy *data,
   data->set.ssl.primary.issuercert = data->set.str[STRING_SSL_ISSUERCERT];
   data->set.ssl.primary.issuercert_blob = data->set.blobs[BLOB_SSL_ISSUERCERT];
   data->set.proxy_ssl.primary.CAfile = data->set.str[STRING_SSL_CAFILE_PROXY];
-  data->set.ssl.primary.ca_file_pem =
-    data->set.str[STRING_SSL_CAFILE_PEM_ORIG];
-  data->set.proxy_ssl.primary.ca_file_pem =
-    data->set.str[STRING_SSL_CAFILE_PEM_PROXY];
+  data->set.ssl.primary.ca_file_pem = data->set.str[STRING_SSL_CAFILE_PEM_ORIG];
+  data->set.proxy_ssl.primary.ca_file_pem = data->set.str[STRING_SSL_CAFILE_PEM_PROXY];
   data->set.ssl.primary.cipher_list =
     data->set.str[STRING_SSL_CIPHER_LIST];
   data->set.ssl.primary.cipher_list13 =
