@@ -385,6 +385,9 @@
 /* Define to 1 if you have the memrchr function or macro. */
 #cmakedefine HAVE_MEMRCHR 1
 
+/* Define to 1 if you have the 'suseconds_t' data type. */
+#cmakedefine HAVE_SUSECONDS_T 1
+
 /* Define to 1 if you have the MSG_NOSIGNAL flag. */
 #cmakedefine HAVE_MSG_NOSIGNAL 1
 
@@ -690,9 +693,6 @@ ${SIZEOF___INT64_CODE}
 
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
-
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-#cmakedefine TIME_WITH_SYS_TIME 1
 
 /* Define if you want to enable c-ares support */
 #cmakedefine USE_ARES 1
