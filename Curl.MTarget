@@ -181,6 +181,10 @@ Target
 		{
 			%File "lib/vauth/*"
 		}
+		%Group "vquic"
+		{
+			%File "lib/vquic/*"
+		}
 		%Group "vtls"
 		{
 			%File "lib/vtls/*"
