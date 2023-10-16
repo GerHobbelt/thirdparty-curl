@@ -27,7 +27,9 @@
  */
 #include <stdio.h>
 #include <string.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <curl/curl.h>
 
 static int ping(CURL *curl, const char *send_payload)
