@@ -173,3 +173,6 @@ fail_unless(Curl_cert_hostcheck(STRCONST("fe80::3285:a9ff:fe46:b619"),
   /* you end the test code like this: */
 
 UNITTEST_STOP
+
+#endif	// OPENSSL || USE_SCHANNEL
+
