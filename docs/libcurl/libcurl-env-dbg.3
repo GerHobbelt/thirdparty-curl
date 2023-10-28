@@ -32,50 +32,66 @@ many effects on the behavior of libcurl. Refer to the source code to determine
 how exactly they are being used.
 .RS
 .IP "CURL_ALTSVC_HTTP"
-Used to circumvent the AltSvc HTTPS protocol restriction.
+Bypass the AltSvc HTTPS protocol restriction if this variable exists.
+.IP "CURL_DBG_SOCK_RBLOCK"
+The percentage of recv() calls that should be answered with a EAGAIN at random.
+For TCP/UNIX sockets.
+.IP "CURL_DBG_SOCK_RMAX"
+The maximum data that shall be received from the network in one recv() call.
+For TCP/UNIX sockets. This is applied to every recv.
+
+Example: \fBCURL_DBG_SOCK_RMAX=400\fP means recv buffer size is limited to a
+maximum of 400 bytes.
 .IP "CURL_DBG_SOCK_WBLOCK"
-Percentage of send() calls that should be answered with a EAGAIN at random. For
-TCP/UNIX sockets.
+The percentage of send() calls that should be answered with a EAGAIN at random.
+For TCP/UNIX sockets.
 .IP "CURL_DBG_SOCK_WPARTIAL"
-Percentage of data that shall be written to the network. For TCP/UNIX sockets.
-This is applied to every send. Example: CURL_DBG_SOCK_WPARTIAL=80 means a send
-with 1000 bytes would only send 800.
+The percentage of data that shall be written to the network. For TCP/UNIX
+sockets. This is applied to every send.
+
+Example: \fBCURL_DBG_SOCK_WPARTIAL=80\fP means a send with 1000 bytes would
+only send 800.
 .IP "CURL_DBG_QUIC_WBLOCK"
-Percentage of send() calls that should be answered with EAGAIN at random. QUIC
-only.
+The percentage of send() calls that should be answered with EAGAIN at random.
+QUIC only.
 .IP "CURL_DEBUG"
-Used to configure trace logging behavior as an alternative to calling
-\fIcurl_global_trace(3)\fP. For example CURL_DEBUG=http/2
+Trace logging behavior as an alternative to calling \fIcurl_global_trace(3)\fP.
+
+Example: \fBCURL_DEBUG=http/2\fP means trace details about HTTP/2 handling.
 .IP "CURL_DEBUG_SIZE"
-Used to fake the size returned by CURLINFO_HEADER_SIZE and
-CURLINFO_REQUEST_SIZE.
+Fake the size returned by CURLINFO_HEADER_SIZE and CURLINFO_REQUEST_SIZE.
 .IP "CURL_GETHOSTNAME"
-Used to override the local machine's unqualified hostname for NTLM and SMTP.
+Fake the local machine's unqualified hostname for NTLM and SMTP.
 .IP "CURL_HSTS_HTTP"
-Used to circumvent the HSTS HTTPS protocol restriction.
+Bypass the HSTS HTTPS protocol restriction if this variable exists.
 .IP "CURL_FORCETIME"
-Used to set a time of 0 for AWS signatures and NTLM.
+A time of 0 is used for AWS signatures and NTLM if this variable exists.
 .IP "CURL_ENTROPY"
-Used to set a fixed faked value to use instead of a proper random number so
-that functions in libcurl that are otherwise getting random outputs can be
-tested for what they generate.
+A fixed faked value to use instead of a proper random number so that functions
+in libcurl that are otherwise getting random outputs can be tested for what
+they generate.
 .IP "CURL_SMALLREQSEND"
-Used to set an alternative size of HTTP data to be sent at a time only if
-smaller than the current.
+An alternative size of HTTP data to be sent at a time only if smaller than the
+current.
 .IP "CURL_SMALLSENDS"
-Used to set an alternative size of socket data to be sent at a time only if
-smaller than the current.
+An alternative size of socket data to be sent at a time only if smaller than
+the current.
 .IP "CURL_TIME"
-Used to fake time of AltSvc, HSTS and CURLINFO variables that are time related.
-This variable is also used to fake the data returned by some CURLINFO variables
-that are not time-related, and in that case the value is not a time string. For
-example CURLINFO_LOCAL_PORT data can be set.
+Fake unix timestamp to use for AltSvc, HSTS and CURLINFO variables that are
+time related.
+
+This variable can also be used to fake the data returned by some CURLINFO
+variables that are not time-related (such as CURLINFO_LOCAL_PORT), and in that
+case the value is not a timestamp.
 .IP "CURL_TRACE"
-Used for debugging the lib/ldap implementation.
+LDAP tracing is enabled if this variable exists and its value is 1 or greater.
+
+OpenLDAP tracing is separate. Refer to CURL_OPENLDAP_TRACE.
 .IP "CURL_NTLM_WB_FILE"
-Used to set to a debug-version of the \fIntlm-wb\fP executable.
+Debug-version of the \fIntlm-wb\fP executable.
 .IP "CURL_OPENLDAP_TRACE"
-Used for debugging the OpenLDAP implementation.
+OpenLDAP tracing is enabled if this variable exists and its value is 1 or
+greater. There's a number of debug levels, refer to \fIopenldap.c\fP comments.
 .RE
 .SH "SEE ALSO"
-.BR libcurl-env "(3)"
+.BR libcurl-env (3)
