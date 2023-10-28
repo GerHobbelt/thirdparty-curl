@@ -535,7 +535,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
   if(isatty(fileno(outs->stream)) &&
      GetConsoleScreenBufferInfo((HANDLE)fhnd, &console_info)) {
     wchar_t *wc_buf;
-    DWORD wc_len;
+    DWORD wc_len, chars_written;
     unsigned char *rbuf = (unsigned char *)buffer;
     DWORD rlen = (DWORD)bytes;
 
@@ -590,7 +590,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
               (HANDLE) fhnd,
               prefix,
               prefix[1] ? 2 : 1,
-              NULL,
+              &chars_written,
               NULL)) {
             return CURL_WRITEFUNC_ERROR;
           }
@@ -649,7 +649,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
           (HANDLE) fhnd,
           wc_buf,
           wc_len,
-          NULL,
+          &chars_written,
           NULL)) {
         free(wc_buf);
         return CURL_WRITEFUNC_ERROR;
