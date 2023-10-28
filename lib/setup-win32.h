@@ -59,8 +59,8 @@
 #      include <ws2tcpip.h>
 #    endif
 #  endif
-#  include <winerror.h>
 #  include <windows.h>
+#  include <winerror.h>
 #  include <intsafe.h>
 #  include <tchar.h>
 #  ifdef UNICODE
