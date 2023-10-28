@@ -200,11 +200,11 @@ struct ldapreqinfo {
 };
 
 /*
- * state()
+ * oldap_state()
  *
  * This is the ONLY way to change LDAP state!
  */
-static void state(struct Curl_easy *data, ldapstate newstate)
+static void oldap_state(struct Curl_easy *data, ldapstate newstate)
 {
   struct ldapconninfo *ldapc = data->conn->proto.ldapc;
 
@@ -447,7 +447,7 @@ static CURLcode oldap_perform_bind(struct Curl_easy *data, ldapstate newstate)
   rc = ldap_sasl_bind(li->ld, binddn, LDAP_SASL_SIMPLE, &passwd,
                       NULL, NULL, &li->msgid);
   if(rc == LDAP_SUCCESS)
-    state(data, newstate);
+    oldap_state(data, newstate);
   else
     result = oldap_map_error(rc,
                              data->state.aptr.user?
@@ -470,7 +470,7 @@ static CURLcode oldap_perform_mechs(struct Curl_easy *data)
                        (char **) supportedSASLMechanisms, 0,
                        NULL, NULL, NULL, 0, &li->msgid);
   if(rc == LDAP_SUCCESS)
-    state(data, OLDAP_MECHS);
+    oldap_state(data, OLDAP_MECHS);
   else
     result = oldap_map_error(rc, CURLE_LOGIN_DENIED);
   return result;
@@ -483,7 +483,7 @@ static CURLcode oldap_perform_sasl(struct Curl_easy *data)
   struct ldapconninfo *li = data->conn->proto.ldapc;
   CURLcode result = Curl_sasl_start(&li->sasl, data, TRUE, &progress);
 
-  state(data, OLDAP_SASL);
+  oldap_state(data, OLDAP_SASL);
   if(!result && progress != SASL_INPROGRESS)
     result = CURLE_LOGIN_DENIED;
   return result;
@@ -506,7 +506,7 @@ static CURLcode oldap_ssl_connect(struct Curl_easy *data, ldapstate newstate)
 
   result = Curl_conn_connect(data, FIRSTSOCKET, FALSE, &ssldone);
   if(!result) {
-    state(data, newstate);
+    oldap_state(data, newstate);
 
     if(ssldone) {
       Sockbuf *sb;
@@ -530,7 +530,7 @@ static CURLcode oldap_perform_starttls(struct Curl_easy *data)
   int rc = ldap_start_tls(li->ld, NULL, NULL, &li->msgid);
 
   if(rc == LDAP_SUCCESS)
-    state(data, OLDAP_STARTTLS);
+    oldap_state(data, OLDAP_STARTTLS);
   else
     result = oldap_map_error(rc, CURLE_USE_SSL_FAILED);
   return result;
@@ -686,7 +686,7 @@ static CURLcode oldap_state_sasl_resp(struct Curl_easy *data,
     result = Curl_sasl_continue(&li->sasl, data, code, &progress);
     if(!result && progress != SASL_INPROGRESS) {
       result = CURLE_LOGIN_DENIED;
-      state(data, OLDAP_STOP);
+      oldap_state(data, OLDAP_STOP);
     }
   }
 
@@ -715,7 +715,7 @@ static CURLcode oldap_state_bind_resp(struct Curl_easy *data, LDAPMessage *msg,
     result = oldap_map_error(rc, CURLE_LDAP_CANNOT_BIND);
   }
   else
-    state(data, OLDAP_STOP);
+    oldap_state(data, OLDAP_STOP);
 
   if(bv)
     ber_bvfree(bv);
@@ -809,7 +809,8 @@ static CURLcode oldap_connecting(struct Curl_easy *data, bool *done)
       else if(data->state.aptr.user)
         result = oldap_perform_bind(data, OLDAP_BIND);
       else {
-        state(data, OLDAP_STOP); /* Version 3 supported: no bind required */
+        /* Version 3 supported: no bind required */
+        oldap_state(data, OLDAP_STOP);
         result = CURLE_OK;
       }
     }

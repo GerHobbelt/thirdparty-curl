@@ -1264,7 +1264,7 @@ struct tempbuf {
   struct dynbuf b;
   int type;   /* type of the 'tempwrite' buffer as a bitmask that is used with
                  Curl_client_write() */
-  BIT(paused_body); /* if PAUSE happend before/during BODY write */
+  BIT(paused_body); /* if PAUSE happened before/during BODY write */
 };
 
 /* Timers */
