@@ -22,7 +22,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH libcurl-security 3 "13 Feb 2018" "libcurl" "libcurl security"
+.TH libcurl-security 3 "13 Feb 2018" "libcurl" "libcurl"
 .SH NAME
 libcurl-security \- security considerations when using libcurl
 .SH "Security"
@@ -418,11 +418,7 @@ Further, when eventually closing a handle and the secrets are no longer
 needed, libcurl does not explicitly clear memory before freeing it, so
 credentials may be left in freed data.
 .SH "Saving files"
-A user of libcurl on multi-user systems should not keep critical files in
-directories in which you allow curl or libcurl to save or update
-files. libcurl cannot completely protect such files against attacks.
-
-Ergo: libcurl cannot protect against attacks where an attacker has write access to
+libcurl cannot protect against attacks where an attacker has write access to
 the same directory where libcurl is directed to save files.
 .SH "Report Security Problems"
 Should you detect or just suspect a security problem in libcurl or curl,

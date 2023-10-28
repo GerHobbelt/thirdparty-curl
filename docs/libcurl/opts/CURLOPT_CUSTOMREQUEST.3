@@ -22,7 +22,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_CUSTOMREQUEST 3 "17 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
+.TH CURLOPT_CUSTOMREQUEST 3 "17 Jun 2014" libcurl libcurl
 .SH NAME
 CURLOPT_CUSTOMREQUEST \- custom request method
 .SH SYNOPSIS
@@ -62,7 +62,7 @@ possibly confuse the remote server badly. Use \fICURLOPT_POST(3)\fP and
 to replace or extend the set of headers sent by libcurl. Use
 \fICURLOPT_HTTP_VERSION(3)\fP to change HTTP version.
 
-If this option used together with \fICURLOPT_FOLLOWLOCATION(3)\fP, the custom
+If this option is used together with \fICURLOPT_FOLLOWLOCATION(3)\fP, the custom
 set method will override the method libcurl could otherwise change to. You can
 fine-tune that decision by using the \fICURLFOLLOW_NO_CUSTOMMETHOD\fP bit to
 \fICURLOPT_FOLLOWLOCATION(3)\fP to make redirects ignore the custom method.

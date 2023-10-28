@@ -22,20 +22,20 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_SSH_HOSTKEYFUNCTION 3 "4 Nov 2021" "libcurl 7.84.0" "curl_easy_setopt options"
+.TH CURLOPT_SSH_HOSTKEYFUNCTION 3 "4 Nov 2021" libcurl libcurl
 .SH NAME
 CURLOPT_SSH_HOSTKEYFUNCTION \- callback to check host key
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
 
-int curl_sshhostkeycallback(void *clientp,/* custom pointer passed with CURLOPT_SSH_HOSTKEYDATA */
-                          int keytype, /* CURLKHTYPE */
-                          const char * key, /*hostkey to check*/
-                          size_t keylen); /*length of the key*/
+int keycallback(void *clientp,
+                int keytype,
+                const char *key,
+                size_t keylen);
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSH_HOSTKEYFUNCTION,
-                          curl_sshhostkeycallback);
+                          keycallback);
 .fi
 .SH DESCRIPTION
 Pass a pointer to your callback function, which should match the prototype

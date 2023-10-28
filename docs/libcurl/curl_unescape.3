@@ -21,14 +21,14 @@
 .\" * SPDX-License-Identifier: curl
 .\" *
 .\" **************************************************************************
-.TH curl_unescape 3 "22 March 2001" "libcurl 7.7" "libcurl Manual"
+.TH curl_unescape 3 "22 March 2001" "libcurl" "libcurl"
 .SH NAME
 curl_unescape - URL decodes the given string
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
 
-char *curl_unescape( const char *url, int length);
+char *curl_unescape(const char *input, int length);
 .fi
 .SH DESCRIPTION
 Obsolete function. Use \fIcurl_easy_unescape(3)\fP instead!

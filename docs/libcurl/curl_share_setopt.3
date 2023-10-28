@@ -21,7 +21,7 @@
 .\" * SPDX-License-Identifier: curl
 .\" *
 .\" **************************************************************************
-.TH curl_share_setopt 3 "8 Aug 2003" "libcurl 7.10.7" "libcurl Manual"
+.TH curl_share_setopt 3 "8 Aug 2003" "libcurl" "libcurl"
 .SH NAME
 curl_share_setopt - Set options for a shared object
 .SH SYNOPSIS
@@ -35,14 +35,6 @@ Set the \fIoption\fP to \fIparameter\fP for the given \fIshare\fP.
 .SH OPTIONS
 .IP CURLSHOPT_LOCKFUNC
 See \fICURLSHOPT_LOCKFUNC(3)\fP.
-
-.IP CURL_LOCK_DATA_KNOWNHOSTS
-Share the known_hosts handle for SFTP and SCP transfers. 
-This will share the content of the known_hosts file between multiple transfers. 
-It's usefull if you are usings thread to transfer data simultaneously. 
-Otherwise there is risk that two transfers write at the same time to the file.
-Only works with the libssh2 backend. Added in 7.75.0
-
 .IP CURLSHOPT_UNLOCKFUNC
 See \fICURLSHOPT_UNLOCKFUNC(3)\fP.
 .IP CURLSHOPT_SHARE
