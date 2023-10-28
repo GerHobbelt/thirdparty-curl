@@ -296,8 +296,6 @@ static const struct Curl_handler * const protocols[] = {
 #ifndef CURL_DISABLE_DICT
   &Curl_handler_dict,
 #endif
-
-  (struct Curl_handler *) NULL
 };
 
 void Curl_freeset(struct Curl_easy *data)
@@ -1628,20 +1626,23 @@ error:
   return NULL;
 }
 
-/* returns the handler if the given scheme is built-in */
-const struct Curl_handler *Curl_builtin_scheme(const char *scheme,
-                                               size_t schemelen)
+const struct Curl_handler *Curl_get_scheme_handler(const char *scheme)
 {
-  const struct Curl_handler * const *pp;
-  const struct Curl_handler *p;
+  return Curl_getn_scheme_handler(scheme, strlen(scheme));
+}
+
+/* returns the handler if the given scheme is built-in */
+const struct Curl_handler *Curl_getn_scheme_handler(const char *scheme,
+                                                    size_t len)
+{
+  size_t i;
   /* Scan protocol handler table and match against 'scheme'. The handler may
      be changed later when the protocol specific setup function is called. */
-  if(schemelen == CURL_ZERO_TERMINATED)
-    schemelen = strlen(scheme);
-  for(pp = protocols; (p = *pp) != NULL; pp++)
-    if(strncasecompare(p->scheme, scheme, schemelen) && !p->scheme[schemelen])
+  for(i = 0; i < ARRAYSIZE(protocols); ++i)
+    if(strncasecompare(protocols[i]->scheme, scheme, len) &&
+       !protocols[i]->scheme[len])
       /* Protocol found in table. */
-      return p;
+      return protocols[i];
   return NULL; /* not found */
 }
 
@@ -1650,8 +1651,7 @@ static CURLcode findprotocol(struct Curl_easy *data,
                              struct connectdata *conn,
                              const char *protostr)
 {
-  const struct Curl_handler *p = Curl_builtin_scheme(protostr,
-                                                     CURL_ZERO_TERMINATED);
+  const struct Curl_handler *p = Curl_get_scheme_handler(protostr);
 
   if(p && /* Protocol found in table. Check if allowed */
      (data->set.allowed_protocols & p->protocol)) {
@@ -1665,7 +1665,6 @@ static CURLcode findprotocol(struct Curl_easy *data,
     else {
       /* Perform setup complement if some. */
       conn->handler = conn->given = p;
-
       /* 'port' and 'remote_port' are set in setup_connection_internals() */
       return CURLE_OK;
     }
