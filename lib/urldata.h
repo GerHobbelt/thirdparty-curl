@@ -1503,6 +1503,9 @@ struct UrlState {
                            though it will be discarded. We must call the data
                            rewind callback before trying to send again. */
   BIT(reported_need_more_data);   /* noise suppression for this info/warning */
+  BIT(internal); /* internal: true if this easy handle was created for
+                    internal use and the user does not have ownership of the
+                    handle. */
 };
 
 /*
@@ -2029,10 +2032,6 @@ struct Curl_easy {
 #ifdef USE_HYPER
   struct hyptransfer hyp;
 #endif
-
-  /* internal: true if this easy handle was created for internal use and the
-     user does not have ownership of the handle. */
-  bool internal;
 };
 
 #define LIBCURL_NAME "libcurl"
