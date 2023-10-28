@@ -144,16 +144,6 @@ if(ENABLE_CURLDEBUG)
   set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS CURLDEBUG)
 endif()
 
-# This combination results in curl tool crashing on startup when run on native
-# Windows (it was seen to work when run under WINE though). We disable UNITY
-# mode as a workaround.
-if(ENABLE_UNICODE AND ENABLE_CURLDEBUG)
-  set(CMAKE_UNITY_BUILD OFF)
-  message(WARNING "Unity builds are not supported with Windows Unicode and "
-    "TrackMemory (-DCURLDEBUG) enabled at the same time. Unity mode has been "
-    "disabled.")
-endif()
-
 # For debug libs and exes, add "-d" postfix
 if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
   set(CMAKE_DEBUG_POSTFIX "-d")
@@ -1255,11 +1245,6 @@ if(NOT HAVE_SIGSETJMP)
   if(HAVE_MACRO_SIGSETJMP)
     set(HAVE_SIGSETJMP 1)
   endif()
-endif()
-
-# If there is no stricmp(), do not allow LDAP to parse URLs
-if(NOT HAVE_STRICMP)
-  set(HAVE_LDAP_URL_PARSE 1)
 endif()
 
 # Do curl specific tests
