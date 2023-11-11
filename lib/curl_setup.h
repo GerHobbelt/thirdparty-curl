@@ -365,23 +365,6 @@
 #include <curl/stdcheaders.h>
 #endif
 
-#ifdef __POCC__
-#  include <sys/types.h>
-#  include <unistd.h>
-#  define sys_nerr EILSEQ
-#endif
-
-/*
- * Salford-C kludge section (mostly borrowed from wxWidgets).
- */
-#ifdef __SALFORDC__
-  #pragma suppress 353             /* Possible nested comments */
-  #pragma suppress 593             /* Define not used */
-  #pragma suppress 61              /* enum has no name */
-  #pragma suppress 106             /* unnamed, unused parameter */
-  #include <clib.h>
-#endif
-
 #  include <io.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
@@ -570,42 +553,17 @@ extern "C" {
 
 #endif /* WIN32 */
 
-/*
- * msvc 6.0 requires PSDK in order to have INET6_ADDRSTRLEN
- * defined in ws2tcpip.h as well as to provide IPv6 support.
- * Does not apply if lwIP is used.
- */
-
-#if defined(_MSC_VER) && !defined(__POCC__) && !defined(USE_LWIPSOCK)
-#  if !defined(HAVE_WS2TCPIP_H) || \
-     ((_MSC_VER < 1300) && !defined(INET6_ADDRSTRLEN))
-#    undef HAVE_GETADDRINFO_THREADSAFE
-#    undef HAVE_FREEADDRINFO
-#    undef HAVE_GETADDRINFO
-#    undef ENABLE_IPV6
-#  endif
-#endif
-
 /* ---------------------------------------------------------------- */
 /*             resolver specialty compile-time defines              */
 /*         CURLRES_* defines to use in the host*.c sources          */
 /* ---------------------------------------------------------------- */
 
 /*
- * lcc-win32 doesn't have _beginthreadex(), lacks threads support.
- */
-
-#if defined(__LCC__) && defined(WIN32)
-#  undef USE_THREADS_POSIX
-#  undef USE_THREADS_WIN32
-#endif
-
-/*
  * MSVC threads support requires a multi-threaded runtime library.
  * _beginthreadex() is not available in single-threaded ones.
  */
 
-#if defined(_MSC_VER) && !defined(__POCC__) && !defined(_MT)
+#if defined(_MSC_VER) && !defined(_MT)
 #  undef USE_THREADS_POSIX
 #  undef USE_THREADS_WIN32
 #endif
@@ -639,41 +597,12 @@ extern "C" {
 /* ---------------------------------------------------------------- */
 
 /*
- * msvc 6.0 does not have struct sockaddr_storage and
- * does not define IPPROTO_ESP in winsock2.h. But both
- * are available if PSDK is properly installed.
- */
-
-#if defined(_MSC_VER) && !defined(__POCC__)
-#  if !defined(HAVE_WINSOCK2_H) || ((_MSC_VER < 1300) && !defined(IPPROTO_ESP))
-#    undef HAVE_STRUCT_SOCKADDR_STORAGE
-#  endif
-#endif
-
-/*
  * Intentionally fail to build when using msvc 6.0 without PSDK installed.
  * The brave of heart can circumvent this, defining ALLOW_MSVC6_WITHOUT_PSDK
  * in lib/config-win32.h although absolutely discouraged and unsupported.
  */
 
 #if defined(_MSC_VER) && !defined(__POCC__)
-#  if !defined(HAVE_WINDOWS_H) || ((_MSC_VER < 1300) && !defined(_FILETIME_))
-#    if !defined(ALLOW_MSVC6_WITHOUT_PSDK)
-#      error MSVC 6.0 requires "February 2003 Platform SDK" a.k.a. \
-             "Windows Server 2003 PSDK"
-#    else
-#      define CURL_DISABLE_LDAP 1
-#    endif
-#  endif
-#endif
-
-/*
- * Intentionally fail to build when using msvc 6.0 without PSDK installed.
- * The brave of heart can circumvent this, defining ALLOW_MSVC6_WITHOUT_PSDK
- * in lib/config-win32.h although absolutely discouraged and unsupported.
- */
-
-#if 0
 #  if !defined(HAVE_WINDOWS_H) || ((_MSC_VER < 1300) && !defined(_FILETIME_))
 #    if !defined(ALLOW_MSVC6_WITHOUT_PSDK)
 #      error MSVC 6.0 requires "February 2003 Platform SDK" a.k.a. \
