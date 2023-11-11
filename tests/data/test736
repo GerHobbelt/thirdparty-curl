@@ -31,8 +31,7 @@ Hello curl from IPFS
 http
 </server>
 <setenv>
-HOME=%PWD/%LOGDIR
-IPFS_PATH=%HOME/.ipfs
+IPFS_PATH=%LOGDIR/.ipfs
 </setenv>
 <name>
 IPFS with IPFS_PATH set, no trailing slash
