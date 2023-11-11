@@ -40,20 +40,20 @@ static CURLcode ensure_trailing_slash(char **input)
   if(*input && **input) {
     size_t len = strlen(*input);
     if(((*input)[len - 1] != '/')) {
-      struct curlx_dynbuf dyn;
-      curlx_dyn_init(&dyn, len + 2);
+      struct dynbuf dyn;
+      Curl_dyn_init(&dyn, len + 2);
 
-      if(curlx_dyn_addn(&dyn, *input, len)) {
+      if(Curl_dyn_addn(&dyn, *input, len)) {
         Curl_safefree(*input);
         return CURLE_OUT_OF_MEMORY;
       }
 
       Curl_safefree(*input);
 
-      if(curlx_dyn_addn(&dyn, "/", 1))
+      if(Curl_dyn_addn(&dyn, "/", 1))
         return CURLE_OUT_OF_MEMORY;
 
-      *input = curlx_dyn_ptr(&dyn);
+      *input = Curl_dyn_ptr(&dyn);
     }
   }
 
@@ -99,21 +99,21 @@ static char *ipfs_gateway(void)
 
   if(gateway_file) {
     int c;
-    struct curlx_dynbuf dyn;
-    curlx_dyn_init(&dyn, MAX_GATEWAY_URL_LEN);
+    struct dynbuf dyn;
+    Curl_dyn_init(&dyn, MAX_GATEWAY_URL_LEN);
 
     /* get the first line of the gateway file, ignore the rest */
     while((c = getc(gateway_file)) != EOF && c != '\n' && c != '\r') {
       char c_char = (char)c;
-      if(curlx_dyn_addn(&dyn, &c_char, 1))
+      if(Curl_dyn_addn(&dyn, &c_char, 1))
         goto fail;
     }
 
     fclose(gateway_file);
     gateway_file = NULL;
 
-    if(curlx_dyn_len(&dyn))
-      gateway = curlx_dyn_ptr(&dyn);
+    if(Curl_dyn_len(&dyn))
+      gateway = Curl_dyn_ptr(&dyn);
 
     if(gateway)
       ensure_trailing_slash(&gateway);
