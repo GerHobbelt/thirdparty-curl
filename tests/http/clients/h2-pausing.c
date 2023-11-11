@@ -29,8 +29,10 @@
  */
 #include <stdio.h>
 #include <string.h>
+#if !defined(_MSC_VER)
 #include <sys/time.h>
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <curl/mprintf.h>

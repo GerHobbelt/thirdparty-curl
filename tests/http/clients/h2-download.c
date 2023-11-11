@@ -34,9 +34,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if !defined(_MSC_VER)
 /* somewhat unix-specific */
 #include <sys/time.h>
 #include <unistd.h>
+#endif
 
 #ifndef CURLPIPE_MULTIPLEX
 #error "too old libcurl, cannot do HTTP/2 server push!"
@@ -179,7 +181,7 @@ static void usage(const char *msg)
 /*
  * Download a file over HTTP/2, take care of server push.
  */
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
   CURLM *multi_handle;
   struct CURLMsg *m;

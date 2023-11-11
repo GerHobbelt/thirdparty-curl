@@ -349,6 +349,8 @@ static void test_connect(struct test_case *tc)
 #define TC_TMOT     90000  /* 90 sec max test duration */
 #define CNCT_TMOT   60000  /* 60sec connect timeout */
 
+#ifdef DEBUGBUILD
+
 static struct test_case TEST_CASES[] = {
   /* TIMEOUT_MS,    FAIL_MS      CREATED    DURATION     Result, HE_PREF */
   /* CNCT   HE      v4    v6     v4 v6      MIN   MAX */
@@ -383,6 +385,8 @@ static struct test_case TEST_CASES[] = {
 #endif
 };
 
+#endif /* DEBUGBUILD */
+
 UNITTEST_START
 
 #if defined(DEBUGBUILD)
@@ -391,9 +395,6 @@ UNITTEST_START
   for(i = 0; i < sizeof(TEST_CASES)/sizeof(TEST_CASES[0]); ++i) {
     test_connect(&TEST_CASES[i]);
   }
-#else
-  (void)TEST_CASES;
-  (void)test_connect;
 #endif
 
 UNITTEST_STOP
