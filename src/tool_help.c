@@ -137,6 +137,9 @@ void tool_help(const char * const category)
     const char * const category_note = "\nThis is not the full help, this "
       "menu is stripped into categories.\nUse \"--help category\" to get "
       "an overview of all categories.\nFor all options use the manual"
+#ifdef USE_MANUAL
+      ", try 'curl --manual' "
+#endif
       " or \"--help all\".";
     print_category(CURLHELP_IMPORTANT);
     puts(category_note);
