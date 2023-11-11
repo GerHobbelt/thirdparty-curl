@@ -97,6 +97,8 @@ typedef enum {
   CURL_CW_CLIENT  /* data written to client */
 } Curl_cwriter_phase;
 
+struct Curl_cwriter;
+
 /* Client Writer Type, provides the implementation */
 struct Curl_cwtype {
   const char *name;        /* writer name. */
