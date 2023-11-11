@@ -3098,7 +3098,6 @@ if test X"$want_nghttp3" != Xno; then
           CURL_LIBRARY_PATH="$CURL_LIBRARY_PATH:$DIR_NGHTTP3"
           export CURL_LIBRARY_PATH
           AC_MSG_NOTICE([Added $DIR_NGHTTP3 to CURL_LIBRARY_PATH])
-          experimental="$experimental HTTP3"
        )
       ],
         dnl not found, revert back to clean variables
@@ -4590,8 +4589,9 @@ if test "x$CURL_WITH_MULTI_SSL" = "x1"; then
   SUPPORT_FEATURES="$SUPPORT_FEATURES MultiSSL"
 fi
 
+AC_MSG_CHECKING([if this build supports HTTPS-proxy])
 dnl if not explicitly turned off, HTTPS-proxy comes with some TLS backends
-if "x$CURL_DISABLE_HTTP" != "x1"; then
+if test "x$CURL_DISABLE_HTTP" != "x1"; then
   if test "x$https_proxy" != "xno"; then
     if test "x$OPENSSL_ENABLED" = "x1" \
         -o "x$GNUTLS_ENABLED" = "x1" \
@@ -4602,10 +4602,18 @@ if "x$CURL_DISABLE_HTTP" != "x1"; then
         -o "x$GNUTLS_ENABLED" = "x1" \
         -o "x$MBEDTLS_ENABLED" = "x1"; then
       SUPPORT_FEATURES="$SUPPORT_FEATURES HTTPS-proxy"
+      AC_MSG_RESULT([yes])
     elif test "x$WOLFSSL_ENABLED" = "x1" -a "x$WOLFSSL_FULL_BIO" = "x1"; then
       SUPPORT_FEATURES="$SUPPORT_FEATURES HTTPS-proxy"
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no])
     fi
+  else
+    AC_MSG_RESULT([no])
   fi
+else
+  AC_MSG_RESULT([no])
 fi
 
 if test "x$ECH_ENABLED" = "x1"; then

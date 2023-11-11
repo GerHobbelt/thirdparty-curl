@@ -1959,10 +1959,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       TRUE : FALSE;
 
     /* Update the current connection ssl_config. */
-    if(data->conn) {
-      data->conn->ssl_config.verifypeer =
-        data->set.ssl.primary.verifypeer;
-    }
+    Curl_ssl_conn_config_update(data, FALSE);
     break;
 #ifndef CURL_DISABLE_DOH
   case CURLOPT_DOH_SSL_VERIFYPEER:
@@ -1982,10 +1979,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       (0 != va_arg(param, long))?TRUE:FALSE;
 
     /* Update the current connection proxy_ssl_config. */
-    if(data->conn) {
-      data->conn->proxy_ssl_config.verifypeer =
-        data->set.proxy_ssl.primary.verifypeer;
-    }
+    Curl_ssl_conn_config_update(data, TRUE);
     break;
 #endif
   case CURLOPT_SSL_VERIFYHOST:
@@ -2000,10 +1994,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.ssl.primary.verifyhost = (bool)((arg & 3) ? TRUE : FALSE);
 
     /* Update the current connection ssl_config. */
-    if(data->conn) {
-      data->conn->ssl_config.verifyhost =
-        data->set.ssl.primary.verifyhost;
-    }
+    Curl_ssl_conn_config_update(data, FALSE);
     break;
 #ifndef CURL_DISABLE_DOH
   case CURLOPT_DOH_SSL_VERIFYHOST:
@@ -2025,12 +2016,8 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
     /* Treat both 1 and 2 as TRUE */
     data->set.proxy_ssl.primary.verifyhost = (bool)((arg & 3)?TRUE:FALSE);
-
     /* Update the current connection proxy_ssl_config. */
-    if(data->conn) {
-      data->conn->proxy_ssl_config.verifyhost =
-        data->set.proxy_ssl.primary.verifyhost;
-    }
+    Curl_ssl_conn_config_update(data, TRUE);
     break;
 #endif
   case CURLOPT_SSL_VERIFYSTATUS:
@@ -2046,10 +2033,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       TRUE : FALSE;
 
     /* Update the current connection ssl_config. */
-    if(data->conn) {
-      data->conn->ssl_config.verifystatus =
-        data->set.ssl.primary.verifystatus;
-    }
+    Curl_ssl_conn_config_update(data, FALSE);
     break;
 #ifndef CURL_DISABLE_DOH
   case CURLOPT_DOH_SSL_VERIFYSTATUS:
