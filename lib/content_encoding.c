@@ -181,7 +181,7 @@ static CURLcode inflate_stream(struct Curl_easy *data,
   struct zlib_writer *zp = (struct zlib_writer *) writer;
   zng_stream *z = &zp->z;         /* zlib state structure */
   uInt nread = z->avail_in;
-  Bytef *orig_in = z->next_in;
+  const Bytef *orig_in = z->next_in;
   bool done = FALSE;
   CURLcode result = CURLE_OK;   /* Curl_client_write status */
   char *decomp;                 /* Put the decompressed data here. */
@@ -342,7 +342,11 @@ static CURLcode gzip_init_writer(struct Curl_easy *data,
   z->zalloc = (alloc_func) zalloc_cb;
   z->zfree = (free_func) zfree_cb;
 
+#if defined(HAVE_LIBZ) && !defined(HAVE_LIBZ_NG)
   if(strcmp(zlibVersion(), "1.2.0.4") >= 0) {
+#else
+  if(TRUE) {
+#endif
     /* zlib ver. >= 1.2.0.4 supports transparent gzip decompressing */
     if(zng_inflateInit2(z, MAX_WBITS + 32) != Z_OK) {
       return process_zlib_error(data, z);

@@ -197,7 +197,7 @@ char *curl_version(void)
   src[i++] = z_version;
 #endif
 #ifdef HAVE_LIBZ_NG
-  msnprintf(zng_version, sizeof(zng_version), "zlib-ng/%s", zng_zlibVersion());
+  msnprintf(zng_version, sizeof(zng_version), "zlib-ng/%s", zlibng_version());
   src[i++] = zng_version;
 #endif
 #ifdef HAVE_BROTLI
