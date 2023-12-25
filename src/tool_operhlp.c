@@ -219,16 +219,79 @@ CURLcode get_url_file_name(char **filename, const char *url)
 //#if defined(MSDOS) || defined(WIN32)
       {
         char *sanitized;
-        SANITIZEcode sc = sanitize_file_name(&sanitized, *filename, 0);
+		CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, *filename, 0);
         Curl_safefree(*filename);
         if(sc) {
-          if(sc == SANITIZE_ERR_OUT_OF_MEMORY)
+          if(sc == CURL_SANITIZE_ERR_OUT_OF_MEMORY)
             return CURLE_OUT_OF_MEMORY;
           return CURLE_URL_MALFORMAT;
         }
         *filename = sanitized;
       }
 //#endif /* MSDOS || WIN32 */
+
+      /* in case we built debug enabled, we allow an environment variable
+       * named CURL_TESTDIR to prefix the given file name to put it into a
+       * specific directory
+       */
+#ifdef DEBUGBUILD
+      {
+      char *tdir = tool_getenv("CURL_TESTDIR");
+        if(tdir) {
+          char *alt = aprintf("%s/%s", tdir, *filename);
+          Curl_safefree(*filename);
+          *filename = alt;
+          curl_free(tdir);
+          if(!*filename)
+            return CURLE_OUT_OF_MEMORY;
+        }
+      }
+#endif
+      return CURLE_OK;
+    }
+  }
+  curl_url_cleanup(uh);
+  return urlerr_cvt(uerr);
+}
+
+
+/* Convert the URL to a local file path suitable for use with `output_path_mimics_url`.
+ * 
+ * Returns a pointer to a heap-allocated string or NULL when URL could not safely/sanely be converted to a local path.
+ */
+CURLcode convert_url_to_file_path(char **filename, const char *url)
+{
+  CURLU *uh = curl_url();
+  char *path = NULL;
+  CURLUcode uerr;
+
+  if(!uh)
+    return CURLE_OUT_OF_MEMORY;
+
+  *filename = NULL;
+
+  uerr = curl_url_set(uh, CURLUPART_URL, url, CURLU_GUESS_SCHEME | CURLU_ALLOW_SPACE);
+  if(!uerr) {
+    uerr = curl_url_get(uh, CURLUPART_URL, &path, CURLU_URLDECODE | CURLU_DEFAULT_SCHEME | CURLU_PUNY2IDN);
+    if(!uerr) {
+      curl_url_cleanup(uh);
+
+      *filename = strdup(path);
+      curl_free(path);
+      if(!*filename)
+        return CURLE_OUT_OF_MEMORY;
+
+      {
+        char *sanitized;
+		CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, *filename, CURL_SANITIZE_ALLOW_PATH | CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH);
+        Curl_safefree(*filename);
+        if(sc) {
+          if(sc == CURL_SANITIZE_ERR_OUT_OF_MEMORY)
+            return CURLE_OUT_OF_MEMORY;
+          return CURLE_URL_MALFORMAT;
+        }
+        *filename = sanitized;
+      }
 
       /* in case we built debug enabled, we allow an environment variable
        * named CURL_TESTDIR to prefix the given file name to put it into a

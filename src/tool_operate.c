@@ -947,6 +947,15 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->etag_save_file) {
           /* open file for output: */
           if(strcmp(config->etag_save_file, "-")) {
+			  if (config->create_dirs) {
+				  CURLcode result = create_dir_hierarchy(config->etag_save_file, global);
+				  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
+				  if (result) {
+					  warnf(global, "Failed to create the path directories to file %s: %s", config->etag_save_file,
+						  strerror(errno));
+				  }
+			  }
+
             FILE *newfile = fopen(config->etag_save_file, "wb");
             if(!newfile) {
               warnf(global, "Failed creating file for saving etags: \"%s\". "
@@ -1021,6 +1030,15 @@ static CURLcode single_transfer(struct GlobalConfig *global,
              * for every transfer.
              */
             if(!per->prev || per->prev->config != config) {
+			  if (config->create_dirs) {
+				  CURLcode result = create_dir_hierarchy(config->headerfile, global);
+				  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
+				  if (result) {
+					  warnf(global, "Failed to create the path directories to file %s: %s", config->headerfile,
+						  strerror(errno));
+				  }
+			  }
+
               newfile = fopen(config->headerfile, "wb");
               if(newfile)
                 fclose(newfile);
@@ -1095,8 +1113,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           if(!per->outfile) {
             /* extract the file name from the URL */
 			DEBUGASSERT(per->outfile == NULL);
-            result = get_url_file_name(&per->outfile, per->this_url);
-            if(result) {
+			if(config->output_path_mimics_url)
+              result = convert_url_to_file_path(&per->outfile, per->this_url);
+			else
+			  result = get_url_file_name(&per->outfile, per->this_url);
+			if(result) {
               errorf(global, "Failed to extract a sensible file name"
                      " from the URL to use for storage");
               break;

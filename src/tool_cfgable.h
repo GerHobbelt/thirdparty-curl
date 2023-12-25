@@ -177,6 +177,7 @@ struct OperationConfig {
   bool terminal_binary_ok;
   bool verifystatus;
   bool doh_verifystatus;
+  bool output_path_mimics_url;
   bool create_dirs;
   bool ftp_create_dirs;
   long ftp_pasvp_ip_rule;   /* how to handle the IP address the FTP server

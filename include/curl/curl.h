@@ -2270,6 +2270,12 @@ typedef enum {
   /* Sanitize without extreme prejudice */
   CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 328),
 
+  /* Automatically create local directories in the generated outut file path when they don't exist yet */
+  CURLOPT(CURLOPT_CREATE_DIRS_FOR_OUTPUT, CURLOPTTYPE_LONG, 329),
+
+  /* The generated output file path is derived from the fully qualified URI. (Takes no-clobber and a few other options into account though, so the file name may end uplooking slightly different.) */
+  CURLOPT(CURLOPT_OUTPUT_PATH_MIMICS_URL, CURLOPTTYPE_LONG, 330),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
@@ -3281,6 +3287,25 @@ CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
 
 #define CURLPAUSE_ALL       (CURLPAUSE_RECV|CURLPAUSE_SEND)
 #define CURLPAUSE_CONT      (CURLPAUSE_RECV_CONT|CURLPAUSE_SEND_CONT)
+
+
+/* curl_sanitize_file_name flags */
+
+#define CURL_SANITIZE_ALLOW_COLONS              (1<<0)  /* Allow colons */
+#define CURL_SANITIZE_ALLOW_PATH                (1<<1)  /* Allow path separators and colons */
+#define CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH  (1<<2)  /* Allow only relative path specs; implies CURL_SANITIZE_ALLOW_PATH */
+#define CURL_SANITIZE_ALLOW_RESERVED            (1<<3)  /* Allow reserved device names */
+#define CURL_SANITIZE_ALLOW_TRUNCATE            (1<<4)  /* Allow truncating a long filename */
+
+typedef enum {
+	CURL_SANITIZE_ERR_OK = 0,           /* 0 - OK */
+	CURL_SANITIZE_ERR_INVALID_PATH,     /* 1 - the path is invalid */
+	CURL_SANITIZE_ERR_BAD_ARGUMENT,     /* 2 - bad function parameter */
+	CURL_SANITIZE_ERR_OUT_OF_MEMORY,    /* 3 - out of memory */
+	CURL_SANITIZE_ERR_LAST /* never use! */
+} CurlSanitizeCode;
+
+CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *file_name,	int flags);
 
 #ifdef  __cplusplus
 } /* end of extern "C" */

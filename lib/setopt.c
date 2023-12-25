@@ -3012,6 +3012,12 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 	  data->set.file_clobber_mode = state < 0 ? CLOBBER_DEFAULT : state == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
   }
 	break;
+  case CURLOPT_CREATE_DIRS_FOR_OUTPUT:
+    data->set.create_dirs = (0 != va_arg(param, long)) ? TRUE : FALSE;
+    break;
+  case CURLOPT_OUTPUT_PATH_MIMICS_URL:
+    data->set.output_path_mimics_url = (0 != va_arg(param, long)) ? TRUE : FALSE;
+    break;
   case CURLOPT_PIPEWAIT:
     data->set.pipewait = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;

@@ -334,6 +334,7 @@ static const struct LongShort aliases[]= {
   {"Oa", "remote-name-all",          ARG_BOOL},
   {"Ob", "output-dir",               ARG_STRING},
   {"Oc", "clobber",                  ARG_BOOL},
+  {"Ou", "output-path-mimics-url",   ARG_BOOL},
   {"p",  "proxytunnel",              ARG_BOOL},
   {"P",  "ftp-port",                 ARG_STRING},
   {"q",  "disable",                  ARG_BOOL},
@@ -1219,6 +1220,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case '~': /* --xattr */
         config->xattr = toggle;
         break;
+
 		case '@': /* --url = the URL! */
 			if (nextarg[0] == '@') {
 				/* read many URLs from a file or stdin */
@@ -2430,18 +2432,22 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       config->nobuffer = longopt ? !toggle : TRUE;
       break;
     case 'O': /* --remote-name */
-      if(subletter == 'a') { /* --remote-name-all */
+      switch(subletter) {
+	  case 'a':  /* --remote-name-all */
         config->default_node_flags = toggle?GETOUT_USEREMOTE:0;
         break;
-      }
-      else if(subletter == 'b') { /* --output-dir */
+	  case 'b':  /* --output-dir */
         GetStr(&config->output_dir, nextarg);
         break;
-      }
-      else if(subletter == 'c') { /* --clobber / --no-clobber */
+	  case 'c': /* --clobber / --no-clobber */
         config->file_clobber_mode = toggle ? CLOBBER_ALWAYS : CLOBBER_NEVER;
         break;
-      }
+	  case 'u': /* --output-path-mimics-url */
+		config->output_path_mimics_url = toggle;
+		if (toggle)
+		  config->create_dirs = TRUE;
+		break;
+	  }
       /* FALLTHROUGH */
     case 'o': /* --output */
       /* output file */

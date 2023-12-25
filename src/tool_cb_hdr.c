@@ -307,16 +307,14 @@ static char *parse_filename(const char *ptr, size_t len)
     memmove(copy, p, strlen(p) + 1);
 
   // Sanitize the filename for *all* OSes: do not accept *? wildcards and other hacky characters *anywhere*: 
-//#if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
-    SANITIZEcode sc = sanitize_file_name(&sanitized, copy, 0);
+    CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, copy, 0);
     Curl_safefree(copy);
     if(sc)
       return NULL;
     copy = sanitized;
   }
-//#endif /* MSDOS || WIN32 */
 
   /* in case we built debug enabled, we allow an environment variable
    * named CURL_TESTDIR to prefix the given file name to put it into a

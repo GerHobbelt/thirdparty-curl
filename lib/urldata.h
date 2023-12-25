@@ -1934,6 +1934,8 @@ struct UserDefined {
   BIT(ssl_enable_alpn);/* TLS ALPN extension? */
   BIT(path_as_is);     /* allow dotdots? */
   file_clobber_mode_t file_clobber_mode;
+  BIT(create_dirs);     /* create local directories in the output file path when they don't exist yet */
+  BIT(output_path_mimics_url);     /* create a local output file path that's derived rom the fully qualified source URI */
   BIT(pipewait);       /* wait for multiplex status before starting a new
                           connection */
   BIT(suppress_connect_headers); /* suppress proxy CONNECT response headers

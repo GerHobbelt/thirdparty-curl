@@ -702,12 +702,12 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
   if(Curl_dyn_addn(&dyn, "", 0))
     return CURLE_OUT_OF_MEMORY;
 
-#if defined(MSDOS) || defined(WIN32)
+#if 1
   {
     char *sanitized;
-    SANITIZEcode sc = sanitize_file_name(&sanitized, Curl_dyn_ptr(&dyn),
-                                         (SANITIZE_ALLOW_PATH |
-                                          SANITIZE_ALLOW_RESERVED));
+	CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, Curl_dyn_ptr(&dyn),
+                                         (CURL_SANITIZE_ALLOW_PATH |
+                                          CURL_SANITIZE_ALLOW_RESERVED));
 	Curl_dyn_free(&dyn);
     if(sc)
       return CURLE_URL_MALFORMAT;
