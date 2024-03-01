@@ -3142,7 +3142,7 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
   return CURLE_OK;
 }
 
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) || defined(HAVE_ZLIB_NG)
 CURLcode Curl_transferencode(struct Curl_easy *data)
 {
   if(!Curl_checkheaders(data, STRCONST("TE")) &&
@@ -3276,7 +3276,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   else
     Curl_safefree(data->state.aptr.accept_encoding);
 
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) || defined(HAVE_ZLIB_NG)
   /* we only consider transfer-encoding magic if libz support is built-in */
   result = Curl_transferencode(data);
   if(result)

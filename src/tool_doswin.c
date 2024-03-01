@@ -185,8 +185,6 @@ CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *fil
   /* replace control characters and other banned characters */
   bool dot = FALSE;
   for(; *p; ++p) {
-    const char *banned;
-
 	if (*p == '.') {
 		if (!dot)
 			dot = TRUE;

@@ -142,7 +142,7 @@ exit_zlib(struct Curl_easy *data,
 	zng_stream *z, zlibInitState *zlib_init, CURLcode result)
 {
   if(*zlib_init == ZLIB_GZIP_HEADER)
-    Curl_safefree(z->next_in);
+    Curl_safefree((void *)z->next_in);
 
   if(*zlib_init != ZLIB_UNINIT) {
     if(zng_inflateEnd(z) != Z_OK && result == CURLE_OK)
@@ -843,7 +843,7 @@ static const struct Curl_cwtype identity_encoding = {
 /* supported content encodings table. */
 static const struct Curl_cwtype * const encodings[] = {
   &identity_encoding,
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) || defined(HAVE_ZLIB_NG)
   &deflate_encoding,
   &gzip_encoding,
 #endif

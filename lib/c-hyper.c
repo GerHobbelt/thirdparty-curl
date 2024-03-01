@@ -1113,7 +1113,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
       goto error;
   }
 
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) || defined(HAVE_ZLIB_NG)
   /* we only consider transfer-encoding magic if libz support is built-in */
   result = Curl_transferencode(data);
   if(result)

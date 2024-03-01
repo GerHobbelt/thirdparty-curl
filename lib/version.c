@@ -132,7 +132,7 @@ char *curl_version(void)
 #ifdef USE_SSL
   char ssl_version[200];
 #endif
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) && !defined(HAVE_ZLIB_NG)
   char z_version[40];
 #endif
 #ifdef HAVE_LIBZ_NG
@@ -192,7 +192,7 @@ char *curl_version(void)
   Curl_ssl_version(ssl_version, sizeof(ssl_version));
   src[i++] = ssl_version;
 #endif
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) && !defined(HAVE_ZLIB_NG)
   msnprintf(z_version, sizeof(z_version), "zlib/%s", zlibVersion());
   src[i++] = z_version;
 #endif
@@ -494,7 +494,7 @@ static const struct feat features_table[] = {
     ( (SIZEOF_OFF_T > 4) || defined(USE_WIN32_LARGE_FILES) )
   FEATURE("Largefile",   NULL,                CURL_VERSION_LARGEFILE),
 #endif
-#ifdef HAVE_LIBZ
+#if HAVE_LIBZ || HAVE_LIBZ_NG
   FEATURE("libz",        NULL,                CURL_VERSION_LIBZ),
 #endif
 #ifdef CURL_WITH_MULTI_SSL
@@ -611,8 +611,12 @@ curl_version_info_data *curl_version_info(CURLversion stamp)
   version_info.ssl_version = ssl_buffer;
 #endif
 
-#ifdef HAVE_LIBZ
+#if defined(HAVE_ZLIB) && !defined(HAVE_ZLIB_NG)
   version_info.libz_version = zlibVersion();
+  /* libz left NULL if non-existing */
+#endif
+#ifdef HAVE_LIBZ_NG
+  version_info.libz_version = zlibng_version();
   /* libz left NULL if non-existing */
 #endif
 #ifdef USE_ARES
