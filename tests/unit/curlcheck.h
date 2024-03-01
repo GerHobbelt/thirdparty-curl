@@ -93,8 +93,6 @@
   } while(0)
 
 
-extern int unitfail;
-
 #ifndef UNITTEST_NAME
 #define UNITTEST_NAME  test
 #endif
