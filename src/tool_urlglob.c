@@ -702,7 +702,6 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
   if(Curl_dyn_addn(&dyn, "", 0))
     return CURLE_OUT_OF_MEMORY;
 
-#if 1
   {
     char *sanitized;
 	CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, Curl_dyn_ptr(&dyn),
@@ -714,8 +713,4 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
     *result = sanitized;
     return CURLE_OK;
   }
-#else
-  *result = Curl_dyn_ptr(&dyn);
-  return CURLE_OK;
-#endif /* _WIN32 || MSDOS */
 }

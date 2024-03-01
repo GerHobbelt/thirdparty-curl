@@ -139,6 +139,11 @@ static void showtable(int try, int init, int shift)
   printf("\n  };\n");
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main      curl_schematable_tool_main
+#endif
+
 int main(void)
 {
   int i;
@@ -204,4 +209,6 @@ int main(void)
   }
 
   showtable(besttry, bestadd, bestshift);
+
+  return 0;
 }
