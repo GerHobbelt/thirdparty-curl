@@ -24,7 +24,7 @@
 
 #include "curl_setup.h"
 
-#if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 
 #include <curl/curl.h>
 #include "version_win32.h"
@@ -316,4 +316,4 @@ bool curlx_verify_windows_version(const unsigned int majorVersion,
   return matched;
 }
 
-#endif /* WIN32 */
+#endif /* _WIN32 */

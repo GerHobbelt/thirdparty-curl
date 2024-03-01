@@ -287,7 +287,7 @@ void curl_global_cleanup(void)
   Curl_ssl_cleanup();
   Curl_resolver_global_cleanup();
 
-#if defined(WIN32) || defined(WIN64)
+#ifdef _WIN32
   Curl_win32_cleanup(easy_init_flags);
 #endif
 

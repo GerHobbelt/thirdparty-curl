@@ -1438,7 +1438,7 @@ CURLcode Curl_buffer_send(struct dynbuf *in,
      *   and install our own `data->state.fread_func` that
      *   on subsequent calls reads `in` empty.
      * - when the whisked away `in` is empty, the `fread_func`
-     *   is restored ot its original state.
+     *   is restored to its original state.
      * The problem is that `fread_func` can only return
      * `upload_buffer_size` lengths. If the send we do here
      * is larger and blocks, we do re-sending with smaller
@@ -4031,8 +4031,7 @@ CURLcode Curl_bump_headersize(struct Curl_easy *data,
 CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
                                      struct connectdata *conn,
                                      const char *buf, size_t blen,
-                                     size_t *pconsumed,
-                                     bool *stop_reading)
+                                     size_t *pconsumed)
 {
   CURLcode result;
   struct SingleRequest *k = &data->req;
@@ -4040,7 +4039,6 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
   char *end_ptr;
 
   /* header line within buffer loop */
-  *stop_reading = FALSE;
   *pconsumed = 0;
   do {
     size_t line_length;
@@ -4407,7 +4405,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
          * out and return home.
          */
         if(data->req.no_body)
-          *stop_reading = TRUE;
+          k->download_done = TRUE;
 #ifndef CURL_DISABLE_RTSP
         else if((conn->handler->protocol & CURLPROTO_RTSP) &&
                 (data->set.rtspreq == RTSPREQ_DESCRIBE) &&
@@ -4416,7 +4414,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
              absent, a length 0 must be assumed.  It will prevent libcurl from
              hanging on DESCRIBE request that got refused for whatever
              reason */
-          *stop_reading = TRUE;
+          k->download_done = TRUE;
 #endif
 
         /* If max download size is *zero* (nothing) we already have
@@ -4427,12 +4425,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
         if(0 == k->maxdownload
            && !Curl_conn_is_http2(data, conn, FIRSTSOCKET)
            && !Curl_conn_is_http3(data, conn, FIRSTSOCKET))
-          *stop_reading = TRUE;
-
-        if(*stop_reading) {
-          /* we make sure that this socket isn't read more now */
-          k->keepon &= ~KEEP_RECV;
-        }
+          k->download_done = TRUE;
 
         Curl_debug(data, CURLINFO_HEADER_IN,
                    Curl_dyn_ptr(&data->state.headerb),

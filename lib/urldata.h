@@ -723,7 +723,7 @@ struct SingleRequest {
 #ifndef CURL_DISABLE_DOH
   struct dohdata *doh; /* DoH specific data for this request */
 #endif
-#if defined(WIN32) && defined(USE_WINSOCK)
+#if defined(_WIN32) && defined(USE_WINSOCK)
   struct curltime last_sndbuf_update;  /* last time readwrite_upload called
                                           win_update_buffer_size */
 #endif
@@ -1396,7 +1396,7 @@ struct UrlState {
 
   /* a place to store the most recently set (S)FTP entrypath */
   char *most_recent_ftp_entrypath;
-#if !(defined(WIN32) || defined(WIN64)) && !defined(MSDOS) && !defined(__EMX__)
+#if !defined(_WIN32) && !defined(MSDOS) && !defined(__EMX__)
 /* do FTP line-end conversions on most platforms */
 #define CURL_DO_LINEEND_CONV
   /* for FTP downloads: track CRLF sequences that span blocks */
@@ -1437,7 +1437,7 @@ struct UrlState {
                                  this should be dealt with in pretransfer */
 #ifndef CURL_DISABLE_HTTP
   curl_mimepart *mimepost;
-  curl_mimepart *formp; /* storage for old API form-posting, alloced on
+  curl_mimepart *formp; /* storage for old API form-posting, allocated on
                            demand */
   size_t trailers_bytes_sent;
   struct dynbuf trailers_buf; /* a buffer containing the compiled trailing

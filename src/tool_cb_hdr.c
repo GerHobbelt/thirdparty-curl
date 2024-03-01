@@ -43,7 +43,7 @@
 
 static char *parse_filename(const char *ptr, size_t len);
 
-#ifdef WIN32
+#ifdef _WIN32
 #define BOLD "\x1b[1m"
 #define BOLDOFF "\x1b[22m"
 #else
@@ -89,7 +89,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
   }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
   /* Discard incomplete UTF-8 sequence buffered from body */
   if(outs->utf8seq[0])
     memset(outs->utf8seq, 0, sizeof(outs->utf8seq));
@@ -222,7 +222,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
       return CURL_WRITEFUNC_ERROR;
 
     if(hdrcbdata->global->isatty &&
-#ifdef WIN32
+#ifdef _WIN32
        tool_term_has_bold &&
 #endif
        hdrcbdata->global->styled_output)

@@ -717,5 +717,5 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
 #else
   *result = Curl_dyn_ptr(&dyn);
   return CURLE_OK;
-#endif /* MSDOS || WIN32 */
+#endif /* _WIN32 || MSDOS */
 }

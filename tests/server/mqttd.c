@@ -1020,7 +1020,7 @@ int main(int argc, const char** argv)
   msnprintf(loglockfile, sizeof(loglockfile), "%s/%s/mqtt-%s.lock",
             logdir, SERVERLOGS_LOCKDIR, ipv_inuse);
 
-#ifdef WIN32
+#ifdef _WIN32
   win32_init();
   atexit(win32_cleanup);
 

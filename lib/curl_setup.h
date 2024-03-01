@@ -41,15 +41,7 @@
 #pragma warning(disable:4127)
 #endif
 
-/*
- * Define WIN32 when build target is Win32 API
- */
-
-#if (defined(_WIN32) || defined(__WIN32__) || defined(_WIN64)) && !defined(WIN32)
-#define WIN32
-#endif
-
-#ifdef WIN32
+#ifdef _WIN32
 /*
  * Don't include unneeded stuff in Windows headers to avoid compiler
  * warnings and macro clashes.
@@ -99,7 +91,7 @@
 #ifdef _WIN32_WCE
 #  include "config-win32ce.h"
 #else
-#  if defined(WIN32) && !defined(FreeRTOS)
+#  if defined(_WIN32) && !defined(FreeRTOS)
 #    include "config-win32.h"
 #  endif
 #endif
@@ -518,11 +510,11 @@ extern "C" {
    5. set dir/file naming defines
    */
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #  define DIR_CHAR      "\\"
 
-#else /* WIN32 */
+#else /* _WIN32 */
 
 #  ifdef MSDOS  /* Watt-32 */
 
@@ -547,7 +539,7 @@ extern "C" {
 
 #  define DIR_CHAR      "/"
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* ---------------------------------------------------------------- */
 /*             resolver specialty compile-time defines              */
@@ -570,7 +562,7 @@ extern "C" {
 
 #if defined(HAVE_GETADDRINFO)
 #  define CURLRES_IPV6
-#elif defined(ENABLE_IPV6) && (defined(WIN32) || defined(__CYGWIN__))
+#elif defined(ENABLE_IPV6) && (defined(_WIN32) || defined(__CYGWIN__))
 /* assume on Windows that IPv6 without getaddrinfo is a broken build */
 #  error "Unexpected build: IPv6 is enabled but getaddrinfo was not found."
 #else
@@ -744,7 +736,7 @@ extern "C" {
 /* In Windows the default file mode is text but an application can override it.
 Therefore we specify it explicitly. https://github.com/curl/curl/pull/258
 */
-#if defined(WIN32) || defined(MSDOS)
+#if defined(_WIN32) || defined(MSDOS)
 #define FOPEN_READTEXT "rt"
 #define FOPEN_WRITETEXT "wt"
 #define FOPEN_APPENDTEXT "at"
@@ -813,11 +805,11 @@ int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf,
 /* Certain Windows implementations are not aligned with what curl expects,
    so always use the local one on this platform. E.g. the mingw-w64
    implementation can return wrong results for non-ASCII inputs. */
-#if defined(HAVE_BASENAME) && defined(WIN32)
+#if defined(HAVE_BASENAME) && defined(_WIN32)
 #undef HAVE_BASENAME
 #endif
 
-#if defined(USE_UNIX_SOCKETS) && defined(WIN32)
+#if defined(USE_UNIX_SOCKETS) && defined(_WIN32)
 #  if !defined(UNIX_PATH_MAX)
      /* Replicating logic present in afunix.h
         (distributed with newer Windows 10 SDK versions only) */

@@ -24,7 +24,7 @@
 
 #include "timeval.h"
 
-#if (defined(WIN32) || defined(WIN64)) && !defined(MSDOS)
+#if defined(_WIN32)
 
 #include "curl_setup.h"
 #include <curl/curl.h>

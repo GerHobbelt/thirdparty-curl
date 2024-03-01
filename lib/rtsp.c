@@ -781,7 +781,7 @@ static CURLcode rtsp_rtp_readwrite(struct Curl_easy *data,
     goto out;
   }
 
-  /* If header parsing is not onging, extract RTP messsages */
+  /* If header parsing is not onging, extract RTP messages */
   if(!rtspc->in_header) {
     result = rtsp_filter_rtp(data, conn, buf, blen, in_body, &consumed);
     if(result)
@@ -793,11 +793,9 @@ static CURLcode rtsp_rtp_readwrite(struct Curl_easy *data,
 
   /* we want to parse headers, do so */
   if(data->req.header && blen) {
-    bool stop_reading;
-
     rtspc->in_header = TRUE;
     result = Curl_http_readwrite_headers(data, conn, buf, blen,
-                                         &consumed, &stop_reading);
+                                         &consumed);
     if(result)
       goto out;
 

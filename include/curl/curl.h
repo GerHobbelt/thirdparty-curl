@@ -53,15 +53,6 @@
 #include "curlver.h"         /* libcurl version defines   */
 #include "system.h"          /* determine things run-time */
 
-/*
- * Define CURL_WIN32 when build target is Win32 API
- */
-
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(_WIN64)) &&        \
-  !defined(__SYMBIAN32__)
-#define CURL_WIN32
-#endif
-
 #include <stdio.h>
 #include <limits.h>
 
@@ -76,7 +67,7 @@
 #include <time.h>
 #endif
 
-#if defined(CURL_WIN32) && !defined(_WIN32_WCE) && !defined(__CYGWIN__)
+#if defined(_WIN32) && !defined(_WIN32_WCE) && !defined(__CYGWIN__)
 #if !(defined(_WINSOCKAPI_) || defined(_WINSOCK_H) || \
       defined(__LWIP_OPT_H__) || defined(LWIP_HDR_OPT_H))
 /* The check above prevents the winsock2 inclusion if winsock.h already was
@@ -90,7 +81,7 @@
    libc5-based Linux systems. Only include it on systems that are known to
    require it! */
 #if defined(_AIX) || defined(__NOVELL_LIBC__) || defined(__NetBSD__) || \
-    defined(__minix) || defined(__SYMBIAN32__) || defined(__INTEGRITY) || \
+    defined(__minix) || defined(__INTEGRITY) || \
     defined(ANDROID) || defined(__ANDROID__) || defined(__OpenBSD__) || \
     defined(__CYGWIN__) || defined(AMIGA) || defined(__NuttX__) || \
    (defined(__FreeBSD_version) && (__FreeBSD_version < 800000)) || \
@@ -99,12 +90,12 @@
 #include <sys/select.h>
 #endif
 
-#if !defined(CURL_WIN32) && !defined(_WIN32_WCE) &&  \
+#if !defined(_WIN32) && !defined(_WIN32_WCE) &&  \
   !defined(CURL_AVOID_SYS_SOCKET_H)
 #include <sys/socket.h>
 #endif
 
-#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#if !defined(_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
 #endif
 
@@ -131,7 +122,7 @@ typedef void CURLSH;
 
 #ifdef CURL_STATICLIB
 #  define CURL_EXTERN
-#elif defined(CURL_WIN32) || defined(__SYMBIAN32__) || \
+#elif defined(_WIN32) || \
      (__has_declspec_attribute(dllexport) && \
       __has_declspec_attribute(dllimport))
 #  if defined(BUILDING_LIBCURL)
@@ -150,7 +141,7 @@ typedef void CURLSH;
 #ifdef FreeRTOS
 typedef Socket_t curl_socket_t;
 #define CURL_SOCKET_BAD FREERTOS_INVALID_SOCKET
-#elif defined(CURL_WIN32) && !defined(__LWIP_OPT_H__) && !defined(LWIP_HDR_OPT_H)
+#elif defined(_WIN32) && !defined(__LWIP_OPT_H__) && !defined(LWIP_HDR_OPT_H)
 typedef SOCKET curl_socket_t;
 #define CURL_SOCKET_BAD INVALID_SOCKET
 #else

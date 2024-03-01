@@ -216,7 +216,7 @@ CURLcode get_url_file_name(char **filename, const char *url)
       if(!*filename)
         return CURLE_OUT_OF_MEMORY;
 
-//#if defined(MSDOS) || defined(WIN32)
+#if defined(_WIN32) || defined(MSDOS)
       {
         char *sanitized;
 		CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, *filename, 0);

@@ -152,7 +152,7 @@ enum sockmode {
   ACTIVE_DISCONNECT  /* as a client, disconnected from server */
 };
 
-#ifdef WIN32
+#ifdef _WIN32
 /*
  * read-wrapper to support reading from stdin on Windows.
  */
@@ -1465,7 +1465,7 @@ int main(int argc, const char** argv)
     }
   }
 
-#ifdef WIN32
+#ifdef _WIN32
   win32_init();
   atexit(win32_cleanup);
 
