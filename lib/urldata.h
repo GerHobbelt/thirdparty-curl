@@ -1346,7 +1346,8 @@ struct UrlState {
   curl_off_t recent_conn_id; /* The most recent connection used, might no
                               * longer exist */
   struct dynbuf headerb; /* buffer to store headers in */
-
+  struct curl_slist *hstslist; /* list of HSTS files set by
+                                  curl_easy_setopt(HSTS) calls */
   char *buffer; /* download buffer */
   char *ulbuf; /* allocated upload buffer or NULL */
   curl_off_t current_speed;  /* the ProgressShow() function sets this,
@@ -1442,6 +1443,10 @@ struct UrlState {
   struct Curl_header_store *prevhead; /* the latest added header */
   trailers_state trailers_state; /* whether we are sending trailers
                                     and what stage are we at */
+#endif
+#ifndef CURL_DISABLE_COOKIES
+  struct curl_slist *cookielist; /* list of cookie files set by
+                                    curl_easy_setopt(COOKIEFILE) calls */
 #endif
 #ifdef USE_HYPER
   bool hconnect;  /* set if a CONNECT request */
@@ -1701,13 +1706,7 @@ struct UserDefined {
   void *prereq_userp; /* pre-initial request user data */
 
   void *seek_client;    /* pointer to pass to the seek callback */
-#ifndef CURL_DISABLE_COOKIES
-  struct curl_slist *cookielist; /* list of cookie files set by
-                                    curl_easy_setopt(COOKIEFILE) calls */
-#endif
 #ifndef CURL_DISABLE_HSTS
-  struct curl_slist *hstslist; /* list of HSTS files set by
-                                  curl_easy_setopt(HSTS) calls */
   curl_hstsread_callback hsts_read;
   void *hsts_read_userp;
   curl_hstswrite_callback hsts_write;

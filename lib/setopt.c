@@ -763,18 +763,18 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
         return CURLE_BAD_FUNCTION_ARGUMENT;
       /* append the cookie file name to the list of file names, and deal with
          them later */
-      cl = curl_slist_append(data->set.cookielist, argptr);
+      cl = curl_slist_append(data->state.cookielist, argptr);
       if(!cl) {
-        curl_slist_free_all(data->set.cookielist);
-        data->set.cookielist = NULL;
+        curl_slist_free_all(data->state.cookielist);
+        data->state.cookielist = NULL;
         return CURLE_OUT_OF_MEMORY;
       }
-      data->set.cookielist = cl; /* store the list for later use */
+      data->state.cookielist = cl; /* store the list for later use */
     }
     else {
       /* clear the list of cookie files */
-      curl_slist_free_all(data->set.cookielist);
-      data->set.cookielist = NULL;
+      curl_slist_free_all(data->state.cookielist);
+      data->state.cookielist = NULL;
 
       if(!data->share || !data->share->cookies) {
         /* throw away all existing cookies if this isn't a shared cookie
@@ -3124,18 +3124,18 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       /* this needs to build a list of file names to read from, so that it can
          read them later, as we might get a shared HSTS handle to load them
          into */
-      h = curl_slist_append(data->set.hstslist, argptr);
+      h = curl_slist_append(data->state.hstslist, argptr);
       if(!h) {
-        curl_slist_free_all(data->set.hstslist);
-        data->set.hstslist = NULL;
+        curl_slist_free_all(data->state.hstslist);
+        data->state.hstslist = NULL;
         return CURLE_OUT_OF_MEMORY;
       }
-      data->set.hstslist = h; /* store the list for later use */
+      data->state.hstslist = h; /* store the list for later use */
     }
     else {
       /* clear the list of HSTS files */
-      curl_slist_free_all(data->set.hstslist);
-      data->set.hstslist = NULL;
+      curl_slist_free_all(data->state.hstslist);
+      data->state.hstslist = NULL;
       if(!data->share || !data->share->hsts)
         /* throw away the HSTS cache unless shared */
         Curl_hsts_cleanup(&data->hsts);
