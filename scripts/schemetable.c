@@ -132,7 +132,7 @@ static void showtable(int try, int init, int shift)
         printf("\n   ");
         nulls = 0;
       }
-      printf(" NULL,", nulls);
+      printf(" NULL,");
       nulls++;
     }
   }

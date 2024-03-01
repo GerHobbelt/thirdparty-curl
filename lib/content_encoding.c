@@ -142,7 +142,7 @@ exit_zlib(struct Curl_easy *data,
 	zng_stream *z, zlibInitState *zlib_init, CURLcode result)
 {
   if(*zlib_init == ZLIB_GZIP_HEADER)
-    Curl_safefree((void *)z->next_in);
+    Curl_safefree(z->next_in);
 
   if(*zlib_init != ZLIB_UNINIT) {
     if(zng_inflateEnd(z) != Z_OK && result == CURLE_OK)
