@@ -334,6 +334,7 @@ static const struct LongShort aliases[]= {
   {"Oa", "remote-name-all",          ARG_BOOL},
   {"Ob", "output-dir",               ARG_STRING},
   {"Oc", "clobber",                  ARG_BOOL},
+  {"OS", "sanitize-with-extreme-prejudice", ARG_NONE },
   {"Ou", "output-path-mimics-url",   ARG_BOOL},
   {"p",  "proxytunnel",              ARG_BOOL},
   {"P",  "ftp-port",                 ARG_STRING},
@@ -365,7 +366,6 @@ static const struct LongShort aliases[]= {
   {"#p", "progress-percent",         ARG_BOOL},
   {":",  "next",                     ARG_NONE},
   {":a", "variable",                 ARG_STRING},
-  {":S", "sanitize-with-extreme-prejudice", ARG_NONE},
 };
 
 /* Split the argument of -E to 'certname' and 'passphrase' separated by colon.
@@ -1221,109 +1221,109 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         config->xattr = toggle;
         break;
 
-		case '@': /* --url = the URL! */
-			if (nextarg[0] == '@') {
-				/* read many URLs from a file or stdin */
-				char* string;
-				size_t len;
-				bool use_stdin = !strcmp(&nextarg[1], "-");
-				FILE* file = use_stdin ? stdin : fopen(&nextarg[1], FOPEN_READTEXT);
-				if (!file)
-					warnf(global, "Failed to open %s!\n", &nextarg[1]);
-				else {
-					err = file2memory(&string, &len, file);
-					if (!err && string) {
-						/* Allow strtok() here since this isn't used threaded */
-						/* !checksrc! disable BANNEDFUNC 2 */
-						char* h = strtok(string, "\r\n");
-						while (h) {
-							// trim leading & trailing whitespace
-							while (*h && isspace(*h))
-								h++;
-							char* e = h + strlen(h);
-							while (e > h && isspace(e[-1]))
-								e--;
-							*e = 0;
-							// only add non-empty lines as URLs
-							if (*h) {
-								struct getout* url;
+      case '@': /* --url = the URL! */
+            if (nextarg[0] == '@') {
+                /* read many URLs from a file or stdin */
+                char* string;
+                size_t len;
+                bool use_stdin = !strcmp(&nextarg[1], "-");
+                FILE* file = use_stdin ? stdin : fopen(&nextarg[1], FOPEN_READTEXT);
+                if (!file)
+                    warnf(global, "Failed to open %s!\n", &nextarg[1]);
+                else {
+                    err = file2memory(&string, &len, file);
+                    if (!err && string) {
+                        /* Allow strtok() here since this isn't used threaded */
+                        /* !checksrc! disable BANNEDFUNC 2 */
+                        char* h = strtok(string, "\r\n");
+                        while (h) {
+                            // trim leading & trailing whitespace
+                            while (*h && isspace(*h))
+                                h++;
+                            char* e = h + strlen(h);
+                            while (e > h && isspace(e[-1]))
+                                e--;
+                            *e = 0;
+                            // only add non-empty lines as URLs
+                            if (*h) {
+                                struct getout* url;
 
-								if (!config->url_get)
-									config->url_get = config->url_list;
+                                if (!config->url_get)
+                                    config->url_get = config->url_list;
 
-								if (config->url_get) {
-									/* there's a node here, if it already is filled-in continue to find
-									   an "empty" node */
-									while (config->url_get && (config->url_get->flags & GETOUT_URL))
-										config->url_get = config->url_get->next;
-								}
+                                if (config->url_get) {
+                                    /* there's a node here, if it already is filled-in continue to find
+                                       an "empty" node */
+                                    while (config->url_get && (config->url_get->flags & GETOUT_URL))
+                                        config->url_get = config->url_get->next;
+                                }
 
-								/* now there might or might not be an available node to fill in! */
+                                /* now there might or might not be an available node to fill in! */
 
-								if (config->url_get)
-									/* existing node */
-									url = config->url_get;
-								else
-									/* there was no free node, create one! */
-									config->url_get = url = new_getout(config);
+                                if (config->url_get)
+                                    /* existing node */
+                                    url = config->url_get;
+                                else
+                                    /* there was no free node, create one! */
+                                    config->url_get = url = new_getout(config);
 
-								if (!url)
-									return PARAM_NO_MEM;
+                                if (!url)
+                                    return PARAM_NO_MEM;
 
-								/* fill in the URL */
-								if (global->tracetype) {
-									fprintf(stderr, "+ Adding URL to the queue:  %s\n", h);
-								}
-								//notef(global, "adding to the queue: URL: %s\n", h);
-								GetStr(&url->url, h);
-								url->flags |= GETOUT_URL;
-							}
-							if (err)
-								break;
-							h = strtok(NULL, "\r\n");
-						}
-						free(string);
-					}
-					if (!use_stdin)
-						fclose(file);
-					if (err) {
-						errorf(global, "out of memory while parsing URL list file '%s'\n", &nextarg[1]);
-						break;
-					}
-				}
-			}
-			else {
-				struct getout* url;
+                                /* fill in the URL */
+                                if (global->tracetype) {
+                                    fprintf(stderr, "+ Adding URL to the queue:  %s\n", h);
+                                }
+                                //notef(global, "adding to the queue: URL: %s\n", h);
+                                GetStr(&url->url, h);
+                                url->flags |= GETOUT_URL;
+                            }
+                            if (err)
+                                break;
+                            h = strtok(NULL, "\r\n");
+                        }
+                        free(string);
+                    }
+                    if (!use_stdin)
+                        fclose(file);
+                    if (err) {
+                        errorf(global, "out of memory while parsing URL list file '%s'\n", &nextarg[1]);
+                        break;
+                    }
+                }
+            }
+            else {
+                struct getout* url;
 
-				if (!config->url_get)
-					config->url_get = config->url_list;
+                if (!config->url_get)
+                    config->url_get = config->url_list;
 
-				if (config->url_get) {
-					/* there's a node here, if it already is filled-in continue to find
-					   an "empty" node */
-					while (config->url_get && (config->url_get->flags & GETOUT_URL))
-						config->url_get = config->url_get->next;
-				}
+                if (config->url_get) {
+                    /* there's a node here, if it already is filled-in continue to find
+                       an "empty" node */
+                    while (config->url_get && (config->url_get->flags & GETOUT_URL))
+                        config->url_get = config->url_get->next;
+                }
 
-				/* now there might or might not be an available node to fill in! */
+                /* now there might or might not be an available node to fill in! */
 
-				if (config->url_get)
-					/* existing node */
-					url = config->url_get;
-				else
-					/* there was no free node, create one! */
-					config->url_get = url = new_getout(config);
+                if (config->url_get)
+                    /* existing node */
+                    url = config->url_get;
+                else
+                    /* there was no free node, create one! */
+                    config->url_get = url = new_getout(config);
 
                 if(!url) {
                     err = PARAM_NO_MEM;
                     break;
                 }
 
-				/* fill in the URL */
-				GetStr(&url->url, nextarg);
-				url->flags |= GETOUT_URL;
-			}
-			break;
+                /* fill in the URL */
+                GetStr(&url->url, nextarg);
+                url->flags |= GETOUT_URL;
+            }
+            break;
       }
       break;
     case '$': /* more options without a short option */
@@ -1421,7 +1421,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
            overflows, not just truncates */
         char lrange[7] = "";
         char *p = strdup(nextarg);
-		char *n_a = p;
+        char *n_a = p;
         while(ISDIGIT(*p))
           p++;
         if(*p) {
@@ -1433,7 +1433,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
           rc = 0;
 
         err = str2unum(&config->localport, n_a);
-		free(n_a);
+        free(n_a);
 
         if(err || (config->localport > 65535)) {
           err = PARAM_BAD_USE;
@@ -1650,9 +1650,6 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       case 'a': /* --variable */
         err = setvariable(global, nextarg);
         break;
-	  case 'S': /* --sanitize-with-extreme-prejudice */
-		config->sanitize_with_extreme_prejudice = toggle;
-		break;
       default:  /* --next */
         err = PARAM_NEXT_OPERATION;
         break;
@@ -1823,7 +1820,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
 #define MAX_QUERY_LEN 100000 /* larger is not likely to ever work */
         char *query;
         struct dynbuf dyn;
-		Curl_dyn_init(&dyn, MAX_QUERY_LEN);
+        Curl_dyn_init(&dyn, MAX_QUERY_LEN);
 
         if(*nextarg == '+') {
           /* use without encoding */
@@ -1963,7 +1960,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       break;
     case 'e':
     {
-	  char* n_a = strdup(nextarg);
+      char* n_a = strdup(nextarg);
       char *ptr = strstr(n_a, ";auto");
       if(ptr) {
         /* Automatic referer requested, this may be combined with a
@@ -1975,7 +1972,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         config->autoreferer = FALSE;
       ptr = *n_a ? n_a : NULL;
       GetStr(&config->referer, ptr);
-	  free(n_a);
+      free(n_a);
     }
     break;
     case 'E':
@@ -2432,22 +2429,31 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       config->nobuffer = longopt ? !toggle : TRUE;
       break;
     case 'O': /* --remote-name */
+      int fallthrough = 0;
       switch(subletter) {
-	  case 'a':  /* --remote-name-all */
+      case 'a':  /* --remote-name-all */
         config->default_node_flags = toggle?GETOUT_USEREMOTE:0;
         break;
-	  case 'b':  /* --output-dir */
+      case 'b':  /* --output-dir */
         GetStr(&config->output_dir, nextarg);
         break;
-	  case 'c': /* --clobber / --no-clobber */
+      case 'c': /* --clobber / --no-clobber */
         config->file_clobber_mode = toggle ? CLOBBER_ALWAYS : CLOBBER_NEVER;
         break;
-	  case 'u': /* --output-path-mimics-url */
-		config->output_path_mimics_url = toggle;
-		if (toggle)
-		  config->create_dirs = TRUE;
-		break;
-	  }
+      case 'S': /* --sanitize-with-extreme-prejudice */
+        config->sanitize_with_extreme_prejudice = toggle;
+        break;
+      case 'u': /* --output-path-mimics-url */
+        config->output_path_mimics_url = toggle;
+        if (toggle)
+          config->create_dirs = TRUE;
+        break;
+      default:
+        fallthrough = 1;
+        break;
+      }
+      if (!fallthrough)
+        break;
       /* FALLTHROUGH */
     case 'o': /* --output */
       /* output file */
@@ -2878,16 +2884,16 @@ ParameterError parse_args(struct GlobalConfig *global, int argc,
 
   // apply some sane defaults when --output-dir was specified without much anything else:
   if (config->output_dir && (config->file_clobber_mode == CLOBBER_DEFAULT)) {
-	  config->file_clobber_mode = CLOBBER_NEVER;
+      config->file_clobber_mode = CLOBBER_NEVER;
   }
   if (config->output_dir && config->url_list && !(config->url_list->flags & GETOUT_USEREMOTE)) {
-	  config->default_node_flags = GETOUT_USEREMOTE;
-	  struct getout* url = config->url_list;
-	  while (url) {
-		  if (!url->outfile)
-			  url->flags |= GETOUT_USEREMOTE;
-		  url = url->next;
-	  }
+      config->default_node_flags = GETOUT_USEREMOTE;
+      struct getout* url = config->url_list;
+      while (url) {
+          if (!url->outfile)
+              url->flags |= GETOUT_USEREMOTE;
+          url = url->next;
+      }
   }
 
   if(!result && config->content_disposition) {
