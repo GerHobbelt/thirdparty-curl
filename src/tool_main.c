@@ -218,11 +218,22 @@ static void main_free(struct GlobalConfig *config)
 /*
 ** curl tool main function.
 */
+
 #if defined(BUILD_MONOLITHIC)
 #define main(cnt, arr)      curl_main(cnt, arr)
 #endif
 
-int main(int argc, const char** argv)
+#if defined(_UNICODE) && !defined(BUILD_MONOLITHIC)    // in monolithic mode, the caller already has converted everything to char/UTF8, so we're good...
+#if defined(__GNUC__)
+/* GCC doesn't know about wmain() */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#endif
+int wmain(int argc, const wchar_t **argv)
+#else
+int main(int argc, const char **argv)
+#endif
 {
   CURLcode result = CURLE_OK;
   struct GlobalConfig global;
@@ -282,5 +293,11 @@ int main(int argc, const char** argv)
   return (int)result;
 #endif
 }
+
+#ifdef _UNICODE
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+#endif
 
 #endif /* ndef UNITTESTS */

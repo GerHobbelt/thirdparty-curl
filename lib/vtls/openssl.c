@@ -2111,22 +2111,6 @@ static bool subj_alt_hostcheck(struct Curl_easy *data,
   return FALSE;
 }
 
-static CURLcode
-ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
-                X509 *server_cert, const char *hostname,
-                const char *dispname);
-
-CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
-                              X509 *server_cert)
-{
-  const char *hostname, *dispname;
-  int port;
-
-  (void)conn;
-  Curl_conn_get_host(data, FIRSTSOCKET, &hostname, &dispname, &port);
-  return ossl_verifyhost(data, conn, server_cert, hostname, dispname);
-}
-
 /* Quote from RFC2818 section 3.1 "Server Identity"
 
    If a subjectAltName extension of type dNSName is present, that MUST
@@ -2149,10 +2133,8 @@ CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
 
    This function is now used from ngtcp2 (QUIC) as well.
 */
-static CURLcode
-ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
-                X509 *server_cert, const char *hostname,
-                const char *dispname)
+CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
+                              struct ssl_peer *peer, X509 *server_cert)
 {
   bool matched = FALSE;
   int target = GEN_DNS; /* target type, GEN_DNS or GEN_IPADD */
@@ -2169,25 +2151,21 @@ ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
   size_t hostlen;
 
   (void)conn;
-  hostlen = strlen(hostname);
-
-#ifndef ENABLE_IPV6
-  /* Silence compiler warnings for unused params */
-  (void) conn;
-#endif
-
+  hostlen = strlen(peer->hostname);
+  if(peer->is_ip_address) {
 #ifdef ENABLE_IPV6
-  if(conn->bits.ipv6_ip &&
-     Curl_inet_pton(AF_INET6, hostname, &addr)) {
-    target = GEN_IPADD;
-    addrlen = sizeof(struct in6_addr);
-  }
-  else
-#endif
-    if(Curl_inet_pton(AF_INET, hostname, &addr)) {
+    if(conn->bits.ipv6_ip &&
+       Curl_inet_pton(AF_INET6, peer->hostname, &addr)) {
       target = GEN_IPADD;
-      addrlen = sizeof(struct in_addr);
+      addrlen = sizeof(struct in6_addr);
     }
+    else
+#endif
+      if(Curl_inet_pton(AF_INET, peer->hostname, &addr)) {
+        target = GEN_IPADD;
+        addrlen = sizeof(struct in_addr);
+      }
+  }
 
   /* get a "list" of alternative names */
   altnames = X509_get_ext_d2i(server_cert, NID_subject_alt_name, NULL, NULL);
@@ -2237,9 +2215,9 @@ ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
           if((altlen == strlen(altptr)) &&
              /* if this isn't true, there was an embedded zero in the name
                 string and we cannot match it. */
-             subj_alt_hostcheck(data,
-                                altptr,
-                                altlen, hostname, hostlen, dispname)) {
+             subj_alt_hostcheck(data, altptr, altlen,
+                                peer->hostname, hostlen,
+                                peer->dispname)) {
             dnsmatched = TRUE;
           }
           break;
@@ -2251,7 +2229,7 @@ ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
             ipmatched = TRUE;
             infof(data,
                   " subjectAltName: host \"%s\" matched cert's IP address!",
-                  dispname);
+                  peer->dispname);
           }
           break;
         }
@@ -2267,9 +2245,9 @@ ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
     /* an alternative name matched */
     ;
   else if(dNSName || iPAddress) {
-    infof(data, " subjectAltName does not match %s", dispname);
+    infof(data, " subjectAltName does not match %s", peer->dispname);
     failf(data, "SSL: no alternative certificate subject name matches "
-          "target host name '%s'", dispname);
+          "target host name '%s'", peer->dispname);
     result = CURLE_PEER_FAILED_VERIFICATION;
   }
   else {
@@ -2333,9 +2311,9 @@ ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
       result = CURLE_PEER_FAILED_VERIFICATION;
     }
     else if(!Curl_cert_hostcheck((const char *)peer_CN,
-                                 peerlen, hostname, hostlen)) {
+                                 peerlen, peer->hostname, hostlen)) {
       failf(data, "SSL: certificate subject name '%s' does not match "
-            "target host name '%s'", peer_CN, dispname);
+            "target host name '%s'", peer_CN, peer->dispname);
       result = CURLE_PEER_FAILED_VERIFICATION;
     }
     else {
@@ -2743,12 +2721,6 @@ static void ossl_trace(int direction, int ssl_ver, int content_type,
 
 #ifdef USE_OPENSSL
 /* ====================================================== */
-
-#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-#  define use_sni(x)  sni = (x)
-#else
-#  define use_sni(x)  Curl_nop_stmt
-#endif
 
 /* Check for OpenSSL 1.0.2 which has ALPN support. */
 #undef HAS_ALPN
@@ -3494,17 +3466,6 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
   struct ssl_primary_config *conn_config = Curl_ssl_cf_get_primary_config(cf);
   struct ssl_config_data *ssl_config = Curl_ssl_cf_get_config(cf, data);
   BIO *bio;
-
-#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-  bool sni;
-  const char *hostname = connssl->hostname;
-
-#ifdef ENABLE_IPV6
-  struct in6_addr addr;
-#else
-  struct in_addr addr;
-#endif
-#endif
   const long int ssl_version = conn_config->version;
   char * const ssl_cert = ssl_config->primary.clientcert;
   const struct curl_blob *ssl_cert_blob = ssl_config->primary.cert_blob;
@@ -3539,7 +3500,6 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
 #else
     req_method = SSLv23_client_method();
 #endif
-    use_sni(TRUE);
     break;
   case CURL_SSLVERSION_SSLv2:
     failf(data, "No SSLv2 support");
@@ -3832,13 +3792,8 @@ static CURLcode ossl_connect_step1(struct Curl_cfilter *cf,
 
   backend->server_cert = 0x0;
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-  if((0 == Curl_inet_pton(AF_INET, hostname, &addr)) &&
-#ifdef ENABLE_IPV6
-     (0 == Curl_inet_pton(AF_INET6, hostname, &addr)) &&
-#endif
-     sni) {
-    char *snihost = Curl_ssl_snihost(data, hostname, NULL);
-    if(!snihost || !SSL_set_tlsext_host_name(backend->handle, snihost)) {
+  if(connssl->peer.sni) {
+    if(!SSL_set_tlsext_host_name(backend->handle, connssl->peer.sni)) {
       failf(data, "Failed set SNI");
       return CURLE_SSL_CONNECT_ERROR;
     }
@@ -4020,7 +3975,7 @@ static CURLcode ossl_connect_step2(struct Curl_cfilter *cf,
           Curl_strerror(sockerr, extramsg, sizeof(extramsg));
         failf(data, OSSL_PACKAGE " SSL_connect: %s in connection to %s:%d ",
               extramsg[0] ? extramsg : SSL_ERROR_to_str(detail),
-              connssl->hostname, connssl->port);
+              connssl->peer.hostname, connssl->port);
         return result;
       }
 
@@ -4261,8 +4216,8 @@ static CURLcode servercert(struct Curl_cfilter *cf,
   BIO_free(mem);
 
   if(conn_config->verifyhost) {
-    result = ossl_verifyhost(data, conn, backend->server_cert,
-                             connssl->hostname, connssl->dispname);
+    result = Curl_ossl_verifyhost(data, conn, &connssl->peer,
+                                  backend->server_cert);
     if(result) {
       X509_free(backend->server_cert);
       backend->server_cert = NULL;

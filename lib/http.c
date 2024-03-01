@@ -844,6 +844,7 @@ output_auth_headers(struct Curl_easy *data,
           (data->state.aptr.user ?
            data->state.aptr.user : ""));
 #else
+    (void)proxy;
     infof(data, "Server auth using %s with user '%s'",
           auth, data->state.aptr.user ?
           data->state.aptr.user : "");
@@ -853,7 +854,7 @@ output_auth_headers(struct Curl_easy *data,
   else
     authstatus->multipass = FALSE;
 
-  return CURLE_OK;
+  return result;
 }
 
 /**
@@ -1010,10 +1011,14 @@ CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
   curlnegotiate *negstate = proxy ? &conn->proxy_negotiate_state :
                                     &conn->http_negotiate_state;
 #endif
+#if defined(USE_SPNEGO) || \
+  defined(USE_NTLM) || \
+  !defined(CURL_DISABLE_DIGEST_AUTH) || \
+  !defined(CURL_DISABLE_BASIC_AUTH) || \
+  !defined(CURL_DISABLE_BEARER_AUTH)
+
   unsigned long *availp;
   struct auth *authp;
-
-  (void) conn; /* In case conditionals make it unused. */
 
   if(proxy) {
     availp = &data->info.proxyauthavail;
@@ -1023,6 +1028,11 @@ CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
     availp = &data->info.httpauthavail;
     authp = &data->state.authhost;
   }
+#else
+  (void) proxy;
+#endif
+
+  (void) conn; /* In case conditionals make it unused. */
 
   /*
    * Here we check if we want the specific single authentication (using ==) and
