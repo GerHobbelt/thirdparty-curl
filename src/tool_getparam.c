@@ -829,7 +829,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       err = PARAM_NO_NOT_BOOLEAN;
       goto error;
     }
-    else if(expand) {
+    else if(expand && nextarg) {
       struct dynbuf nbuf;
       bool replaced;
 

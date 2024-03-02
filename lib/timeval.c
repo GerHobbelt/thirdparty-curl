@@ -35,8 +35,8 @@
 #include <sysinfoapi.h>
 
 /* set in win32_init() */
-static LARGE_INTEGER Curl_freq;
-static bool Curl_isVistaOrGreater;
+static LARGE_INTEGER Curl_freq = { 0 };
+static bool Curl_isVistaOrGreater = FALSE;
 static bool timer_initialized = FALSE;
 
 /* In case of bug fix this function has a counterpart in tool_util.c */
