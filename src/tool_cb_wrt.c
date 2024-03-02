@@ -208,209 +208,142 @@ bool tool_create_output_file(struct OutStruct *outs,
   int starts_with_outdir = (outdir && strncmp(outdir, fname, outdir_len) == 0 && strchr("\\/", fname[outdir_len]));
 
   if (starts_with_outdir) {
-	  fname += outdir_len + 2; // skip path separator as well
+	  fname += outdir_len + 1; // skip path separator as well
   }
 
+  /* if HTTP response >= 400, return error? */
+  long code = 0;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+
+  const char *__unknown__ext = NULL;
+  const char *__hidden_prefix = "";
+   
   if (config->sanitize_with_extreme_prejudice) {
 	  // config->failwithbody ?
-
-	  /* if HTTP response >= 400, return error */
-	  long code = 0;
-	  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+	  
+	  __unknown__ext = "unknown";
+	  __hidden_prefix = "___";
 
 	  // - if filename is empty (or itself a directory), then we create a filename after the fact.
 	  // - if the filename is 'hidden' (i.e. starts with a '.'), the filename is *unhiddden.
 	  // - if the filename does not have an extension, an extension will be added, based on the mimetype
 	  //   reported by the server response. As this bit can be adversarial as well, we keep our
 	  //   sanity about it by restricting the length of the extension.
-	  char* fn = find_beyond_all(fname, "\\/:");
-	  int fn_offset = (int)(fn - fname);
 
 	  // unescape possibly url-escaped filename for our convenience:
 	  {
-		  size_t len = strlen(fn);
+		  size_t len = strlen(fname);
 		  char* fn2 = NULL;
-		  if (CURLE_OK != Curl_urldecode(fn, len, &fn2, &len, SANITIZE_CTRL)) {
+		  if (CURLE_OK != Curl_urldecode(fname, len, &fn2, &len, SANITIZE_CTRL)) {
 			  errorf(global, "failure during filename sanitization: out of memory?\n");
 			  return FALSE;
 		  }
 
-		  if (CURL_SANITIZE_ERR_OK != curl_sanitize_file_name(&fn, fn2, 0)) {
+		  if (CURL_SANITIZE_ERR_OK != curl_sanitize_file_name(&fname, fn2, CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH)) {
 			  errorf(global, "failure during filename sanitization: out of memory?\n");
 			  return FALSE;
 		  }
 	  }
-
-	  bool empty = !*fn;
-	  bool hidden = (*fn == '.');
-	  char* ext = strrchr(fn + hidden, '.');
-
-	  int fn_length = (ext ? (ext - fn) : INT_MAX);
-
-	  // We would like to derive a 'sane' filename extension from the server-reported mime-type
-	  // when our current filename has NO extension.
-	  // We ALSO benefit from doing this when the actual filename has a 'nonsense extension',
-	  // which can happen due to the filename having been derived off the request URL, where
-	  // you might get something like:
-	  //     https://dl.acm.org/doi/abs/10.1145/3532342.3532351
-	  // and you would thus end up with thee 'nonsense filename':
-	  //     3532342.3532351
-	  // where appending a 'sane' mime-type based extension MIGHT help:
-
-	  if (!ext || !ext[1])
-		  ext = NULL;
-	  else
-		  ext++;
-
-	  char *new_ext = get_file_extension_for_response_content_type(fname, per);
-
-		if (!ext || !new_ext) {
-			// when we could not determine a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown'
-			if (!new_ext) {
-				ext = "unknown";
-			}
-			else {
-				ext = new_ext;
-			}
-			fn_length = INT_MAX;
-		}
-		else {
-			// we already have an extension for the filename, but the mime-type derived one might be 'saner'.
-			// There are now 3 scenarios to consider:
-			// 1. both extensions are the same (case-*IN*sensitive comparison, because '.PDF' == '.pdf' for our purposes!)
-			// 2. the filename extension is 'sane', the mime-derived one isn't so much: keep the filename ext as-is.
-			// 3. the filename extension is less 'sane' than the mime-derived one. Append the mime-ext, i.e.
-			//    treat the filename extension as part of the filename instead.
-			//    e.g. filename="3532342.3532351" --> ext="3532351", mimee-ext="html" --> new filename="3532342.3532351.html"
-
-			if (curl_strequal(new_ext, ext)) {
-				ext = new_ext;
-			}
-			else {
-				bool mime_ext_is_preferred = (!strcmp("html", new_ext) || !strcmp("js", new_ext) || !strcmp("css", new_ext)); /* TODO: vet the set of known-good extensions */
-				DEBUGASSERT(*ext);
-				if ( ! (
-					    mime_ext_is_preferred ||
-						(strlen(ext) >= strlen(new_ext))
-				)) {
-					// 2. no-op
-				}
-				else {
-					// 3. drop file ext; use mime ext.
-				    fn_length = INT_MAX;
-					ext = new_ext;
-				}
-			}
-		}
-
-	  aname = aprintf("%s%s%.*s%s%.*s.%s", (starts_with_outdir ? outdir : ""), (starts_with_outdir ? "/" : ""),
-		              fn_offset, fname, (hidden ? "___" : ""), fn_length, (empty ? "__download__" : fn), ext);
-	  if (!aname) {
-		  errorf(global, "out of memory\n");
-		  free(new_ext);
-		  free(fn);
-		  return FALSE;
-	  }
-	  if (outs->alloc_filename)
-		  free(outs->filename);
-	  fname = outs->filename = aname;
-	  outs->alloc_filename = TRUE;
-	  aname = NULL;
-	  free(new_ext);
-	  free(fn);
 
 	  // never clobber generated download filenames:
 	  clobber_mode = CLOBBER_NEVER;
   }
   else {   // !config->sanitize_with_extreme_prejudice
 
-	  /* if HTTP response >= 400, return error */
-	  long code = 0;
-	  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-
+      // prep for free(fname) + free(out->filename) afterwards: prevent double free when we travel this branch.
+	  outs->filename = NULL;
+	  
 	  // - if the filename does not have an extension, an extension will be added, based on the mimetype
 	  //   reported by the server response. As this bit can be adversarial as well, we keep our
 	  //   sanity about it by restricting the length of the extension.
-	  char* fn = find_beyond_all(fname, "\\/:");
-	  int fn_offset = (int)(fn - fname);
+  }
 
-	  bool empty = !*fn;
-	  bool hidden = (*fn == '.');
-	  char* ext = strrchr(fn + hidden, '.');
+  char* fn = find_beyond_all(fname, "\\/:");
+  int fn_offset = (int)(fn - fname);
 
-	  int fn_length = (ext ? (ext - fn) : INT_MAX);
+  bool empty = !*fn;
+  bool hidden = (*fn == '.');
+  const char* ext = strrchr(fn + hidden, '.');
 
-	  // We would like to derive a 'sane' filename extension from the server-reported mime-type
-	  // when our current filename has NO extension.
-	  // We ALSO benefit from doing this when the actual filename has a 'nonsense extension',
-	  // which can happen due to the filename having been derived off the request URL, where
-	  // you might get something like:
-	  //     https://dl.acm.org/doi/abs/10.1145/3532342.3532351
-	  // and you would thus end up with thee 'nonsense filename':
-	  //     3532342.3532351
-	  // where appending a 'sane' mime-type based extension MIGHT help:
+  int fn_length = (ext ? (ext - fn) : INT_MAX);
 
-	  if (!ext || !ext[1])
-		  ext = NULL;
-	  else
-		  ext++;
+  // We would like to derive a 'sane' filename extension from the server-reported mime-type
+  // when our current filename has NO extension.
+  // We ALSO benefit from doing this when the actual filename has a 'nonsense extension',
+  // which can happen due to the filename having been derived off the request URL, where
+  // you might get something like:
+  //     https://dl.acm.org/doi/abs/10.1145/3532342.3532351
+  // and you would thus end up with thee 'nonsense filename':
+  //     3532342.3532351
+  // where appending a 'sane' mime-type based extension MIGHT help:
 
-	  char *new_ext = get_file_extension_for_response_content_type(fname, per);
+  if (!ext || !ext[1])
+	  ext = NULL;
+  else
+	  ext++;
 
-		if (!ext || !new_ext || empty) {
-			// when we could not determine a proper & *sane* filename extension from the mimetype, we don't change anything
-			if (new_ext && !empty) {
-				ext = new_ext;
-			}
+  const char *new_ext = get_file_extension_for_response_content_type(fn, per);
 
-			if (!ext)
-				ext = "";
-
-			fn_length = INT_MAX;
+	if (!ext || !new_ext) {
+		// when we could not determine a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown'
+		if (!new_ext) {
+			ext = __unknown__ext;
 		}
 		else {
-			// we already have an extension for the filename, but the mime-type derived one might be 'saner'.
-			// There are now 3 scenarios to consider:
-			// 1. both extensions are the same (case-*IN*sensitive comparison, because '.PDF' == '.pdf' for our purposes!)
-			// 2. the filename extension is 'sane', the mime-derived one isn't so much: keep the filename ext as-is.
-			// 3. the filename extension is less 'sane' than the mime-derived one. Append the mime-ext, i.e.
-			//    treat the filename extension as part of the filename instead.
-			//    e.g. filename="3532342.3532351" --> ext="3532351", mimee-ext="html" --> new filename="3532342.3532351.html"
-
-			if (curl_strequal(new_ext, ext)) {
-				ext = new_ext;
-			}
-			else {
-				bool mime_ext_is_preferred = (!strcmp("html", new_ext) || !strcmp("js", new_ext) || !strcmp("css", new_ext)); /* TODO: vet the set of known-good extensions */
-				DEBUGASSERT(*ext);
-				if ( ! (
-					    mime_ext_is_preferred ||
-						(strlen(ext) >= strlen(new_ext))
-				)) {
-					// 2. no-op
-				}
-				else {
-					// 3. drop file ext; use mime ext.
-				    fn_length = INT_MAX;
-					ext = new_ext;
-				}
-			}
+			ext = new_ext;
 		}
 
-	  aname = aprintf("%s%s%.*s%.*s%s%s", (starts_with_outdir ? outdir : ""), (starts_with_outdir ? "/" : ""),
-		              fn_offset, fname, fn_length, fn, (*ext ? "." : ""), ext);
-	  if (!aname) {
-		  errorf(global, "out of memory\n");
-		  free(new_ext);
-		  return FALSE;
-	  }
-	  if (outs->alloc_filename)
-		  free(outs->filename);
-	  fname = outs->filename = aname;
-	  outs->alloc_filename = TRUE;
-	  aname = NULL;
-	  free(new_ext);
+		if (!ext)
+			ext = "";
+			
+		fn_length = INT_MAX;
+	}
+	else {
+		// we already have an extension for the filename, but the mime-type derived one might be 'saner'.
+		// There are now 3 scenarios to consider:
+		// 1. both extensions are the same (case-*IN*sensitive comparison, because '.PDF' == '.pdf' for our purposes!)
+		// 2. the filename extension is 'sane', the mime-derived one isn't so much: keep the filename ext as-is.
+		// 3. the filename extension is less 'sane' than the mime-derived one. Append the mime-ext, i.e.
+		//    treat the filename extension as part of the filename instead.
+		//    e.g. filename="3532342.3532351" --> ext="3532351", mimee-ext="html" --> new filename="3532342.3532351.html"
+
+		if (curl_strequal(new_ext, ext)) {
+			ext = new_ext;
+		}
+		else {
+			bool mime_ext_is_preferred = (!strcmp("html", new_ext) || !strcmp("js", new_ext) || !strcmp("css", new_ext)); /* TODO: vet the set of known-good extensions */
+			DEBUGASSERT(*ext);
+			if ( ! (
+				    mime_ext_is_preferred ||
+					(strlen(ext) >= strlen(new_ext))
+			)) {
+				// 2. no-op
+			}
+			else {
+				// 3. drop file ext; use mime ext.
+			    fn_length = INT_MAX;
+				ext = new_ext;
+			}
+		}
+	}
+
+  aname = aprintf("%s%s%.*s%s%.*s%s%s", (starts_with_outdir ? outdir : ""), (starts_with_outdir ? "/" : ""),
+	              fn_offset, fname, (hidden ? __hidden_prefix : ""), fn_length, (empty ? "__download__" : fn), (*ext ? "." : ""), ext);
+  if (!aname) {
+	  errorf(global, "out of memory\n");
+	  free((void*)new_ext);
+	  free(fname);
+	  return FALSE;
   }
+  if (outs->alloc_filename)
+	  free(outs->filename);
+  outs->filename = aname;
+  outs->alloc_filename = TRUE;
+  aname = NULL;
+  free((void *)new_ext);
+  free(fname);
+	  
+  fname = outs->filename;
 
   if(!fname || !*fname) {
     warnf(global, "Remote filename has no length");
