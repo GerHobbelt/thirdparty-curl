@@ -1191,6 +1191,7 @@ struct Progress {
   curl_off_t dlspeed;
   curl_off_t ulspeed;
 
+  timediff_t t_postqueue;
   timediff_t t_nslookup;
   timediff_t t_connect;
   timediff_t t_appconnect;
