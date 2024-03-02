@@ -204,12 +204,6 @@ bool tool_sanitize_output_file_path(struct per_transfer *per)
 	  fname += outdir_len + 1; // skip path separator as well
   }
 
-#if 0
-  /* if HTTP response >= 400, return error? */
-  long code = 0;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-#endif
-
   const char *__unknown__ext = NULL;
   const char *__hidden_prefix = "";
    
@@ -368,12 +362,6 @@ bool tool_create_output_file(struct OutStruct *outs,
   global = config->global;
 
   clobber_mode = config->file_clobber_mode;
-
-#if 0
-  /* if HTTP response >= 400, return error? */
-  long code = 0;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-#endif
 
   if (config->sanitize_with_extreme_prejudice) {
 	  // never clobber generated download filenames:
