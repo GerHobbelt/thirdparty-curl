@@ -141,7 +141,7 @@ static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *opaque)
   return size * nmemb;
 }
 
-static void add_transfer(CURLM *multi, CURLSH *share,
+static int add_transfer(CURLM *multi, CURLSH *share,
                          struct curl_slist *resolve, const char *url)
 {
   CURL *easy;
@@ -150,7 +150,7 @@ static void add_transfer(CURLM *multi, CURLSH *share,
   easy = curl_easy_init();
   if(!easy) {
     fprintf(stderr, "curl_easy_init failed\n");
-    exit(1);
+    return 1;
   }
   curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
   curl_easy_setopt(easy, CURLOPT_DEBUGFUNCTION, debug_cb);
@@ -172,11 +172,17 @@ static void add_transfer(CURLM *multi, CURLSH *share,
   if(mc != CURLM_OK) {
     fprintf(stderr, "curl_multi_add_handle: %s\n",
            curl_multi_strerror(mc));
-    exit(1);
+    return 1;
   }
+  return 0;
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main      curl_example_tls_session_reuse_main
+#endif
+
+int main(int argc, const char **argv)
 {
   const char *url;
   CURLM *multi;
@@ -193,26 +199,26 @@ int main(int argc, char *argv[])
 
   if(argc != 2) {
     fprintf(stderr, "%s URL\n", argv[0]);
-    exit(2);
+    return 2;
   }
 
   url = argv[1];
   cu = curl_url();
   if(!cu) {
     fprintf(stderr, "out of memory\n");
-    exit(1);
+    return 1;
   }
   if(curl_url_set(cu, CURLUPART_URL, url, 0)) {
     fprintf(stderr, "not a URL: '%s'\n", url);
-    exit(1);
+    return 1;
   }
   if(curl_url_get(cu, CURLUPART_HOST, &host, 0)) {
     fprintf(stderr, "could not get host of '%s'\n", url);
-    exit(1);
+    return 1;
   }
   if(curl_url_get(cu, CURLUPART_PORT, &port, 0)) {
     fprintf(stderr, "could not get port of '%s'\n", url);
-    exit(1);
+    return 1;
   }
 
    memset(&resolve, 0, sizeof(resolve));
@@ -223,18 +229,20 @@ int main(int argc, char *argv[])
   multi = curl_multi_init();
   if(!multi) {
     fprintf(stderr, "curl_multi_init failed\n");
-    exit(1);
+    return 1;
   }
 
   share = curl_share_init();
   if(!share) {
     fprintf(stderr, "curl_share_init failed\n");
-    exit(1);
+    return 1;
   }
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
 
 
-  add_transfer(multi, share, &resolve, url);
+  if (add_transfer(multi, share, &resolve, url))
+	return 1;
+
   ++ongoing;
   add_more = 6;
   waits = 3;
@@ -243,7 +251,7 @@ int main(int argc, char *argv[])
     if(mc != CURLM_OK) {
       fprintf(stderr, "curl_multi_perform: %s\n",
              curl_multi_strerror(mc));
-      exit(1);
+      return 1;
     }
 
     if(running_handles) {
@@ -251,7 +259,7 @@ int main(int argc, char *argv[])
       if(mc != CURLM_OK) {
         fprintf(stderr, "curl_multi_poll: %s\n",
                curl_multi_strerror(mc));
-        exit(1);
+        return 1;
       }
     }
 
@@ -260,7 +268,8 @@ int main(int argc, char *argv[])
     }
     else {
       while(add_more) {
-        add_transfer(multi, share, &resolve, url);
+        if (add_transfer(multi, share, &resolve, url))
+		  return 1;
         ++ongoing;
         --add_more;
       }
@@ -281,12 +290,12 @@ int main(int argc, char *argv[])
         else if(msg->data.result) {
           fprintf(stderr, "transfer #%" CURL_FORMAT_CURL_OFF_T
                   ": failed with %d\n", xfer_id, msg->data.result);
-          exit(1);
+          return 1;
         }
         else if(status != 200) {
           fprintf(stderr, "transfer #%" CURL_FORMAT_CURL_OFF_T
                   ": wrong http status %ld (expected 200)\n", xfer_id, status);
-          exit(1);
+          return 1;
         }
         curl_multi_remove_handle(multi, msg->easy_handle);
         curl_easy_cleanup(msg->easy_handle);
@@ -302,5 +311,5 @@ int main(int argc, char *argv[])
   } while(ongoing || add_more);
 
   fprintf(stderr, "exiting\n");
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }

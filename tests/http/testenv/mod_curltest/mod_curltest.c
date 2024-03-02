@@ -21,6 +21,9 @@
  * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
+
+#ifndef BUILD_MONOLITHIC
+
 #include <apr_optional.h>
 #include <apr_optional_hooks.h>
 #include <apr_strings.h>
@@ -584,3 +587,5 @@ cleanup:
   }
   return DECLINED;
 }
+
+#endif

@@ -32,6 +32,10 @@
 #endif
 #include <curl/curl.h>
 
+#ifdef _WIN32
+#define sleep(sec) Sleep ((sec)*1000)
+#endif
+
 static int ping(CURL *curl, const char *send_payload)
 {
   size_t sent;
@@ -103,6 +107,10 @@ static void websocket(CURL *curl)
   } while(i++ < 10);
   websocket_close(curl);
 }
+
+#if defined(BUILD_MONOLITHIC)
+#define main      curl_example_websocket_main
+#endif
 
 int main(void)
 {

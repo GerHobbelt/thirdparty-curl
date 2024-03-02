@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#if !defined(CURL_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#if !defined(_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
 #include <sys/time.h>
 #endif
 

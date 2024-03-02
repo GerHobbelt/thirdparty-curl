@@ -61,7 +61,7 @@ callback.
 
 #include <curl/curl.h>
 
-#if !defined(CURL_WIN32)
+#if !defined(_WIN32)
 
 #include <stdio.h>
 #include <string.h>

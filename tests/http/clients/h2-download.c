@@ -33,8 +33,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
-#if !defined(_MSC_VER)
+#if !defined(_WIN32)
 /* somewhat unix-specific */
 #include <sys/time.h>
 #include <unistd.h>
@@ -177,10 +178,14 @@ static void usage(const char *msg)
   );
 }
 
+#if defined(BUILD_MONOLITHIC)
+#define main      curl_example_h2_download_main
+#endif
+
 /*
  * Download a file over HTTP/2, take care of server push.
  */
-int main(int argc, const char *argv[])
+int main(int argc, const char **argv)
 {
   CURLM *multi_handle;
   struct CURLMsg *m;
