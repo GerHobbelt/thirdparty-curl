@@ -179,19 +179,14 @@ static char *get_file_extension_for_response_content_type(char* fname, struct pe
 	return NULL;
 }
 
-/* create/open a local file for writing, return TRUE on success */
-bool tool_create_output_file(struct OutStruct *outs,
-                             struct per_transfer *per)
+/* sanitize a local file for writing, return TRUE on success */
+bool tool_sanitize_output_file_path(struct per_transfer *per)
 {
   struct GlobalConfig *global;
   struct OperationConfig *config;
-  FILE *file = NULL;
-  file_clobber_mode_t clobber_mode;
-  int duplicate = 1;
-  char* fname = outs->filename;
+  char* fname = per->outfile;
   char* aname = NULL;
 
-  DEBUGASSERT(outs);
   DEBUGASSERT(per);
   config = per->config;
   DEBUGASSERT(config);
@@ -201,8 +196,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 
   global = config->global;
 
-  clobber_mode = config->file_clobber_mode;
-
   const char* outdir = config->output_dir;
   int outdir_len = (outdir ? strlen(outdir) : 0);
   int starts_with_outdir = (outdir && strncmp(outdir, fname, outdir_len) == 0 && strchr("\\/", fname[outdir_len]));
@@ -211,9 +204,11 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  fname += outdir_len + 1; // skip path separator as well
   }
 
+#if 0
   /* if HTTP response >= 400, return error? */
   long code = 0;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+#endif
 
   const char *__unknown__ext = NULL;
   const char *__hidden_prefix = "";
@@ -244,14 +239,11 @@ bool tool_create_output_file(struct OutStruct *outs,
 			  return FALSE;
 		  }
 	  }
-
-	  // never clobber generated download filenames:
-	  clobber_mode = CLOBBER_NEVER;
   }
   else {   // !config->sanitize_with_extreme_prejudice
 
-      // prep for free(fname) + free(out->filename) afterwards: prevent double free when we travel this branch.
-	  outs->filename = NULL;
+      // prep for free(fname) + free(per->outfile) afterwards: prevent double free when we travel this branch.
+	  //per->outfile = NULL;
 	  
 	  // - if the filename does not have an extension, an extension will be added, based on the mimetype
 	  //   reported by the server response. As this bit can be adversarial as well, we keep our
@@ -332,18 +324,61 @@ bool tool_create_output_file(struct OutStruct *outs,
   if (!aname) {
 	  errorf(global, "out of memory\n");
 	  free((void*)new_ext);
-	  free(fname);
+	  if (fname != per->outfile)
+	    free(fname);
 	  return FALSE;
   }
-  if (outs->alloc_filename)
-	  free(outs->filename);
-  outs->filename = aname;
-  outs->alloc_filename = TRUE;
-  aname = NULL;
+  if (fname != per->outfile)
+      free(fname);
+  free(per->outfile);
+  per->outfile = aname;
   free((void *)new_ext);
-  free(fname);
 	  
-  fname = outs->filename;
+  if(!aname || !*aname) {
+    warnf(global, "Remote filename has no length");
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/* create/open a local file for writing, return TRUE on success */
+bool tool_create_output_file(struct OutStruct *outs,
+                             struct per_transfer *per)
+{
+  struct GlobalConfig *global;
+  struct OperationConfig *config;
+  FILE *file = NULL;
+  file_clobber_mode_t clobber_mode;
+  int duplicate = 1;
+  char* fname = outs->filename;
+
+  if (!fname || !*fname) {
+	  fname = per->outfile;
+  }
+
+  DEBUGASSERT(outs);
+  DEBUGASSERT(per);
+  config = per->config;
+  DEBUGASSERT(config);
+
+  CURL* curl = per->curl;
+  DEBUGASSERT(curl);
+
+  global = config->global;
+
+  clobber_mode = config->file_clobber_mode;
+
+#if 0
+  /* if HTTP response >= 400, return error? */
+  long code = 0;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+#endif
+
+  if (config->sanitize_with_extreme_prejudice) {
+	  // never clobber generated download filenames:
+	  clobber_mode = CLOBBER_NEVER;
+  }
 
   if(!fname || !*fname) {
     warnf(global, "Remote filename has no length");
@@ -364,7 +399,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  if (result) {
 		  warnf(global, "Failed to create the path directories to file %s: %s", fname,
 			  strerror(errno));
-		  free(aname);
 		  return FALSE;
 	  }
   }
@@ -391,7 +425,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 	fn_ext = strdup(fname + fn_ext_pos);
 	if (!fn_ext) {
 		errorf(global, "out of memory");
-		free(aname);
 		return FALSE;
 	}
 
@@ -408,7 +441,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 	  /* Guard against wraparound in new filename */
       if(newlen < len) {
         errorf(global, "overflow in filename generation");
-		free(aname);
 		free(fn_ext);
 		return FALSE;
       }
@@ -423,7 +455,6 @@ bool tool_create_output_file(struct OutStruct *outs,
 		newname = aprintf("%.*s%s.%02d%s", (int)fn_ext_pos, fname, (has_risky_filename ? "__download__" : ""), next_num, fn_ext);
 		if (!newname) {
             errorf(global, "out of memory");
-			free(aname);
 			free(fn_ext);
 			return FALSE;
 		}
@@ -435,9 +466,7 @@ bool tool_create_output_file(struct OutStruct *outs,
       }
 	  if (outs->alloc_filename)
 		  free(outs->filename);
-	  Curl_safefree(aname);
-	  fname = NULL;
-	  outs->filename = newname; /* remember the new one */
+	  fname = outs->filename = newname; /* remember the new one */
       outs->alloc_filename = TRUE;
     }
 
@@ -458,19 +487,26 @@ bool tool_create_output_file(struct OutStruct *outs,
   if(!file) {
     warnf(global, "Failed to open the file %s: %s", outs->filename,
           strerror(errno));
-	free(aname);
 	return FALSE;
   }
 
-  free(aname);
+  if (fname != outs->filename) {
+	  if (outs->alloc_filename)
+		  free(outs->filename);
+	  if (fname == per->outfile) 
+		  per->outfile = NULL;
+	  outs->filename = fname;
+	  outs->alloc_filename = TRUE;
+  }
 
-  aname = per->outfile;
-  per->outfile = strdup(outs->filename);
-  free(aname);
-  if (!per->outfile) {
-	  errorf(global, "out of memory\n");
-	  fclose(file);
-	  return FALSE;
+  if (fname != per->outfile) {
+	  free(per->outfile);
+	  per->outfile = strdup(fname);
+	  if (!per->outfile) {
+		  errorf(global, "out of memory\n");
+		  fclose(file);
+		  return FALSE;
+	  }
   }
 
   Curl_infof(per->curl, "Data will be written to output file: %s", per->outfile);

@@ -185,6 +185,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         if (outs->alloc_filename)
             free(outs->filename);
 		outs->filename = NULL;
+		outs->alloc_filename = FALSE;
 
         if (per->config->output_dir) {
             char *aname = aprintf("%s/%s", per->config->output_dir, filename);
@@ -195,12 +196,16 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 
             filename = aname;
         }
-        outs->filename = filename;
+		free(per->outfile);
+		per->outfile = filename;
 
         outs->is_cd_filename = TRUE;
+
+        if (!tool_sanitize_output_file_path(per))
+          return CURL_WRITEFUNC_ERROR;
+
         outs->s_isreg = TRUE;
         outs->fopened = FALSE;
-        outs->alloc_filename = TRUE;
         hdrcbdata->honor_cd_filename = FALSE; /* done now! */
 
         if (!tool_create_output_file(outs, per))

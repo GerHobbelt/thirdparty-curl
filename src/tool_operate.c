@@ -399,9 +399,9 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
   int rc;
 
   {
-	  char* cleaned_url = curl_clean_for_printing_to_console(per->this_url);
-	  Curl_infof(per->curl, "Processed URL: %s", cleaned_url);
-	  free(cleaned_url);
+      char* cleaned_url = curl_clean_for_printing_to_console(per->this_url);
+      Curl_infof(per->curl, "Processed URL: %s", cleaned_url);
+      free(cleaned_url);
   }
 
   if(!curl || !config)
@@ -947,14 +947,14 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->etag_save_file) {
           /* open file for output: */
           if(strcmp(config->etag_save_file, "-")) {
-			  if (config->create_dirs) {
-				  CURLcode result = create_dir_hierarchy(config->etag_save_file, global);
-				  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
-				  if (result) {
-					  warnf(global, "Failed to create the path directories to file %s: %s", config->etag_save_file,
-						  strerror(errno));
-				  }
-			  }
+              if (config->create_dirs) {
+                  CURLcode result = create_dir_hierarchy(config->etag_save_file, global);
+                  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
+                  if (result) {
+                      warnf(global, "Failed to create the path directories to file %s: %s", config->etag_save_file,
+                          strerror(errno));
+                  }
+              }
 
             FILE *newfile = fopen(config->etag_save_file, "wb");
             if(!newfile) {
@@ -1030,14 +1030,14 @@ static CURLcode single_transfer(struct GlobalConfig *global,
              * for every transfer.
              */
             if(!per->prev || per->prev->config != config) {
-			  if (config->create_dirs) {
-				  CURLcode result = create_dir_hierarchy(config->headerfile, global);
-				  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
-				  if (result) {
-					  warnf(global, "Failed to create the path directories to file %s: %s", config->headerfile,
-						  strerror(errno));
-				  }
-			  }
+              if (config->create_dirs) {
+                  CURLcode result = create_dir_hierarchy(config->headerfile, global);
+                  /* create_dir_hierarchy shows error upon CURLE_WRITE_ERROR */
+                  if (result) {
+                      warnf(global, "Failed to create the path directories to file %s: %s", config->headerfile,
+                          strerror(errno));
+                  }
+              }
 
               newfile = fopen(config->headerfile, "wb");
               if(newfile)
@@ -1094,7 +1094,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           break;
 
         if(state->outfiles) {
-		  DEBUGASSERT(per->outfile == NULL);
+          DEBUGASSERT(per->outfile == NULL);
           per->outfile = strdup(state->outfiles);
           if(!per->outfile) {
             result = CURLE_OUT_OF_MEMORY;
@@ -1103,7 +1103,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         }
 
         if(((urlnode->flags&GETOUT_USEREMOTE) ||
-            (per->outfile && strcmp("-", per->outfile)))) {
+            !per->outfile || strcmp("-", per->outfile))) {
 
           /*
            * We have specified a file name to store the result in, or we have
@@ -1112,12 +1112,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           if(!per->outfile) {
             /* extract the file name from the URL */
-			DEBUGASSERT(per->outfile == NULL);
-			if(config->output_path_mimics_url)
+            DEBUGASSERT(per->outfile == NULL);
+            if(config->output_path_mimics_url)
               result = convert_url_to_file_path(&per->outfile, per->this_url);
-			else
-			  result = get_url_file_name(&per->outfile, per->this_url);
-			if(result) {
+            else
+              result = get_url_file_name(&per->outfile, per->this_url);
+            if(result) {
               errorf(global, "Failed to extract a sensible file name"
                      " from the URL to use for storage");
               break;
@@ -1148,12 +1148,19 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           if(config->output_dir && *config->output_dir) {
             char *d = aprintf("%s/%s", config->output_dir, per->outfile);
             if(!d) {
+              errorf(global, "out of memory");
               result = CURLE_WRITE_ERROR;
               break;
             }
             free(per->outfile);
             per->outfile = d;
           }
+
+          if (!tool_sanitize_output_file_path(per)) {
+              result = CURLE_WRITE_ERROR;
+              break;
+          }
+
           /* Create the directory hierarchy, if not pre-existent to a multiple
              file output call */
 
@@ -1167,7 +1174,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           if((urlnode->flags & GETOUT_USEREMOTE)
              && config->content_disposition) {
             /* Our header callback MIGHT set the filename */
-            DEBUGASSERT(!outs->filename);
+
+			/* no-op */
           }
 
           if(config->resume_from_current) {
@@ -1199,7 +1207,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
             }
 
-			Curl_infof(per->curl, "Resuming: data will be written (appended) to output file: %s", per->outfile);
+            Curl_infof(per->curl, "Resuming: data will be written (appended) to output file: %s", per->outfile);
 
             outs->fopened = TRUE;
             outs->stream = file;
@@ -1208,9 +1216,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           else {
             outs->stream = NULL; /* open when needed */
           }
-          outs->filename = strdup(per->outfile);
-		  outs->alloc_filename = TRUE;
-		  outs->s_isreg = TRUE;
+		  if (outs->alloc_filename)
+			free(outs->filename);
+		  outs->filename = strdup(per->outfile);
+          outs->alloc_filename = TRUE;
+          outs->s_isreg = TRUE;
         }
 
         if(per->uploadfile && !stdin_upload(per->uploadfile)) {
@@ -1891,7 +1901,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
           /* The maximum size needs to match MAX_NAME in cookie.h */
 #define MAX_COOKIE_LINE 8200
-		  Curl_dyn_init(&cookies, MAX_COOKIE_LINE);
+          Curl_dyn_init(&cookies, MAX_COOKIE_LINE);
           for(cl = config->cookies; cl; cl = cl->next) {
             if(cl == config->cookies)
               result = Curl_dyn_addf(&cookies, "%s", cl->data);
@@ -2252,8 +2262,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->hsts)
           my_setopt_str(curl, CURLOPT_HSTS, config->hsts);
 
-		if (config->sanitize_with_extreme_prejudice)
-			my_setopt_str(curl, CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, 1L);
+        if (config->sanitize_with_extreme_prejudice)
+            my_setopt_str(curl, CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, 1L);
 
         /* initialize retry vars for loop below */
         per->retry_sleep_default = (config->retry_delay) ?
@@ -2800,11 +2810,11 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
       result = CURLE_OK;
 
       /* Check if we were asked for the help */
-	  if (res == PARAM_HELP_REQUESTED)
-	  {
-		  tool_help(global->help_category);
-		  global->help_category = NULL;     // category string has been free()d inside tool_help()
-	  }
+      if (res == PARAM_HELP_REQUESTED)
+      {
+          tool_help(global->help_category);
+          global->help_category = NULL;     // category string has been free()d inside tool_help()
+      }
       /* Check if we were asked for the manual */
       else if(res == PARAM_MANUAL_REQUESTED)
         hugehelp();

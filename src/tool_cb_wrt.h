@@ -33,8 +33,11 @@ struct per_transfer;
 
 size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata);
 
+/* sanitize a local file for writing, return TRUE on success */
+bool tool_sanitize_output_file_path(struct per_transfer *per);
+
 /* create a local file for writing, return TRUE on success */
 bool tool_create_output_file(struct OutStruct *outs,
-                             struct per_transfer *per);
+							 struct per_transfer *per);
 
 #endif /* HEADER_CURL_TOOL_CB_WRT_H */

@@ -281,7 +281,7 @@ CURLcode convert_url_to_file_path(char **filename, const char *url)
 
       {
         char *sanitized;
-		CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, *filename, CURL_SANITIZE_ALLOW_PATH | CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH);
+		CurlSanitizeCode sc = curl_sanitize_file_name(&sanitized, *filename, CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH);
         Curl_safefree(*filename);
         if(sc) {
           if(sc == CURL_SANITIZE_ERR_OUT_OF_MEMORY)
