@@ -297,7 +297,6 @@ char *Curl_copy_header_value(const char *header)
 {
   const char *start;
   const char *end;
-  char *value;
   size_t len;
 
   /* Find the end of the header name */
@@ -330,14 +329,7 @@ char *Curl_copy_header_value(const char *header)
   /* get length of the type */
   len = end - start + 1;
 
-  value = malloc(len + 1);
-  if(!value)
-    return NULL;
-
-  memcpy(value, start, len);
-  value[len] = 0; /* null-terminate */
-
-  return value;
+  return Curl_memdup0(start, len);
 }
 
 #ifndef CURL_DISABLE_HTTP_AUTH
@@ -3222,7 +3214,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
       ) {
       result = Curl_http2_switch(data, conn, FIRSTSOCKET);
       if(result)
-        return result;
+        goto fail;
     }
     else
 #endif
@@ -3237,7 +3229,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
       DEBUGF(infof(data, "HTTP/2 over clean TCP"));
       result = Curl_http2_switch(data, conn, FIRSTSOCKET);
       if(result)
-        return result;
+        goto fail;
     }
     break;
   }
@@ -3247,11 +3239,11 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
 
   result = Curl_http_host(data, conn);
   if(result)
-    return result;
+    goto fail;
 
   result = Curl_http_useragent(data);
   if(result)
-    return result;
+    goto fail;
 
   Curl_http_method(data, conn, &request, &httpreq);
 
@@ -3267,7 +3259,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
                                    (pq ? pq : data->state.up.path), FALSE);
     free(pq);
     if(result)
-      return result;
+      goto fail;
   }
 
   Curl_safefree(data->state.aptr.ref);
@@ -3292,23 +3284,23 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   /* we only consider transfer-encoding magic if libz support is built-in */
   result = Curl_transferencode(data);
   if(result)
-    return result;
+    goto fail;
 #endif
 
   result = Curl_http_body(data, conn, httpreq, &te);
   if(result)
-    return result;
+    goto fail;
 
   p_accept = Curl_checkheaders(data,
                                STRCONST("Accept"))?NULL:"Accept: */*\r\n";
 
   result = Curl_http_resume(data, conn, httpreq);
   if(result)
-    return result;
+    goto fail;
 
   result = Curl_http_range(data, httpreq);
   if(result)
-    return result;
+    goto fail;
 
   httpstring = get_http_string(data, conn);
 
@@ -3326,7 +3318,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
     result = Curl_http_target(data, conn, &req);
   if(result) {
     Curl_dyn_free(&req);
-    return result;
+    goto fail;
   }
 
 #ifndef CURL_DISABLE_ALTSVC
@@ -3397,7 +3389,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
 
   if(result) {
     Curl_dyn_free(&req);
-    return result;
+    goto fail;
   }
 
   if(!(conn->handler->flags&PROTOPT_SSL) &&
@@ -3433,7 +3425,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   }
   if(result) {
     Curl_dyn_free(&req);
-    return result;
+    goto fail;
   }
 
   if((http->postsize > -1) &&
@@ -3469,6 +3461,9 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
        but is disabled here again to avoid that the chunked encoded version is
        actually used when sending the request body over h2 */
     data->req.upload_chunky = FALSE;
+fail:
+  if(CURLE_TOO_LARGE == result)
+    failf(data, "HTTP request too large");
   return result;
 }
 
@@ -3931,7 +3926,7 @@ CURLcode Curl_http_statusline(struct Curl_easy *data,
      * fields.  */
     if(data->set.timecondition)
       data->info.timecond = TRUE;
-    /* FALLTHROUGH */
+    FALLTHROUGH();
   case 204:
     /* (quote from RFC2616, section 10.2.5): The server has
      * fulfilled the request but does not need to return an
@@ -4666,7 +4661,7 @@ CURLcode Curl_http_req_make(struct httpreq **preq,
   CURLcode result = CURLE_OUT_OF_MEMORY;
 
   DEBUGASSERT(method);
-  if(m_len + 1 >= sizeof(req->method))
+  if(m_len + 1 > sizeof(req->method))
     return CURLE_BAD_FUNCTION_ARGUMENT;
 
   req = calloc(1, sizeof(*req));
@@ -4674,17 +4669,17 @@ CURLcode Curl_http_req_make(struct httpreq **preq,
     goto out;
   memcpy(req->method, method, m_len);
   if(scheme) {
-    req->scheme = Curl_strndup(scheme, s_len);
+    req->scheme = Curl_memdup0(scheme, s_len);
     if(!req->scheme)
       goto out;
   }
   if(authority) {
-    req->authority = Curl_strndup(authority, a_len);
+    req->authority = Curl_memdup0(authority, a_len);
     if(!req->authority)
       goto out;
   }
   if(path) {
-    req->path = Curl_strndup(path, p_len);
+    req->path = Curl_memdup0(path, p_len);
     if(!req->path)
       goto out;
   }
@@ -4822,7 +4817,7 @@ CURLcode Curl_http_req_make2(struct httpreq **preq,
   CURLUcode uc;
 
   DEBUGASSERT(method);
-  if(m_len + 1 >= sizeof(req->method))
+  if(m_len + 1 > sizeof(req->method))
     return CURLE_BAD_FUNCTION_ARGUMENT;
 
   req = calloc(1, sizeof(*req));

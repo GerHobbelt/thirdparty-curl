@@ -223,7 +223,6 @@ static CURLcode dohprobe(struct Curl_easy *data,
                          struct curl_slist *headers)
 {
   struct Curl_easy *doh = NULL;
-  char *nurl = NULL;
   CURLcode result = CURLE_OK;
   timediff_t timeout_ms;
   DOHcode d = doh_encode(host, dnstype, p->dohbuffer, sizeof(p->dohbuffer),
@@ -356,11 +355,9 @@ static CURLcode dohprobe(struct Curl_easy *data,
   }
   else
     goto error;
-  free(nurl);
   return CURLE_OK;
 
 error:
-  free(nurl);
   Curl_close(&doh);
   return result;
 }
@@ -909,7 +906,6 @@ UNITTEST void de_cleanup(struct dohentry *d)
 CURLcode Curl_doh_is_resolved(struct Curl_easy *data,
                               struct Curl_dns_entry **dnsp)
 {
-  struct connectdata *conn = data->conn;
   CURLcode result;
   struct dohdata *dohp = data->req.doh;
   *dnsp = NULL; /* defaults to no response */
@@ -918,7 +914,7 @@ CURLcode Curl_doh_is_resolved(struct Curl_easy *data,
 
   if(!dohp->probe[DOH_PROBE_SLOT_IPADDR_V4].easy &&
      !dohp->probe[DOH_PROBE_SLOT_IPADDR_V6].easy) {
-    failf(data, "Could not DoH-resolve: %s", conn->resolve_async.hostname);
+    failf(data, "Could not DoH-resolve: %s", data->state.async.hostname);
     return CONN_IS_PROXIED(data->conn)?CURLE_COULDNT_RESOLVE_PROXY:
       CURLE_COULDNT_RESOLVE_HOST;
   }
@@ -981,7 +977,7 @@ CURLcode Curl_doh_is_resolved(struct Curl_easy *data,
         Curl_freeaddrinfo(ai);
       }
       else {
-        conn->resolve_async.dns = dns;
+        data->state.async.dns = dns;
         *dnsp = dns;
         result = CURLE_OK;      /* address resolution OK */
       }

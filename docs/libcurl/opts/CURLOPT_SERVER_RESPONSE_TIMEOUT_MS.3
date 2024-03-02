@@ -22,25 +22,32 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_SOCKS5_GSSAPI_NEC 3 "19 Jun 2014" libcurl libcurl
+.TH CURLOPT_SERVER_RESPONSE_TIMEOUT_MS 3 "19 Jun 2014" libcurl libcurl
 .SH NAME
-CURLOPT_SOCKS5_GSSAPI_NEC \- SOCKS proxy GSSAPI negotiation protection
+CURLOPT_SERVER_RESPONSE_TIMEOUT_MS \- time allowed to wait for server response
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SOCKS5_GSSAPI_NEC, long nec);
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SERVER_RESPONSE_TIMEOUT_MS,
+                          long timeout);
 .fi
 .SH DESCRIPTION
-Pass a long set to 1 to enable or 0 to disable. As part of the GSSAPI
-negotiation a protection mode is negotiated. The RFC 1961 says in section
-4.3/4.4 it should be protected, but the NEC reference implementation does not.
-If enabled, this option allows the unprotected exchange of the protection mode
-negotiation.
+Pass a long.  Causes libcurl to set a \fItimeout\fP period (in milliseconds)
+on the amount of time that the server is allowed to take in order to send a
+response message for a command before the session is considered dead.  While
+libcurl is waiting for a response, this value overrides
+\fICURLOPT_TIMEOUT(3)\fP. It is recommended that if used in conjunction with
+\fICURLOPT_TIMEOUT(3)\fP, you set \fICURLOPT_SERVER_RESPONSE_TIMEOUT_MS(3)\fP
+to a value smaller than \fICURLOPT_TIMEOUT(3)\fP.
+
+The maximum accepted value is 2147483648.
+
+This is the millisecond version of \fICURLOPT_SERVER_RESPONSE_TIMEOUT(3)\fP.
 .SH DEFAULT
-?
+None
 .SH PROTOCOLS
-Most
+FTP, IMAP, POP3, SMTP, and SSH
 .SH EXAMPLE
 .nf
 int main(void)
@@ -48,18 +55,22 @@ int main(void)
   CURL *curl = curl_easy_init();
   if(curl) {
     CURLcode res;
-    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com/");
-    curl_easy_setopt(curl, CURLOPT_PROXY, "socks5://proxy");
-    curl_easy_setopt(curl, CURLOPT_SOCKS5_GSSAPI_NEC, 1L);
+    curl_easy_setopt(curl, CURLOPT_URL, "ftp://example.com/slow.txt");
+    /* wait no more than 237 milliseconds */
+    curl_easy_setopt(curl, CURLOPT_SERVER_RESPONSE_TIMEOUT_MS, 237L);
     res = curl_easy_perform(curl);
+
     curl_easy_cleanup(curl);
   }
 }
 .fi
 .SH AVAILABILITY
-Added in 7.19.4
+Added in 8.6.0.
 .SH RETURN VALUE
-Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+Returns CURLE_OK if supported, and CURLE_UNKNOWN_OPTION if not. Returns
+CURLE_BAD_FUNCTION_ARGUMENT if set to a negative value or a value that when
+converted to milliseconds is too large.
 .SH "SEE ALSO"
-.BR CURLOPT_SOCKS5_GSSAPI_SERVICE (3),
-.BR CURLOPT_PROXY (3)
+.BR CURLOPT_CONNECTTIMEOUT (3),
+.BR CURLOPT_LOW_SPEED_LIMIT (3),
+.BR CURLOPT_TIMEOUT (3)

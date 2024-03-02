@@ -923,9 +923,6 @@ struct connectdata {
      multi_done(). This entry will be NULL if the connection is reused as then
      there is no name resolve done. */
   struct Curl_dns_entry *dns_entry;
-#ifdef USE_CURL_ASYNC
-  struct Curl_async resolve_async;  /* asynchronous name resolver data */
-#endif
 
   /* 'remote_addr' is the particular IP we connected to. it is owned, set
    * and NULLed by the connected socket filter (if there is one). */
@@ -1105,7 +1102,6 @@ struct connectdata {
   unsigned short localport;
   unsigned short secondary_port; /* secondary socket remote port to connect to
                                     (ftp) */
-  unsigned char cselect_bits; /* bitmask of socket events */
   unsigned char alpn; /* APLN TLS negotiated protocol, a CURL_HTTP_VERSION*
                          value */
 #ifndef CURL_DISABLE_PROXY
@@ -1384,6 +1380,9 @@ struct UrlState {
 #endif
   struct auth authhost;  /* auth details for host */
   struct auth authproxy; /* auth details for proxy */
+#ifdef USE_CURL_ASYNC
+  struct Curl_async async;  /* asynchronous name resolver data */
+#endif
 
 #if defined(USE_OPENSSL)
   /* void instead of ENGINE to avoid bleeding OpenSSL into this header */
@@ -1484,7 +1483,7 @@ struct UrlState {
                                 server involved in this request */
   unsigned char httpreq; /* Curl_HttpReq; what kind of HTTP request (if any)
                             is this */
-  unsigned char dselect_bits; /* != 0 -> bitmask of socket events for this
+  unsigned char select_bits; /* != 0 -> bitmask of socket events for this
                                  transfer overriding anything the socket may
                                  report */
 #ifdef CURLDEBUG

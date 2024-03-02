@@ -2454,7 +2454,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       }
       if (!fallthrough)
         break;
-      /* FALLTHROUGH */
+      FALLTHROUGH();
     case 'o': /* --output */
       /* output file */
     {
@@ -2757,7 +2757,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       switch(*nextarg) {
       case '+':
         nextarg++;
-        /* FALLTHROUGH */
+        FALLTHROUGH();
       default:
         /* If-Modified-Since: (section 14.28 in RFC2068) */
         config->timecond = CURL_TIMECOND_IFMODSINCE;

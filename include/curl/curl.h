@@ -656,6 +656,7 @@ typedef enum {
   CURLE_SSL_CLIENTCERT,          /* 98 - client-side certificate required */
   CURLE_UNRECOVERABLE_POLL,      /* 99 - poll/select returned fatal error */
   CURLE_LOCK_ERROR,              /* 100 - curl was unable to lock the file */
+  CURLE_TOO_LARGE,               /* 101 - a value/data met its maximum */
   CURL_LAST /* never use! */
 } CURLcode;
 
@@ -2247,25 +2248,28 @@ typedef enum {
   /* set a specific client IP for HAProxy PROXY protocol header? */
   CURLOPT(CURLOPT_HAPROXY_CLIENT_IP, CURLOPTTYPE_STRINGPOINT, 323),
 
+  /* millisecond version */
+  CURLOPT(CURLOPT_SERVER_RESPONSE_TIMEOUT_MS, CURLOPTTYPE_LONG, 324),
+
   /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 324),
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 325),
 
   /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
-  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 325),
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 326),
   
   /* Set secure authentication mechanisms flags. */
-  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 326),
+  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 327),
 
-  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 327),
+  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 328),
 	  
   /* Sanitize without extreme prejudice */
-  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 328),
+  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 329),
 
   /* Automatically create local directories in the generated outut file path when they don't exist yet */
-  CURLOPT(CURLOPT_CREATE_DIRS_FOR_OUTPUT, CURLOPTTYPE_LONG, 329),
+  CURLOPT(CURLOPT_CREATE_DIRS_FOR_OUTPUT, CURLOPTTYPE_LONG, 330),
 
   /* The generated output file path is derived from the fully qualified URI. (Takes no-clobber and a few other options into account though, so the file name may end uplooking slightly different.) */
-  CURLOPT(CURLOPT_OUTPUT_PATH_MIMICS_URL, CURLOPTTYPE_LONG, 330),
+  CURLOPT(CURLOPT_OUTPUT_PATH_MIMICS_URL, CURLOPTTYPE_LONG, 331),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
