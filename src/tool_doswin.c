@@ -183,34 +183,53 @@ CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *fil
     p = target;
 
   /* replace control characters and other banned characters */
+  bool s_o_p = TRUE;
   bool dot = FALSE;
   for(; *p; ++p) {
 	if (*p == '.') {
-		if (!dot)
-			dot = TRUE;
-		else {
-			// previous character was a '.' as well: sanitize them all!
-			p[-1] = '_';
+		if (s_o_p && !(flags & CURL_SANITIZE_ALLOW_DOTFILES)) {
+			// dotfiles are not allowed!
+			//
+			// Incidentally: make sure this is not some crappy attempt to slip a '..' path in: encode it entirely.
 			*p = '_';
+			dot = TRUE;
+			s_o_p = (p[1] == '.');
 			continue;
 		}
-	}
-	else {
-		dot = FALSE;
+
+		// only accept a dot at the start or middle of a *larger* file/dir name, never at the end of the file/dirname.
+		if (!dot && p[1] && p[1] != '/' && p[1] != '\\') {
+			dot = TRUE;
+			s_o_p = FALSE;
+			continue;
+		}
+
+		if (dot) {
+			// previous character was a '.' as well: sanitize them all!
+			p[-1] = '_';
+		}
+		*p = '_';
+		s_o_p = FALSE;
+		continue;
 	}
 
-	if (flags & CURL_SANITIZE_ALLOW_PATH) {
-		if (*p == '/' || *p == '\\') {
+	dot = FALSE;
+
+	if (*p == '/' || *p == '\\') {
+		if (flags & CURL_SANITIZE_ALLOW_PATH) {
 			*p = '/';	// convert to UNIX-style path separator
 
 			// and when we've hit our first path separator like that, we do no longer tolerate colons in the path either!
 			flags &= ~CURL_SANITIZE_ALLOW_COLONS;
 
+			s_o_p = TRUE;
+
 			// replace multiple-'/' sequences with a single '/' iff this is to be a path 
 			int i = 1;
 			for ( ; p[i] == '/' || p[i] == '\\'; i++)
 				;
-			strmov(p + 1, p + i);
+			if (i > 1)
+				strmov(p + 1, p + i);
 
 			// remove trailing spaces and periods per path segment
 			char *q;
@@ -220,23 +239,65 @@ CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *fil
 			} 
 			q++;
 
-			strmov(q, p);
+			if (q != p) {
+				strmov(q, p);
+				p = q;
+			}
+			continue;
 		}
+
+		*p = '_';
+		s_o_p = FALSE;
+		continue;
 	}
 
-    if((1 <= *p && *p <= 31) || (*p == 0x7F) ||
-       (!(flags & (CURL_SANITIZE_ALLOW_COLONS)) && *p == ':') ||
-       (!(flags & CURL_SANITIZE_ALLOW_PATH) && (*p == '/' || *p == '\\'))) {
+    if ((1 <= *p && *p <= 31) || (*p == 0x7F)) {
       *p = '_';
-      continue;
+	  s_o_p = FALSE;
+	  continue;
     }
 
-    if (strchr("|<>\"&'~`?*$^;#%", *p)) {
+	// replace ':', but strip it off when it's the last thing in the path part, e.g. 'http://' --> 'https/'
+	if (!(flags & (CURL_SANITIZE_ALLOW_COLONS)) && *p == ':') {
+		if (s_o_p || p[1] != '/')
+			*p = '_';
+		else {
+			int i = 2;
+			for (; p[i] == '/' || p[i] == '\\'; i++)
+				;
+			strmov(p, p + i - 1);
+			p--;
+		}
+		s_o_p = FALSE;
+		continue;
+	}
+
+	if (strchr("|<>\"&'~`?*$^;#%", *p)) {
         *p = '_';
-    }
+		s_o_p = FALSE;
+		continue;
+	}
+
+	// remove leading spaces and dashes per path segment:
+	//
+	// we remove dashes (`-`) to prevent creating file/dir-names which would otherwise mimmick commandline options, e.g. `-2` --> `_2`
+	if (s_o_p) {
+		if (*p == ' ' || *p == '-' || (*p == '.' && !(flags & CURL_SANITIZE_ALLOW_DOTFILES))) {
+			*p = '_';
+
+			// replace a series of any of these at Start-Of-Part (SOP), if any:
+			p++;
+			while (*p == ' ' || *p == '-' || (*p == '.' && !(flags & CURL_SANITIZE_ALLOW_DOTFILES)))
+				*p++ = '_';
+			p--;
+			s_o_p = FALSE;
+			continue;
+		}
+	}
+	s_o_p = FALSE;
   }
 
-  // remove trailing spaces and periods if not allowing paths 
+  // remove trailing spaces and periods if not allowing paths
   if(!(flags & CURL_SANITIZE_ALLOW_PATH) && len) {
     char *clip = NULL;
 
@@ -268,7 +329,7 @@ CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *fil
   }
 #endif
 
-  if(!(flags & CURL_SANITIZE_ALLOW_RESERVED)) {
+  if (!(flags & CURL_SANITIZE_ALLOW_RESERVED)) {
     sc = rename_if_reserved_dos_device_name(&p, target, flags);
     free(target);
     if(sc)

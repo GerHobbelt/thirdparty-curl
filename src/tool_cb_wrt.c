@@ -203,6 +203,14 @@ bool tool_create_output_file(struct OutStruct *outs,
 
   clobber_mode = config->file_clobber_mode;
 
+  const char* outdir = config->output_dir;
+  int outdir_len = (outdir ? strlen(outdir) : 0);
+  int starts_with_outdir = (outdir && strncmp(outdir, fname, outdir_len) == 0 && strchr("\\/", fname[outdir_len]));
+
+  if (starts_with_outdir) {
+	  fname += outdir_len + 2; // skip path separator as well
+  }
+
   if (config->sanitize_with_extreme_prejudice) {
 	  // config->failwithbody ?
 
@@ -295,7 +303,8 @@ bool tool_create_output_file(struct OutStruct *outs,
 			}
 		}
 
-	  aname = aprintf("%.*s%s%.*s.%s", fn_offset, fname, (hidden ? "___" : ""), fn_length, (empty ? "__download__" : fn), ext);
+	  aname = aprintf("%s%s%.*s%s%.*s.%s", (starts_with_outdir ? outdir : ""), (starts_with_outdir ? "/" : ""),
+		              fn_offset, fname, (hidden ? "___" : ""), fn_length, (empty ? "__download__" : fn), ext);
 	  if (!aname) {
 		  errorf(global, "out of memory\n");
 		  free(new_ext);
@@ -388,7 +397,8 @@ bool tool_create_output_file(struct OutStruct *outs,
 			}
 		}
 
-	  aname = aprintf("%.*s%.*s%s%s", fn_offset, fname, fn_length, fn, (*ext ? "." : ""), ext);
+	  aname = aprintf("%s%s%.*s%.*s%s%s", (starts_with_outdir ? outdir : ""), (starts_with_outdir ? "/" : ""),
+		              fn_offset, fname, fn_length, fn, (*ext ? "." : ""), ext);
 	  if (!aname) {
 		  errorf(global, "out of memory\n");
 		  free(new_ext);
@@ -407,20 +417,8 @@ bool tool_create_output_file(struct OutStruct *outs,
     return FALSE;
   }
 
-  if(config->output_dir && outs->is_cd_filename) {
+  if(outs->is_cd_filename) {
     /* default behaviour: don't overwrite existing files */
-    aname = aprintf("%s/%s", config->output_dir, fname);
-    if(!aname) {
-      errorf(global, "out of memory");
-      return FALSE;
-    }
-
-	if (outs->alloc_filename)
-		free(outs->filename);
-	fname = outs->filename = aname;
-	outs->alloc_filename = TRUE;
-	aname = NULL;
-
 	clobber_mode = CLOBBER_NEVER;
   }
   else {

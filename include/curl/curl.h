@@ -3291,7 +3291,8 @@ CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
 #define CURL_SANITIZE_ALLOW_PATH                (1<<1)  /* Allow path separators and colons */
 #define CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH  (1<<2)  /* Allow only relative path specs; implies CURL_SANITIZE_ALLOW_PATH */
 #define CURL_SANITIZE_ALLOW_RESERVED            (1<<3)  /* Allow reserved device names */
-#define CURL_SANITIZE_ALLOW_TRUNCATE            (1<<4)  /* Allow truncating a long filename */
+#define CURL_SANITIZE_ALLOW_DOTFILES            (1<<4)  /* Allow UNIX 'hidden' dotfiles (and dotdirectories), e.g. '.gitattributes' */
+#define CURL_SANITIZE_ALLOW_TRUNCATE            (1<<5)  /* Allow truncating a long filename */
 
 typedef enum {
 	CURL_SANITIZE_ERR_OK = 0,           /* 0 - OK */

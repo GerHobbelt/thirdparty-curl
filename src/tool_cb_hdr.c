@@ -180,17 +180,22 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
           return CURL_WRITEFUNC_ERROR;
         }
 
-		if (outs->alloc_filename)
-			free(outs->filename);
+        Curl_infof(per->curl, "Filename obtained from server Content-disposition response header: \"%s\"", filename);
 
-        if(per->config->output_dir) {
-          outs->filename = aprintf("%s/%s", per->config->output_dir, filename);
-          free(filename);
-          if(!outs->filename)
-            return CURL_WRITEFUNC_ERROR;
+        if (outs->alloc_filename)
+            free(outs->filename);
+		outs->filename = NULL;
+
+        if (per->config->output_dir) {
+            char *aname = aprintf("%s/%s", per->config->output_dir, filename);
+            free(filename);
+            if (!aname) {
+	            return CURL_WRITEFUNC_ERROR;
+            }
+
+            filename = aname;
         }
-        else
-          outs->filename = filename;
+        outs->filename = filename;
 
         outs->is_cd_filename = TRUE;
         outs->s_isreg = TRUE;
@@ -198,9 +203,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         outs->alloc_filename = TRUE;
         hdrcbdata->honor_cd_filename = FALSE; /* done now! */
 
-		Curl_infof(per->curl, "Filename obtained from server Content-disposition response header: \"%s\"", filename);
-
-        if(!tool_create_output_file(outs, per))
+        if (!tool_create_output_file(outs, per))
           return CURL_WRITEFUNC_ERROR;
       }
       break;
