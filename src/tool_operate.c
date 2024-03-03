@@ -400,7 +400,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
 
   {
       char* cleaned_url = curl_clean_for_printing_to_console(per->this_url);
-      Curl_infof(per->curl, "Processed URL: %s", cleaned_url);
+      Curl_infof(per->curl, "Processed URL: %s%s%s", cleaned_url, (per->outfile ? " --> " : ""), (per->outfile ? per->outfile : ""));
       free(cleaned_url);
   }
 
