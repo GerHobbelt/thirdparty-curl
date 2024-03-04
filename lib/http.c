@@ -1297,7 +1297,6 @@ CURLcode Curl_http_done(struct Curl_easy *data,
   if(!http)
     return CURLE_OK;
 
-  Curl_dyn_free(&http->send_buffer);
   Curl_dyn_reset(&data->state.headerb);
   Curl_hyper_done(data);
   Curl_ws_done(data);
@@ -2167,6 +2166,12 @@ CURLcode Curl_http_req_complete(struct Curl_easy *data,
   CURLcode result = CURLE_OK;
   struct HTTP *http = data->req.p.http;
 
+  if(data->req.upload_chunky) {
+    result = Curl_httpchunk_add_reader(data);
+    if(result)
+      return result;
+  }
+
   DEBUGASSERT(data->conn);
   switch(httpreq) {
   case HTTPREQ_PUT: /* Let's PUT the data to the server! */
@@ -2268,7 +2273,6 @@ CURLcode Curl_http_req_complete(struct Curl_easy *data,
       data->state.in = (void *) data->state.mimepost;
       result = Client_reader_set_fread(data, data->state.infilesize);
     }
-    http->sending = HTTPSEND_BODY;
     break;
 #endif
   case HTTPREQ_POST:
@@ -2310,19 +2314,21 @@ CURLcode Curl_http_req_complete(struct Curl_easy *data,
       goto out;
 
     if(!http->postsize) {
-      Curl_pgrsSetUploadSize(data, -1);
+      Curl_pgrsSetUploadSize(data, 0);
       result = Client_reader_set_null(data);
     }
-    else if(data->set.postfields) {  /* we have the bytes */
+    else if(data->set.postfields) {
       Curl_pgrsSetUploadSize(data, http->postsize);
-      result = Client_reader_set_buf(data, data->set.postfields,
-                                     (size_t)http->postsize);
+      if(http->postsize > 0)
+        result = Client_reader_set_buf(data, data->set.postfields,
+                                       (size_t)http->postsize);
+      else
+        result = Client_reader_set_null(data);
     }
     else { /* we read the bytes from the callback */
       Curl_pgrsSetUploadSize(data, http->postsize);
       result = Client_reader_set_fread(data, http->postsize);
     }
-    http->sending = HTTPSEND_BODY;
     break;
 
   default:
@@ -2682,7 +2688,6 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
 {
   struct connectdata *conn = data->conn;
   CURLcode result = CURLE_OK;
-  struct HTTP *http;
   Curl_HttpReq httpreq;
   const char *te = ""; /* transfer-encoding */
   const char *request;
@@ -2733,9 +2738,6 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   result = Curl_headers_init(data);
   if(result)
     goto fail;
-
-  http = data->req.p.http;
-  DEBUGASSERT(http);
 
   result = Curl_http_host(data, conn);
   if(result)
@@ -2915,7 +2917,6 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
     result = Curl_add_custom_headers(data, FALSE, &req);
 
   if(!result) {
-    http->postdata = NULL;  /* nothing to post at this point */
     if((httpreq == HTTPREQ_GET) ||
        (httpreq == HTTPREQ_HEAD))
       Curl_pgrsSetUploadSize(data, 0); /* nothing */
@@ -2930,29 +2931,6 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   Curl_dyn_free(&req);
   if(result)
     goto fail;
-
-  if(data->req.writebytecount) {
-    /* if a request-body has been sent off, we make sure this progress is noted
-       properly */
-    Curl_pgrsSetUploadCounter(data, data->req.writebytecount);
-    if(Curl_pgrsUpdate(data))
-      result = CURLE_ABORTED_BY_CALLBACK;
-
-    if(!http->postsize) {
-      /* already sent the entire request body, mark the "upload" as
-         complete */
-      infof(data, "upload completely sent off: %" CURL_FORMAT_CURL_OFF_T
-            " out of %" CURL_FORMAT_CURL_OFF_T " bytes",
-            data->req.writebytecount, http->postsize);
-      data->req.upload_done = TRUE;
-      data->req.keepon &= ~KEEP_SEND; /* we're done writing */
-      data->req.exp100 = EXP100_SEND_DATA; /* already sent */
-      Curl_expire_done(data, EXPIRE_100_TIMEOUT);
-    }
-  }
-
-  if(data->req.upload_done)
-    Curl_conn_ev_data_done_send(data);
 
   if((conn->httpversion >= 20) && data->req.upload_chunky)
     /* upload_chunky was set above to set up the request in a chunky fashion,
@@ -3831,7 +3809,7 @@ static CURLcode http_rw_headers(struct Curl_easy *data,
              * connection for closure after we've read the entire response.
              */
             Curl_expire_done(data, EXPIRE_100_TIMEOUT);
-            if(!k->upload_done) {
+            if(!Curl_req_done_sending(data)) {
               if((k->httpcode == 417) && data->state.expect100header) {
                 /* 417 Expectation Failed - try again without the Expect
                    header */
@@ -3850,7 +3828,7 @@ static CURLcode http_rw_headers(struct Curl_easy *data,
                 data->state.disableexpect = TRUE;
                 DEBUGASSERT(!data->req.newurl);
                 data->req.newurl = strdup(data->state.url);
-                Curl_done_sending(data, k);
+                Curl_req_abort_sending(data);
               }
               else if(data->set.http_keep_sending_on_error) {
                 infof(data, "HTTP error before end of send, keep sending");
@@ -3862,10 +3840,9 @@ static CURLcode http_rw_headers(struct Curl_easy *data,
               else {
                 infof(data, "HTTP error before end of send, stop sending");
                 streamclose(conn, "Stop sending data before everything sent");
-                result = Curl_done_sending(data, k);
+                result = Curl_req_abort_sending(data);
                 if(result)
                   return result;
-                k->upload_done = TRUE;
                 if(data->state.expect100header)
                   k->exp100 = EXP100_FAILED;
               }
@@ -3877,8 +3854,7 @@ static CURLcode http_rw_headers(struct Curl_easy *data,
           }
         }
 
-        if(data->state.rewindbeforesend &&
-           (conn->writesockfd != CURL_SOCKET_BAD)) {
+        if(data->state.rewindbeforesend && !Curl_req_done_sending(data)) {
           /* We rewind before next send, continue sending now */
           infof(data, "Keep sending data to get tossed away");
           k->keepon |= KEEP_SEND;
