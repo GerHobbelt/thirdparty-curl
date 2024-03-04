@@ -499,6 +499,7 @@ static const struct LongShort aliases[]= {
   {"oauth2-bearer",              ARG_STRG, ' ', C_OAUTH2_BEARER},
   {"output",                     ARG_FILE, 'o', C_OUTPUT},
   {"output-dir",                 ARG_STRG, ' ', C_OUTPUT_DIR},
+  {"output-path-mimics-url",     ARG_BOOL, ' ', C_OUTPUT_PATH_MIMICS_URL },
   {"parallel",                   ARG_BOOL, 'Z', C_PARALLEL},
   {"parallel-immediate",         ARG_BOOL, ' ', C_PARALLEL_IMMEDIATE},
   {"parallel-max",               ARG_STRG, ' ', C_PARALLEL_MAX},
@@ -511,6 +512,7 @@ static const struct LongShort aliases[]= {
   {"preproxy",                   ARG_STRG, ' ', C_PREPROXY},
   {"progress-bar",               ARG_BOOL, '#', C_PROGRESS_BAR},
   {"progress-meter",             ARG_BOOL, ' ', C_PROGRESS_METER},
+  {"progress-percent",           ARG_BOOL, ' ', C_PROGRESS_PCT },
   {"proto",                      ARG_STRG, ' ', C_PROTO},
   {"proto-default",              ARG_STRG, ' ', C_PROTO_DEFAULT},
   {"proto-redir",                ARG_STRG, ' ', C_PROTO_REDIR},
@@ -534,6 +536,7 @@ static const struct LongShort aliases[]= {
   {"proxy-ntlm",                 ARG_BOOL, ' ', C_PROXY_NTLM},
   {"proxy-pass",                 ARG_STRG, ' ', C_PROXY_PASS},
   {"proxy-pinnedpubkey",         ARG_STRG, ' ', C_PROXY_PINNEDPUBKEY},
+  {"proxy-safe-auth",            ARG_BOOL, ' ', C_PROXY_SAFE_AUTH },
   {"proxy-service-name",         ARG_STRG, ' ', C_PROXY_SERVICE_NAME},
   {"proxy-ssl-allow-beast",      ARG_BOOL, ' ', C_PROXY_SSL_ALLOW_BEAST},
   {"proxy-ssl-auto-client-cert", ARG_BOOL, ' ', C_PROXY_SSL_AUTO_CLIENT_CERT},
@@ -565,6 +568,8 @@ static const struct LongShort aliases[]= {
   {"retry-connrefused",          ARG_BOOL, ' ', C_RETRY_CONNREFUSED},
   {"retry-delay",                ARG_STRG, ' ', C_RETRY_DELAY},
   {"retry-max-time",             ARG_STRG, ' ', C_RETRY_MAX_TIME},
+  {"safe-auth",                  ARG_BOOL, ' ', C_SAFE_AUTH },
+  {"sanitize-with-extreme-prejudice", ARG_NONE , ' ', C_SANITIZE_WXP },
   {"sasl-authzid",               ARG_STRG, ' ', C_SASL_AUTHZID},
   {"sasl-ir",                    ARG_BOOL, ' ', C_SASL_IR},
   {"service-name",               ARG_STRG, ' ', C_SERVICE_NAME},
@@ -593,6 +598,7 @@ static const struct LongShort aliases[]= {
   {"styled-output",              ARG_BOOL, ' ', C_STYLED_OUTPUT},
   {"suppress-connect-headers",   ARG_BOOL, ' ', C_SUPPRESS_CONNECT_HEADERS},
   {"tcp-fastopen",               ARG_BOOL, ' ', C_TCP_FASTOPEN},
+  {"tcp-maxseg",                 ARG_STRG, ' ', C_TCP_MAXSEG },
   {"tcp-nodelay",                ARG_BOOL, ' ', C_TCP_NODELAY},
   {"telnet-option",              ARG_STRG, 't', C_TELNET_OPTION},
   {"test-event",                 ARG_BOOL, ' ', C_TEST_EVENT},
@@ -630,13 +636,6 @@ static const struct LongShort aliases[]= {
 #endif
   {"write-out",                  ARG_STRG, 'w', C_WRITE_OUT},
   {"xattr",                      ARG_BOOL, ' ', C_XATTR},
-
-  {"safe-auth",                  ARG_BOOL, ' ', C_SAFE_AUTH },
-  {"proxy-safe-auth",            ARG_BOOL, ' ', C_PROXY_SAFE_AUTH },
-  {"sanitize-with-extreme-prejudice", ARG_NONE , ' ', C_SANITIZE_WXP },
-  {"output-path-mimics-url",     ARG_BOOL, ' ', C_OUTPUT_PATH_MIMICS_URL },
-  {"tcp-maxseg",                 ARG_STRG, ' ', C_TCP_MAXSEG },
-  {"progress-percent",           ARG_BOOL, ' ', C_PROGRESS_PCT },
 };
 
 /* Split the argument of -E to 'certname' and 'passphrase' separated by colon.
