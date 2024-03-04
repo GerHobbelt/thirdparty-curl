@@ -94,7 +94,7 @@
  * infinite time left). If the value is negative, the timeout time has already
  * elapsed.
  * @param data the transfer to check on
- * @param nowp timestamp to use for calculdation, NULL to use Curl_now()
+ * @param nowp timestamp to use for calculation, NULL to use Curl_now()
  * @param duringconnect TRUE iff connect timeout is also taken into account.
  * @unittest: 1303
  */
@@ -158,6 +158,13 @@ void Curl_persistconninfo(struct Curl_easy *data, struct connectdata *conn,
   data->info.conn_primary_port = conn->port;
   data->info.conn_remote_port = conn->remote_port;
   data->info.conn_local_port = local_port;
+  data->info.used_proxy =
+#ifdef CURL_DISABLE_PROXY
+    0
+#else
+    conn->bits.proxy
+#endif
+    ;
 }
 
 static const struct Curl_addrinfo *

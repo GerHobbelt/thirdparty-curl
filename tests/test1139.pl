@@ -67,7 +67,8 @@ my %alias = (
 sub scanmanpage {
     my ($file, @words) = @_;
 
-    open(my $mh, "<", "$file");
+    open(my $mh, "<", "$file") ||
+        die "could not open $file";
     my @m;
     while(<$mh>) {
         if($_ =~ /^\.IP (.*)/) {
@@ -128,7 +129,7 @@ while(<$r>) {
             elsif($type eq "MOPT") {
                 push @curlmopt, $opt,
             }
-            if(! -f "$root/docs/libcurl/opts/$opt.3") {
+            if(! -f "$buildroot/docs/libcurl/opts/$opt.3") {
                 print STDERR "Missing $opt.3\n";
                 $errors++;
             }
@@ -137,9 +138,9 @@ while(<$r>) {
 }
 close($r);
 
-scanmanpage("$root/docs/libcurl/curl_easy_setopt.3", @curlopt);
-scanmanpage("$root/docs/libcurl/curl_easy_getinfo.3", @curlinfo);
-scanmanpage("$root/docs/libcurl/curl_multi_setopt.3", @curlmopt);
+scanmanpage("$buildroot/docs/libcurl/curl_easy_setopt.3", @curlopt);
+scanmanpage("$buildroot/docs/libcurl/curl_easy_getinfo.3", @curlinfo);
+scanmanpage("$buildroot/docs/libcurl/curl_multi_setopt.3", @curlmopt);
 
 # using this hash array, we can skip specific options
 my %opts = (
@@ -181,30 +182,36 @@ open($r, "<", "$root/src/tool_getparam.c") ||
 my $list;
 my @getparam; # store all parsed parameters
 
+my $prevlong = "";
+my $no = 0;
 while(<$r>) {
+    $no++;
     chomp;
-    my $l= $_;
     if(/struct LongShort aliases/) {
         $list=1;
     }
     elsif($list) {
-        if( /^  \{([^,]*), *([^ ]*)/) {
-            my ($s, $l)=($1, $2);
+        if( /^  \{(\"[^,]*\").*\'(.)\', (.*)\}/) {
+            my ($l, $s, $rd)=($1, $2, $3);
             my $sh;
             my $lo;
             my $title;
+            if(($l cmp $prevlong) < 0) {
+                print STDERR "tool_getparam.c:$no: '$l' is NOT placed in alpha-order\n";
+            }
             if($l =~ /\"(.*)\"/) {
                 # long option
                 $lo = $1;
                 $title="--$lo";
             }
-            if($s =~ /\"(.)\"/) {
+            if($s ne " ") {
                 # a short option
-                $sh = $1;
+                $sh = $s;
                 $title="-$sh, $title";
             }
             push @getparam, $title;
             $opts{$title} |= 1;
+            $prevlong = $l;
         }
     }
 }

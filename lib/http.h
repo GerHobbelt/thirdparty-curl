@@ -54,14 +54,6 @@ extern const struct Curl_handler Curl_handler_http;
 extern const struct Curl_handler Curl_handler_https;
 #endif
 
-#ifdef USE_WEBSOCKETS
-extern const struct Curl_handler Curl_handler_ws;
-
-#ifdef USE_SSL
-extern const struct Curl_handler Curl_handler_wss;
-#endif
-#endif /* websockets */
-
 struct dynhds;
 
 CURLcode Curl_bump_headersize(struct Curl_easy *data,
@@ -82,12 +74,6 @@ char *Curl_checkProxyheaders(struct Curl_easy *data,
                              const char *thisheader,
                              const size_t thislen);
 struct HTTP; /* see below */
-CURLcode Curl_buffer_send(struct dynbuf *in,
-                          struct Curl_easy *data,
-                          struct HTTP *http,
-                          curl_off_t *bytes_written,
-                          curl_off_t included_body_bytes,
-                          int socketindex);
 
 CURLcode Curl_add_timecondition(struct Curl_easy *data,
 #ifndef USE_HYPER
@@ -108,10 +94,6 @@ CURLcode Curl_dynhds_add_custom(struct Curl_easy *data,
                                 bool is_connect,
                                 struct dynhds *hds);
 
-CURLcode Curl_http_compile_trailers(struct curl_slist *trailers,
-                                    struct dynbuf *buf,
-                                    struct Curl_easy *handle);
-
 void Curl_http_method(struct Curl_easy *data, struct connectdata *conn,
                       const char **method, Curl_HttpReq *);
 CURLcode Curl_http_useragent(struct Curl_easy *data);
@@ -126,8 +108,8 @@ CURLcode Curl_transferencode(struct Curl_easy *data);
 CURLcode Curl_http_body(struct Curl_easy *data, struct connectdata *conn,
                         Curl_HttpReq httpreq,
                         const char **teep);
-CURLcode Curl_http_bodysend(struct Curl_easy *data, struct connectdata *conn,
-                            struct dynbuf *r, Curl_HttpReq httpreq);
+CURLcode Curl_http_req_complete(struct Curl_easy *data,
+                                struct dynbuf *r, Curl_HttpReq httpreq);
 bool Curl_use_http_1_1plus(const struct Curl_easy *data,
                            const struct connectdata *conn);
 #ifndef CURL_DISABLE_COOKIES
@@ -147,9 +129,17 @@ CURLcode Curl_http_firstwrite(struct Curl_easy *data,
                               bool *done);
 
 /* protocol-specific functions set up to be called by the main engine */
+CURLcode Curl_http_setup_conn(struct Curl_easy *data,
+                              struct connectdata *conn);
 CURLcode Curl_http(struct Curl_easy *data, bool *done);
 CURLcode Curl_http_done(struct Curl_easy *data, CURLcode, bool premature);
 CURLcode Curl_http_connect(struct Curl_easy *data, bool *done);
+int Curl_http_getsock_do(struct Curl_easy *data, struct connectdata *conn,
+                         curl_socket_t *socks);
+CURLcode Curl_http_write_resp(struct Curl_easy *data,
+                              const char *buf, size_t blen,
+                              bool is_eos,
+                              bool *done);
 
 /* These functions are in http.c */
 CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
@@ -229,10 +219,10 @@ struct HTTP {
 
 CURLcode Curl_http_size(struct Curl_easy *data);
 
-CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
-                                     struct connectdata *conn,
-                                     const char *buf, size_t blen,
-                                     size_t *pconsumed);
+CURLcode Curl_http_write_resp_hds(struct Curl_easy *data,
+                                  const char *buf, size_t blen,
+                                  size_t *pconsumed,
+                                  bool *done);
 
 /**
  * Curl_http_output_auth() setups the authentication headers for the

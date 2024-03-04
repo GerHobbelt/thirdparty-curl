@@ -134,7 +134,7 @@ CLEANFILES = $(VC14_LIBVCXPROJ) $(VC14_SRCVCXPROJ) \
 
 bin_SCRIPTS = curl-config
 
-SUBDIRS = lib src
+SUBDIRS = lib src scripts
 DIST_SUBDIRS = $(SUBDIRS) tests packages scripts include docs
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -152,12 +152,6 @@ dist-hook:
 	  strip=`echo $$file | sed -e s/^$(srcdir)// -e s/\.dist//`; \
 	  cp -p $$file $(distdir)$$strip; \
 	done)
-
-html:
-	cd docs && $(MAKE) html
-
-pdf:
-	cd docs && $(MAKE) pdf
 
 check: test examples check-docs
 
@@ -247,10 +241,16 @@ cygwinbin:
 	$(MAKE) -C packages/Win32/cygwin cygwinbin
 
 # We extend the standard install with a custom hook:
+if BUILD_DOCS
 install-data-hook:
 	(cd include && $(MAKE) install)
 	(cd docs && $(MAKE) install)
 	(cd docs/libcurl && $(MAKE) install)
+else
+install-data-hook:
+	(cd include && $(MAKE) install)
+	(cd docs && $(MAKE) install)
+endif
 
 # We extend the standard uninstall with a custom hook:
 uninstall-hook:

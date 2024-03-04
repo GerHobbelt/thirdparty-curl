@@ -36,6 +36,13 @@
 /* Define this to enable lots of debugging for mbedTLS */
 /* #define MBEDTLS_DEBUG */
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+/* mbedTLS (as of v3.5.1) has a duplicate function declaration
+   in its public headers. Disable the warning that detects it. */
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
+
 #include <mbedtls/version.h>
 #if MBEDTLS_VERSION_NUMBER >= 0x02040000
 #include <mbedtls/net_sockets.h>
@@ -54,6 +61,10 @@
 #  ifdef MBEDTLS_DEBUG
 #    include <mbedtls/debug.h>
 #  endif
+#endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
 #endif
 
 #include "urldata.h"
@@ -154,7 +165,6 @@ static void mbed_debug(void *context, int level, const char *f_name,
   infof(data, "%s", line);
   (void) level;
 }
-#else
 #endif
 
 static int mbedtls_bio_cf_write(void *bio,
@@ -166,6 +176,9 @@ static int mbedtls_bio_cf_write(void *bio,
   CURLcode result;
 
   DEBUGASSERT(data);
+  if(!data)
+    return 0;
+
   nwritten = Curl_conn_cf_send(cf->next, data, (char *)buf, blen, &result);
   CURL_TRC_CF(data, cf, "mbedtls_bio_cf_out_write(len=%zu) -> %zd, err=%d",
               blen, nwritten, result);
@@ -183,6 +196,8 @@ static int mbedtls_bio_cf_read(void *bio, unsigned char *buf, size_t blen)
   CURLcode result;
 
   DEBUGASSERT(data);
+  if(!data)
+    return 0;
   /* OpenSSL catches this case, so should we. */
   if(!buf)
     return 0;
@@ -222,6 +237,23 @@ static const mbedtls_x509_crt_profile mbedtls_x509_crt_profile_fr =
 #define PUB_DER_MAX_BYTES   (RSA_PUB_DER_MAX_BYTES > ECP_PUB_DER_MAX_BYTES ? \
                              RSA_PUB_DER_MAX_BYTES : ECP_PUB_DER_MAX_BYTES)
 
+#if MBEDTLS_VERSION_NUMBER >= 0x03020000
+static CURLcode mbedtls_version_from_curl(
+  mbedtls_ssl_protocol_version* mbedver, long version)
+{
+  switch(version) {
+  case CURL_SSLVERSION_TLSv1_0:
+  case CURL_SSLVERSION_TLSv1_1:
+  case CURL_SSLVERSION_TLSv1_2:
+    *mbedver = MBEDTLS_SSL_VERSION_TLS1_2;
+    return CURLE_OK;
+  case CURL_SSLVERSION_TLSv1_3:
+    break;
+  }
+
+  return CURLE_SSL_CONNECT_ERROR;
+}
+#else
 static CURLcode mbedtls_version_from_curl(int *mbedver, long version)
 {
 #if MBEDTLS_VERSION_NUMBER >= 0x03000000
@@ -252,6 +284,7 @@ static CURLcode mbedtls_version_from_curl(int *mbedver, long version)
 
   return CURLE_SSL_CONNECT_ERROR;
 }
+#endif
 
 static CURLcode
 set_ssl_version_min_max(struct Curl_cfilter *cf, struct Curl_easy *data)
@@ -260,7 +293,10 @@ set_ssl_version_min_max(struct Curl_cfilter *cf, struct Curl_easy *data)
   struct mbed_ssl_backend_data *backend =
     (struct mbed_ssl_backend_data *)connssl->backend;
   struct ssl_primary_config *conn_config = Curl_ssl_cf_get_primary_config(cf);
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#if MBEDTLS_VERSION_NUMBER >= 0x03020000
+  mbedtls_ssl_protocol_version mbedtls_ver_min = MBEDTLS_SSL_VERSION_TLS1_2;
+  mbedtls_ssl_protocol_version mbedtls_ver_max = MBEDTLS_SSL_VERSION_TLS1_2;
+#elif MBEDTLS_VERSION_NUMBER >= 0x03000000
   int mbedtls_ver_min = MBEDTLS_SSL_MINOR_VERSION_3;
   int mbedtls_ver_max = MBEDTLS_SSL_MINOR_VERSION_3;
 #else
@@ -298,10 +334,15 @@ set_ssl_version_min_max(struct Curl_cfilter *cf, struct Curl_easy *data)
     return result;
   }
 
+#if MBEDTLS_VERSION_NUMBER >= 0x03020000
+  mbedtls_ssl_conf_min_tls_version(&backend->config, mbedtls_ver_min);
+  mbedtls_ssl_conf_max_tls_version(&backend->config, mbedtls_ver_max);
+#else
   mbedtls_ssl_conf_min_version(&backend->config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                mbedtls_ver_min);
   mbedtls_ssl_conf_max_version(&backend->config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                mbedtls_ver_max);
+#endif
 
   return result;
 }
@@ -760,6 +801,7 @@ mbed_connect_step2(struct Curl_cfilter *cf, struct Curl_easy *data)
   peercert = mbedtls_ssl_get_peer_cert(&backend->ssl);
 
   if(peercert && data->set.verbose) {
+#ifndef MBEDTLS_X509_REMOVE_INFO
     const size_t bufsize = 16384;
     char *buffer = malloc(bufsize);
 
@@ -772,6 +814,9 @@ mbed_connect_step2(struct Curl_cfilter *cf, struct Curl_easy *data)
       infof(data, "Unable to dump certificate information");
 
     free(buffer);
+#else
+    infof(data, "Unable to dump certificate information");
+#endif
   }
 
   if(pinnedpubkey) {

@@ -58,6 +58,7 @@
 #include "multiif.h"
 #include "select.h"
 #include "cfilters.h"
+#include "cw-out.h"
 #include "sendf.h" /* for failf function prototype */
 #include "connect.h" /* for Curl_getconnectinfo */
 #include "slist.h"
@@ -697,9 +698,9 @@ static CURLcode easy_transfer(struct Curl_multi *multi)
   /* Make sure to return some kind of error if there was a multi problem */
   if(mcode) {
     result = (mcode == CURLM_OUT_OF_MEMORY) ? CURLE_OUT_OF_MEMORY :
-              /* The other multi errors should never happen, so return
-                 something suitably generic */
-              CURLE_BAD_FUNCTION_ARGUMENT;
+      /* The other multi errors should never happen, so return
+         something suitably generic */
+      CURLE_BAD_FUNCTION_ARGUMENT;
   }
 
   return result;
@@ -750,7 +751,6 @@ static CURLcode easy_perform(struct Curl_easy *data, bool events)
     multi = Curl_multi_handle(1, 3, 7);
     if(!multi)
       return CURLE_OUT_OF_MEMORY;
-    data->multi_easy = multi;
   }
 
   if(multi->in_callback)
@@ -759,14 +759,17 @@ static CURLcode easy_perform(struct Curl_easy *data, bool events)
   /* Copy the MAXCONNECTS option to the multi handle */
   curl_multi_setopt(multi, CURLMOPT_MAXCONNECTS, (long)data->set.maxconnects);
 
+  data->multi_easy = NULL; /* pretend it does not exist */
   mcode = curl_multi_add_handle(multi, data);
   if(mcode) {
     curl_multi_cleanup(multi);
-    data->multi_easy = NULL;
     if(mcode == CURLM_OUT_OF_MEMORY)
       return CURLE_OUT_OF_MEMORY;
     return CURLE_FAILED_INIT;
   }
+
+  /* assign this after curl_multi_add_handle() */
+  data->multi_easy = multi;
 
   sigpipe_ignore(data, &pipe_st);
 
@@ -1030,7 +1033,6 @@ fail:
 #ifndef CURL_DISABLE_COOKIES
     free(outcurl->cookies);
 #endif
-    free(outcurl->state.buffer);
     Curl_dyn_free(&outcurl->state.headerb);
     Curl_altsvc_cleanup(&outcurl->asi);
     Curl_hsts_cleanup(&outcurl->hsts);
@@ -1047,7 +1049,7 @@ fail:
  */
 void curl_easy_reset(struct Curl_easy *data)
 {
-  Curl_free_request_state(data);
+  Curl_req_reset(&data->req, data);
 
   /* zero out UserDefined data: */
   Curl_freeset(data);
@@ -1127,7 +1129,7 @@ CURLcode curl_easy_pause(struct Curl_easy *data, int action)
 
   if(!(newstate & KEEP_RECV_PAUSE)) {
     Curl_conn_ev_data_pause(data, FALSE);
-    result = Curl_client_unpause(data);
+    result = Curl_cw_out_flush(data);
     if(result)
       return result;
   }
@@ -1151,7 +1153,7 @@ CURLcode curl_easy_pause(struct Curl_easy *data, int action)
     /* reset the too-slow time keeper */
     data->state.keeps_speed.tv_sec = 0;
 
-    if(!data->state.tempcount)
+    if(!Curl_cw_out_is_paused(data))
       /* if not pausing again, force a recv/send check of this connection as
          the data might've been read off the socket already */
       data->state.select_bits = CURL_CSELECT_IN | CURL_CSELECT_OUT;
@@ -1175,9 +1177,11 @@ CURLcode curl_easy_pause(struct Curl_easy *data, int action)
 }
 
 
-static CURLcode easy_connection(struct Curl_easy *data, curl_socket_t *sfd,
+static CURLcode easy_connection(struct Curl_easy *data,
                                 struct connectdata **connp)
 {
+  curl_socket_t sfd;
+
   if(!data)
     return CURLE_BAD_FUNCTION_ARGUMENT;
 
@@ -1187,9 +1191,9 @@ static CURLcode easy_connection(struct Curl_easy *data, curl_socket_t *sfd,
     return CURLE_UNSUPPORTED_PROTOCOL;
   }
 
-  *sfd = Curl_getconnectinfo(data, connp);
+  sfd = Curl_getconnectinfo(data, connp);
 
-  if(*sfd == CURL_SOCKET_BAD) {
+  if(sfd == CURL_SOCKET_BAD) {
     failf(data, "Failed to get recent socket");
     return CURLE_UNSUPPORTED_PROTOCOL;
   }
@@ -1205,7 +1209,6 @@ static CURLcode easy_connection(struct Curl_easy *data, curl_socket_t *sfd,
 CURLcode curl_easy_recv(struct Curl_easy *data, void *buffer, size_t buflen,
                         size_t *n)
 {
-  curl_socket_t sfd;
   CURLcode result;
   ssize_t n1;
   struct connectdata *c;
@@ -1213,7 +1216,7 @@ CURLcode curl_easy_recv(struct Curl_easy *data, void *buffer, size_t buflen,
   if(Curl_is_in_callback(data))
     return CURLE_RECURSIVE_API_CALL;
 
-  result = easy_connection(data, &sfd, &c);
+  result = easy_connection(data, &c);
   if(result)
     return result;
 
@@ -1223,7 +1226,7 @@ CURLcode curl_easy_recv(struct Curl_easy *data, void *buffer, size_t buflen,
     Curl_attach_connection(data, c);
 
   *n = 0;
-  result = Curl_read(data, sfd, buffer, buflen, &n1);
+  result = Curl_conn_recv(data, FIRSTSOCKET, buffer, buflen, &n1);
 
   if(result)
     return result;
@@ -1235,11 +1238,10 @@ CURLcode curl_easy_recv(struct Curl_easy *data, void *buffer, size_t buflen,
 #ifdef USE_WEBSOCKETS
 CURLcode Curl_connect_only_attach(struct Curl_easy *data)
 {
-  curl_socket_t sfd;
   CURLcode result;
   struct connectdata *c = NULL;
 
-  result = easy_connection(data, &sfd, &c);
+  result = easy_connection(data, &c);
   if(result)
     return result;
 
@@ -1258,15 +1260,14 @@ CURLcode Curl_connect_only_attach(struct Curl_easy *data)
  * This is the private internal version of curl_easy_send()
  */
 CURLcode Curl_senddata(struct Curl_easy *data, const void *buffer,
-                       size_t buflen, ssize_t *n)
+                       size_t buflen, size_t *n)
 {
-  curl_socket_t sfd;
   CURLcode result;
-  ssize_t n1;
   struct connectdata *c = NULL;
   SIGPIPE_VARIABLE(pipe_st);
 
-  result = easy_connection(data, &sfd, &c);
+  *n = 0;
+  result = easy_connection(data, &c);
   if(result)
     return result;
 
@@ -1275,20 +1276,12 @@ CURLcode Curl_senddata(struct Curl_easy *data, const void *buffer,
        needs to be reattached */
     Curl_attach_connection(data, c);
 
-  *n = 0;
   sigpipe_ignore(data, &pipe_st);
-  result = Curl_write(data, sfd, buffer, buflen, &n1);
+  result = Curl_conn_send(data, FIRSTSOCKET, buffer, buflen, n);
   sigpipe_restore(&pipe_st);
 
-  if(n1 == -1)
+  if(result && result != CURLE_AGAIN)
     return CURLE_SEND_ERROR;
-
-  /* detect EAGAIN */
-  if(!result && !n1)
-    return CURLE_AGAIN;
-
-  *n = n1;
-
   return result;
 }
 
@@ -1299,13 +1292,13 @@ CURLcode Curl_senddata(struct Curl_easy *data, const void *buffer,
 CURLcode curl_easy_send(struct Curl_easy *data, const void *buffer,
                         size_t buflen, size_t *n)
 {
-  ssize_t written = 0;
+  size_t written = 0;
   CURLcode result;
   if(Curl_is_in_callback(data))
     return CURLE_RECURSIVE_API_CALL;
 
   result = Curl_senddata(data, buffer, buflen, &written);
-  *n = (size_t)written;
+  *n = written;
   return result;
 }
 

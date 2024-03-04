@@ -536,7 +536,7 @@ UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, struct dynbuf *host,
     portptr = strchr(hostname, ':');
 
   if(portptr) {
-    char *rest;
+    char *rest = NULL;
     long port;
     size_t keep = portptr - hostname;
 
@@ -686,7 +686,7 @@ static int ipv4_normalize(struct dynbuf *host)
     return HOST_IPV6;
 
   while(!done) {
-    char *endp;
+    char *endp = NULL;
     unsigned long l;
     if(!ISDIGIT(*c))
       /* most importantly this doesn't allow a leading plus or minus */
@@ -1269,7 +1269,6 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
     pathlen -= fraglen;
   }
 
-  DEBUGASSERT(pathlen < urllen);
   query = memchr(path, '?', pathlen);
   if(query) {
     size_t qlen = fragment ? (size_t)(fragment - query) :

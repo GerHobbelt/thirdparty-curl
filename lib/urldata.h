@@ -54,6 +54,8 @@
 #define PORT_GOPHER 70
 #define PORT_MQTT 1883
 
+struct curl_trc_featt;
+
 #ifdef USE_WEBSOCKETS
 /* CURLPROTO_GOPHERS (29) is the highest publicly used protocol bit number,
  * the rest are internal information. If we use higher bits we only do this on
@@ -142,6 +144,7 @@ typedef unsigned int curl_prot_t;
 #include "splay.h"
 #include "dynbuf.h"
 #include "dynhds.h"
+#include "request.h"
 
 /* return the count of bytes sent, or -1 on error */
 typedef ssize_t (Curl_send)(struct Curl_easy *data,   /* transfer */
@@ -267,11 +270,17 @@ typedef enum {
 /* SSL backend-specific data; declared differently by each SSL backend */
 struct ssl_backend_data;
 
+typedef enum {
+  CURL_SSL_PEER_DNS,
+  CURL_SSL_PEER_IPV4,
+  CURL_SSL_PEER_IPV6
+} ssl_peer_type;
+
 struct ssl_peer {
   char *hostname;        /* hostname for verification */
   char *dispname;        /* display version of hostname */
   char *sni;             /* SNI version of hostname or NULL if not usable */
-  BIT(is_ip_address);    /* if hostname is an IPv4|6 address */
+  ssl_peer_type type;    /* type of the peer information */
 };
 
 struct ssl_primary_config {
@@ -521,10 +530,6 @@ struct ConnectBits {
                          the TCP layer connect */
   BIT(retry);         /* this connection is about to get closed and then
                          re-attempted at another connection. */
-  BIT(authneg);       /* TRUE when the auth phase has started, which means
-                         that we are creating a request with an auth header,
-                         but it is not the final request in the auth
-                         negotiation. */
 #ifndef CURL_DISABLE_FTP
   BIT(ftp_use_epsv);  /* As set with CURLOPT_FTP_USE_EPSV, but if we find out
                          EPSV doesn't work we disable it for the forthcoming
@@ -614,22 +619,6 @@ struct easy_pollset {
   unsigned char actions[MAX_SOCKSPEREASYHANDLE];
 };
 
-enum expect100 {
-  EXP100_SEND_DATA,           /* enough waiting, just send the body now */
-  EXP100_AWAITING_CONTINUE,   /* waiting for the 100 Continue header */
-  EXP100_SENDING_REQUEST,     /* still sending the request but will wait for
-                                 the 100 header once done with the request */
-  EXP100_FAILED               /* used on 417 Expectation Failed */
-};
-
-enum upgrade101 {
-  UPGR101_INIT,               /* default state */
-  UPGR101_WS,                 /* upgrade to WebSockets requested */
-  UPGR101_H2,                 /* upgrade to HTTP/2 requested */
-  UPGR101_RECEIVED,           /* 101 response received */
-  UPGR101_WORKING             /* talking upgraded protocol */
-};
-
 enum doh_slots {
   /* Explicit values for first two symbols so as to match hard-coded
    * constants in existing code
@@ -646,111 +635,6 @@ enum doh_slots {
 
   /* AFTER all slot definitions, establish how many we have */
   DOH_PROBE_SLOTS
-};
-
-/*
- * Request specific data in the easy handle (Curl_easy).  Previously,
- * these members were on the connectdata struct but since a conn struct may
- * now be shared between different Curl_easys, we store connection-specific
- * data here. This struct only keeps stuff that's interesting for *this*
- * request, as it will be cleared between multiple ones
- */
-struct SingleRequest {
-  curl_off_t size;        /* -1 if unknown at this point */
-  curl_off_t maxdownload; /* in bytes, the maximum amount of data to fetch,
-                             -1 means unlimited */
-  curl_off_t bytecount;         /* total number of bytes read */
-  curl_off_t writebytecount;    /* number of bytes written */
-
-  curl_off_t pendingheader;      /* this many bytes left to send is actually
-                                    header and not body */
-  struct curltime start;         /* transfer started at this time */
-  unsigned int headerbytecount;  /* received server headers (not CONNECT
-                                    headers) */
-  unsigned int allheadercount;   /* all received headers (server + CONNECT) */
-  unsigned int deductheadercount; /* this amount of bytes doesn't count when
-                                     we check if anything has been transferred
-                                     at the end of a connection. We use this
-                                     counter to make only a 100 reply (without
-                                     a following second response code) result
-                                     in a CURLE_GOT_NOTHING error code */
-  int headerline;               /* counts header lines to better track the
-                                   first one */
-  curl_off_t offset;            /* possible resume offset read from the
-                                   Content-Range: header */
-  int httpcode;                 /* error code from the 'HTTP/1.? XXX' or
-                                   'RTSP/1.? XXX' line */
-  int keepon;
-  struct curltime start100;      /* time stamp to wait for the 100 code from */
-  enum expect100 exp100;        /* expect 100 continue state */
-  enum upgrade101 upgr101;      /* 101 upgrade state */
-
-  /* Content unencoding stack. See sec 3.5, RFC2616. */
-  struct Curl_cwriter *writer_stack;
-  time_t timeofdoc;
-  long bodywrites;
-  char *location;   /* This points to an allocated version of the Location:
-                       header data */
-  char *newurl;     /* Set to the new URL to use when a redirect or a retry is
-                       wanted */
-
-  /* 'upload_present' is used to keep a byte counter of how much data there is
-     still left in the buffer, aimed for upload. */
-  ssize_t upload_present;
-
-  /* 'upload_fromhere' is used as a read-pointer when we uploaded parts of a
-     buffer, so the next read should read from where this pointer points to,
-     and the 'upload_present' contains the number of bytes available at this
-     position */
-  char *upload_fromhere;
-
-  /* Allocated protocol-specific data. Each protocol handler makes sure this
-     points to data it needs. */
-  union {
-    struct FILEPROTO *file;
-    struct FTP *ftp;
-    struct HTTP *http;
-    struct IMAP *imap;
-    struct ldapreqinfo *ldap;
-    struct MQTT *mqtt;
-    struct POP3 *pop3;
-    struct RTSP *rtsp;
-    struct smb_request *smb;
-    struct SMTP *smtp;
-    struct SSHPROTO *ssh;
-    struct TELNET *telnet;
-  } p;
-#ifndef CURL_DISABLE_DOH
-  struct dohdata *doh; /* DoH specific data for this request */
-#endif
-#if defined(_WIN32) && defined(USE_WINSOCK)
-  struct curltime last_sndbuf_update;  /* last time readwrite_upload called
-                                          win_update_buffer_size */
-#endif
-  char fread_eof[2]; /* the body read callback (index 0) returned EOF or
-                        the trailer read callback (index 1) returned EOF */
-#ifndef CURL_DISABLE_COOKIES
-  unsigned char setcookies;
-#endif
-  unsigned char writer_stack_depth; /* Unencoding stack depth. */
-  BIT(header);        /* incoming data has HTTP header */
-  BIT(badheader);     /* header parsing found sth not a header */
-  BIT(content_range); /* set TRUE if Content-Range: was found */
-  BIT(download_done); /* set to TRUE when download is complete */
-  BIT(upload_done);   /* set to TRUE when doing chunked transfer-encoding
-                         upload and we're uploading the last chunk */
-  BIT(ignorebody);    /* we read a response-body but we ignore it! */
-  BIT(http_bodyless); /* HTTP response status code is between 100 and 199,
-                         204 or 304 */
-  BIT(chunk);         /* if set, this is a chunked transfer-encoding */
-  BIT(ignore_cl);     /* ignore content-length */
-  BIT(upload_chunky); /* set TRUE if we are doing chunked transfer-encoding
-                         on upload */
-  BIT(getheader);    /* TRUE if header parsing is wanted */
-  BIT(forbidchunk);  /* used only to explicitly forbid chunk-upload for
-                        specific upload buffers. See readmoredata() in http.c
-                        for details. */
-  BIT(no_body);      /* the response has no body */
 };
 
 /*
@@ -818,10 +702,10 @@ struct Curl_handler {
                          bool dead_connection);
 
   /* If used, this function gets called from transfer.c:readwrite_data() to
-     allow the protocol to do extra reads/writes */
-  CURLcode (*readwrite)(struct Curl_easy *data, struct connectdata *conn,
-                        const char *buf, size_t blen,
-                        size_t *pconsumed, bool *readmore);
+     allow the protocol to do extra handling in writing response to
+     the client. */
+  CURLcode (*write_resp)(struct Curl_easy *data, const char *buf, size_t blen,
+                         bool is_eos, bool *done);
 
   /* This function can perform various checks on the connection. See
      CONNCHECK_* for more information about the checks that can be performed,
@@ -899,11 +783,6 @@ struct ldapconninfo;
  */
 struct connectdata {
   struct Curl_llist_element bundle_node; /* conncache */
-
-  /* chunk is for HTTP chunked encoding, but is in the general connectdata
-     struct only because we can do just about any protocol through an HTTP
-     proxy and an HTTP proxy may in fact respond using chunked encoding */
-  struct Curl_chunker chunk;
 
   curl_closesocket_callback fclosesocket; /* function closing the socket(s) */
   void *closesocket_client;
@@ -1005,6 +884,11 @@ struct connectdata {
   CtxtHandle *sslContext;
 #endif
 
+#if defined(_WIN32) && defined(USE_WINSOCK)
+  struct curltime last_sndbuf_update;  /* last time readwrite_upload called
+                                          win_update_buffer_size */
+#endif
+
 #ifdef USE_GSASL
   struct gsasldata gsasl;
 #endif
@@ -1025,11 +909,6 @@ struct connectdata {
 
   struct negotiatedata negotiate; /* state data for host Negotiate auth */
   struct negotiatedata proxyneg; /* state data for proxy Negotiate auth */
-#endif
-
-#ifndef CURL_DISABLE_HTTP
-  /* for chunked-encoded trailer */
-  struct dynbuf trailer;
 #endif
 
   union {
@@ -1170,6 +1049,7 @@ struct PureInfo {
   CURLproxycode pxcode;
   BIT(timecond);  /* set to TRUE if the time condition didn't match, which
                      thus made the document NOT get fetched */
+  BIT(used_proxy); /* the transfer used a proxy */
 };
 
 
@@ -1275,18 +1155,6 @@ struct Curl_data_priority {
 #endif
 };
 
-/*
- * This struct is for holding data that was attempted to get sent to the user's
- * callback but is held due to pausing. One instance per type (BOTH, HEADER,
- * BODY).
- */
-struct tempbuf {
-  struct dynbuf b;
-  int type;   /* type of the 'tempwrite' buffer as a bitmask that is used with
-                 Curl_client_write() */
-  BIT(paused_body); /* if PAUSE happened before/during BODY write */
-};
-
 /* Timers */
 typedef enum {
   EXPIRE_100_TIMEOUT,
@@ -1349,7 +1217,6 @@ struct UrlState {
   struct dynbuf headerb; /* buffer to store headers in */
   struct curl_slist *hstslist; /* list of HSTS files set by
                                   curl_easy_setopt(HSTS) calls */
-  char *buffer; /* download buffer */
   char *ulbuf; /* allocated upload buffer or NULL */
   curl_off_t current_speed;  /* the ProgressShow() function sets this,
                                 bytes / second */
@@ -1365,8 +1232,6 @@ struct UrlState {
   int retrycount; /* number of retries on a new connection */
   struct Curl_ssl_session *session; /* array of 'max_ssl_sessions' size */
   long sessionage;                  /* number of the most recent session */
-  struct tempbuf tempwrite[3]; /* BOTH, HEADER, BODY */
-  unsigned int tempcount; /* number of entries in use in tempwrite, 0 - 3 */
   int os_errno;  /* filled in with errno whenever an error occurs */
   char *scratch; /* huge buffer[set.buffer_size*2] for upload CRLF replacing */
   long followlocation; /* redirect counter */
@@ -1399,8 +1264,6 @@ struct UrlState {
 #if !defined(_WIN32) && !defined(MSDOS) && !defined(__EMX__)
 /* do FTP line-end conversions on most platforms */
 #define CURL_DO_LINEEND_CONV
-  /* for FTP downloads: track CRLF sequences that span blocks */
-  BIT(prev_block_had_trailing_cr);
   /* for FTP downloads: how many CRLFs did we converted to LFs? */
   curl_off_t crlf_conversions;
 #endif
@@ -1437,8 +1300,10 @@ struct UrlState {
                                  this should be dealt with in pretransfer */
 #ifndef CURL_DISABLE_HTTP
   curl_mimepart *mimepost;
+#ifndef CURL_DISABLE_FORM_API
   curl_mimepart *formp; /* storage for old API form-posting, allocated on
                            demand */
+#endif
   size_t trailers_bytes_sent;
   struct dynbuf trailers_buf; /* a buffer containing the compiled trailing
                                  headers */
@@ -1455,6 +1320,10 @@ struct UrlState {
 #ifdef USE_HYPER
   bool hconnect;  /* set if a CONNECT request */
   CURLcode hresult; /* used to pass return codes back from hyper callbacks */
+#endif
+
+#ifndef CURL_DISABLE_VERBOSE_STRINGS
+  struct curl_trc_feat *feat; /* opt. trace feature transfer is part of */
 #endif
 
   /* Dynamically allocated strings, MUST be freed before this struct is
@@ -1739,7 +1608,9 @@ struct UserDefined {
   curl_off_t set_resume_from;  /* continue [ftp] transfer from here */
   struct curl_slist *headers; /* linked list of extra headers */
   struct curl_httppost *httppost;  /* linked list of old POST data */
+#if !defined(CURL_DISABLE_MIME) || !defined(CURL_DISABLE_FORM_API)
   curl_mimepart mimepost;  /* MIME/POST data. */
+#endif
 #ifndef CURL_DISABLE_TELNET
   struct curl_slist *telnet_options; /* linked list of telnet options */
 #endif
@@ -1960,6 +1831,12 @@ struct UserDefined {
   BIT(sanitize_with_extreme_prejudice);       /* sanitize URLs and output filenames
                           without compunction, producing filenames safe for all (modern) file systems */
 };
+
+#ifndef CURL_DISABLE_MIME
+#define IS_MIME_POST(a) ((a)->set.mimepost.kind != MIMEKIND_NONE)
+#else
+#define IS_MIME_POST(a) FALSE
+#endif
 
 struct Names {
   struct Curl_hash *hostcache;

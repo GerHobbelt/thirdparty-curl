@@ -131,7 +131,7 @@ const struct Curl_handler Curl_handler_ldap = {
   ZERO_NULL,                            /* domore_getsock */
   ZERO_NULL,                            /* perform_getsock */
   oldap_disconnect,                     /* disconnect */
-  ZERO_NULL,                            /* readwrite */
+  ZERO_NULL,                            /* write_resp */
   ZERO_NULL,                            /* connection_check */
   ZERO_NULL,                            /* attach connection */
   PORT_LDAP,                            /* defport */
@@ -159,7 +159,7 @@ const struct Curl_handler Curl_handler_ldaps = {
   ZERO_NULL,                            /* domore_getsock */
   ZERO_NULL,                            /* perform_getsock */
   oldap_disconnect,                     /* disconnect */
-  ZERO_NULL,                            /* readwrite */
+  ZERO_NULL,                            /* write_resp */
   ZERO_NULL,                            /* connection_check */
   ZERO_NULL,                            /* attach connection */
   PORT_LDAPS,                           /* defport */
@@ -921,7 +921,7 @@ static CURLcode oldap_do(struct Curl_easy *data, bool *done)
       else {
         lr->msgid = msgid;
         data->req.p.ldap = lr;
-        Curl_setup_transfer(data, FIRSTSOCKET, -1, FALSE, -1);
+        Curl_xfer_setup(data, FIRSTSOCKET, -1, FALSE, -1);
         *done = TRUE;
       }
     }

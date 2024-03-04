@@ -345,22 +345,6 @@ static CURLcode pre_transfer(struct GlobalConfig *global,
   return result;
 }
 
-#ifdef __AMIGA__
-static void AmigaSetComment(struct per_transfer *per,
-                            CURLcode result)
-{
-  struct OutStruct *outs = &per->outs;
-  if(!result && outs->s_isreg && outs->filename) {
-    /* Set the url (up to 80 chars) as comment for the file */
-    if(strlen(per->this_url) > 78)
-      per->this_url[79] = '\0';
-    SetComment(outs->filename, per->this_url);
-  }
-}
-#else
-#define AmigaSetComment(x,y) Curl_nop_stmt
-#endif
-
 /* When doing serial transfers, we use a single fixed error area */
 static char global_errorbuffer[CURL_ERROR_SIZE];
 
@@ -374,7 +358,6 @@ void single_transfer_cleanup(struct OperationConfig *config)
       state->urls = NULL;
     }
     Curl_safefree(state->outfiles);
-    Curl_safefree(state->httpgetfields);
     Curl_safefree(state->uploadfile);
     if(state->inglob) {
       /* Free list of globbed upload files */
@@ -579,7 +562,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
           /* store in a 'long', make sure it doesn't overflow */
           if(retry_after > LONG_MAX/1000)
             sleeptime = LONG_MAX;
-          else
+          else if((retry_after * 1000) > sleeptime)
             sleeptime = (long)retry_after * 1000; /* milliseconds */
 
           /* if adding retry_after seconds to the process would exceed the
@@ -662,12 +645,19 @@ noretry:
       errorf(config->global, "curl: (%d) Failed writing body", result);
     }
     if(result && config->rm_partial) {
-      notef(global, "Removing output file: %s", outs->filename);
-      unlink(outs->filename);
+      struct_stat st;
+      if(!stat(outs->filename, &st) &&
+         S_ISREG(st.st_mode)) {
+        if(!unlink(outs->filename))
+          notef(global, "Removed output file: %s", outs->filename);
+        else
+          warnf(global, "Failed removing: %s", outs->filename);
+      }
+      else
+        warnf(global, "Skipping removal; not a regular file: %s",
+              outs->filename);
     }
   }
-
-  AmigaSetComment(per, result);
 
   /* File time can only be set _after_ the file has been closed */
   if(!result && config->remote_time && outs->s_isreg && outs->filename) {
@@ -770,15 +760,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
     if(config->use_httpget) {
       if(!httpgetfields) {
         /* Use the postfields data for an HTTP get */
-        httpgetfields = state->httpgetfields = strdup(config->postfields);
-        Curl_safefree(config->postfields);
-        if(!httpgetfields) {
-          errorf(global, "out of memory");
-          result = CURLE_OUT_OF_MEMORY;
-        }
-        else if(SetHTTPrequest(config,
-                               (config->no_body?HTTPREQ_HEAD:HTTPREQ_GET),
-                               &config->httpreq)) {
+        httpgetfields = state->httpgetfields = config->postfields;
+        config->postfields = NULL;
+        if(SetHTTPrequest(config,
+                          (config->no_body?HTTPREQ_HEAD:HTTPREQ_GET),
+                          &config->httpreq)) {
           result = CURLE_FAILED_INIT;
         }
       }
@@ -1337,6 +1323,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result && (use_proto == proto_ipfs || use_proto == proto_ipns))
           break;
 
+#ifndef DEBUGBUILD
         /* On most modern OSes, exiting works thoroughly,
            we'll clean everything up via exit(), so don't bother with
            slow cleanups. Crappy ones might need to skip this.
@@ -1345,6 +1332,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         result = curl_easy_setopt(curl, CURLOPT_QUICK_EXIT, 1L);
         if(result)
           break;
+#endif
 
         if(!config->tcp_nodelay)
           my_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
@@ -1482,9 +1470,9 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           }
           else {
             my_setopt_str(curl, CURLOPT_POSTFIELDS,
-                          config->postfields);
+                          Curl_dyn_ptr(&config->postdata));
             my_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE,
-                      config->postfieldsize);
+                      (curl_off_t)Curl_dyn_len(&config->postdata));
           }
           break;
         case HTTPREQ_MIMEPOST:

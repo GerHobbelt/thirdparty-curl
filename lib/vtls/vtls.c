@@ -774,9 +774,13 @@ void Curl_ssl_adjust_pollset(struct Curl_cfilter *cf, struct Curl_easy *data,
     if(sock != CURL_SOCKET_BAD) {
       if(connssl->connecting_state == ssl_connect_2_writing) {
         Curl_pollset_set_out_only(data, ps, sock);
+        CURL_TRC_CF(data, cf, "adjust_pollset, POLLOUT fd=%"
+                    CURL_FORMAT_SOCKET_T, sock);
       }
       else {
         Curl_pollset_set_in_only(data, ps, sock);
+        CURL_TRC_CF(data, cf, "adjust_pollset, POLLIN fd=%"
+                    CURL_FORMAT_SOCKET_T, sock);
       }
     }
   }
@@ -1512,7 +1516,7 @@ void Curl_ssl_peer_cleanup(struct ssl_peer *peer)
   free(peer->sni);
   free(peer->hostname);
   peer->hostname = peer->sni = peer->dispname = NULL;
-  peer->is_ip_address = FALSE;
+  peer->type = CURL_SSL_PEER_DNS;
 }
 
 static void cf_close(struct Curl_cfilter *cf, struct Curl_easy *data)
@@ -1526,18 +1530,23 @@ static void cf_close(struct Curl_cfilter *cf, struct Curl_easy *data)
   cf->connected = FALSE;
 }
 
-static int is_ip_address(const char *hostname)
+static ssl_peer_type get_peer_type(const char *hostname)
 {
+  if(hostname && hostname[0]) {
 #ifdef ENABLE_IPV6
-  struct in6_addr addr;
+    struct in6_addr addr;
 #else
-  struct in_addr addr;
+    struct in_addr addr;
 #endif
-  return (hostname && hostname[0] && (Curl_inet_pton(AF_INET, hostname, &addr)
+    if(Curl_inet_pton(AF_INET, hostname, &addr))
+      return CURL_SSL_PEER_IPV4;
 #ifdef ENABLE_IPV6
-          || Curl_inet_pton(AF_INET6, hostname, &addr)
+    else if(Curl_inet_pton(AF_INET6, hostname, &addr)) {
+      return CURL_SSL_PEER_IPV6;
+    }
 #endif
-         ));
+  }
+  return CURL_SSL_PEER_DNS;
 }
 
 CURLcode Curl_ssl_peer_init(struct ssl_peer *peer, struct Curl_cfilter *cf)
@@ -1566,6 +1575,7 @@ CURLcode Curl_ssl_peer_init(struct ssl_peer *peer, struct Curl_cfilter *cf)
   }
 
   /* change if ehostname changed */
+  DEBUGASSERT(!ehostname || ehostname[0]);
   if(ehostname && (!peer->hostname
                    || strcmp(ehostname, peer->hostname))) {
     Curl_ssl_peer_cleanup(peer);
@@ -1585,8 +1595,8 @@ CURLcode Curl_ssl_peer_init(struct ssl_peer *peer, struct Curl_cfilter *cf)
     }
 
     peer->sni = NULL;
-    peer->is_ip_address = is_ip_address(peer->hostname)? TRUE : FALSE;
-    if(peer->hostname[0] && !peer->is_ip_address) {
+    peer->type = get_peer_type(peer->hostname);
+    if(peer->type == CURL_SSL_PEER_DNS && peer->hostname[0]) {
       /* not an IP address, normalize according to RCC 6066 ch. 3,
        * max len of SNI is 2^16-1, no trailing dot */
       size_t len = strlen(peer->hostname);
@@ -1726,7 +1736,8 @@ static ssize_t ssl_cf_recv(struct Curl_cfilter *cf,
     /* eof */
     *err = CURLE_OK;
   }
-  CURL_TRC_CF(data, cf, "cf_recv(len=%zu) -> %zd, %d", len, nread, *err);
+  CURL_TRC_CF(data, cf, "cf_recv(len=%zu) -> %zd, %d", len,
+              nread, *err);
   CF_DATA_RESTORE(cf, save);
   return nread;
 }

@@ -14,7 +14,7 @@ With this naming established, client writers are concerned with writing response
 All code in `libcurl` that handles response data is ultimately expected to forward this data via `Curl_client_write()` to the application. The exact prototype of this function is:
 
 ```
-CURLcode Curl_client_write(struct Curl_easy *data, int type, char *buf, size_t blen);
+CURLcode Curl_client_write(struct Curl_easy *data, int type, const char *buf, size_t blen);
 ```
 The `type` argument specifies what the bytes in `buf` actually are. The following bits are defined:
 
@@ -28,7 +28,10 @@ The `type` argument specifies what the bytes in `buf` actually are. The followin
 #define CLIENTWRITE_TRAILER (1<<6) /* a trailer HEADER */
 ```
 
-The main types here are `CLIENTWRITE_BODY` and `CLIENTWRITE_HEADER`. They are mutually exclusive. The other bits are enhancements to `CLIENTWRITE_HEADER` to specify what the header is about. And they are only used in HTTP and related protocols (RTSP and WebSocket).
+The main types here are `CLIENTWRITE_BODY` and `CLIENTWRITE_HEADER`. They are
+mutually exclusive. The other bits are enhancements to `CLIENTWRITE_HEADER` to
+specify what the header is about. They are only used in HTTP and related
+protocols (RTSP and WebSocket).
 
 The implementation of `Curl_client_write()` uses a chain of *client writer* instances to process the call and make sure that the bytes reach the proper application callbacks. This is similar to the design of connection filters: client writers can be chained to process the bytes written through them. The definition is:
 
@@ -79,13 +82,27 @@ With these writers always in place, libcurl's protocol handlers automatically ha
 
 ## Enhanced Use
 
-HTTP is the protocol in curl that makes use of the client writer chain by adding writers to it. When the `libcurl` application set `CURLOPT_ACCEPT_ENCODING` (as `curl` does with `--compressed`), the server is offered an `Accept-Encoding` header with the algorithms supported. The server then may choose to send the response body compressed. For example using `gzip` or `brotli` or even both.
+HTTP is the protocol in curl that makes use of the client writer chain by
+adding writers to it. When the `libcurl` application set
+`CURLOPT_ACCEPT_ENCODING` (as `curl` does with `--compressed`), the server is
+offered an `Accept-Encoding` header with the algorithms supported. The server
+then may choose to send the response body compressed. For example using `gzip`
+or `brotli` or even both.
 
-In the server's response, there then will be a `Content-Encoding` header listing the encoding applied. If supported by `libcurl` it will then decompress the content before writing it out to the client. How does it do that?
+In the server's response, if there is a `Content-Encoding` header listing the
+encoding applied. If supported by `libcurl` it then decompresses the content
+before writing it out to the client. How does it do that?
 
-The HTTP protocol will add client writers in phase `CURL_CW_CONTENT_DECODE` on seeing such a header. For each encoding listed, it will add the corresponding writer. The response from the server is then passed through `Curl_client_write()` to the writers that decode it. If several encodings had been applied the writer chain decodes them in the proper order.
+The HTTP protocol adds client writers in phase `CURL_CW_CONTENT_DECODE` on
+seeing such a header. For each encoding listed, it adds the corresponding
+writer. The response from the server is then passed through
+`Curl_client_write()` to the writers that decode it. If several encodings had
+been applied the writer chain decodes them in the proper order.
 
-When the server provides a `Content-Length` header, that value applies to the *compressed* content. So length checks on the response bytes must happen *before* it gets decoded. That is why this check happens in phase `CURL_CW_PROTOCOL` which always is ordered before writers in phase `CURL_CW_CONTENT_DECODE`.
+When the server provides a `Content-Length` header, that value applies to the
+*compressed* content. Length checks on the response bytes must happen *before*
+it gets decoded. That is why this check happens in phase `CURL_CW_PROTOCOL`
+which always is ordered before writers in phase `CURL_CW_CONTENT_DECODE`.
 
 What else?
 

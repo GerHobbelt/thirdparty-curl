@@ -26,17 +26,17 @@
 
 /*
  * DO NOT edit tool_listhelp.c manually.
- * This source file is generated with the following command:
-
-  cd $srcroot/docs/cmdline-opts
-  ./gen.pl listhelp *.d > $srcroot/src/tool_listhelp.c
+ * This source file is generated with the following command in an autotools
+ * build:
+ *
+ * "make listhelp"
  */
 
 const struct helptxt helptext[] = {
   {"    --abstract-unix-socket <path>",
    "Connect via abstract Unix domain socket",
    CURLHELP_CONNECTION},
-  {"    --alt-svc <file name>",
+  {"    --alt-svc <filename>",
    "Enable alt-svc with this cache file",
    CURLHELP_HTTP},
   {"    --anyauth",
@@ -166,7 +166,7 @@ const struct helptxt helptext[] = {
    "Allow insecure DoH server connections",
    CURLHELP_DNS | CURLHELP_TLS},
   {"    --doh-url <URL>",
-   "Resolve host names over DoH",
+   "Resolve hostnames over DoH",
    CURLHELP_DNS},
   {"-D, --dump-header <filename>",
    "Write the received headers to <filename>",
@@ -202,7 +202,7 @@ const struct helptxt helptext[] = {
    "Specify multipart MIME data",
    CURLHELP_HTTP | CURLHELP_UPLOAD},
   {"    --form-escape",
-   "Escape multipart form field/file names using backslash",
+   "Escape multipart form field/filenames using backslash",
    CURLHELP_HTTP | CURLHELP_UPLOAD},
   {"    --form-string <name=string>",
    "Specify multipart MIME data",
@@ -270,7 +270,7 @@ const struct helptxt helptext[] = {
   {"    --hostpubsha256 <sha256>",
    "Acceptable SHA256 hash of the host public key",
    CURLHELP_SFTP | CURLHELP_SCP},
-  {"    --hsts <file name>",
+  {"    --hsts <filename>",
    "Enable HSTS with this cache file",
    CURLHELP_HTTP},
   {"    --http0.9",
@@ -325,7 +325,7 @@ const struct helptxt helptext[] = {
    "Interval time for keepalive probes",
    CURLHELP_CONNECTION},
   {"    --key <key>",
-   "Private key file name",
+   "Private key filename",
    CURLHELP_TLS | CURLHELP_SSH},
   {"    --key-type <type>",
    "Private key file type (DER/PEM/ENG)",
@@ -385,7 +385,7 @@ const struct helptxt helptext[] = {
    "Use HTTP Negotiate (SPNEGO) authentication",
    CURLHELP_AUTH | CURLHELP_HTTP},
   {"-n, --netrc",
-   "Must read .netrc for user name and password",
+   "Must read .netrc for username and password",
    CURLHELP_CURL},
   {"    --netrc-file <filename>",
    "Specify FILE for netrc",
@@ -577,7 +577,7 @@ const struct helptxt helptext[] = {
    "Operate through an HTTP proxy tunnel (using CONNECT)",
    CURLHELP_PROXY},
   {"    --pubkey <key>",
-   "SSH Public key file name",
+   "SSH Public key filename",
    CURLHELP_SFTP | CURLHELP_SCP | CURLHELP_AUTH},
   {"-Q, --quote <command>",
    "Send command(s) to server before transfer",
@@ -592,7 +592,7 @@ const struct helptxt helptext[] = {
    "Request rate for serial transfers",
    CURLHELP_CONNECTION},
   {"    --raw",
-   "Do HTTP \"raw\"; no transfer decoding",
+   "Do HTTP raw; no transfer decoding",
    CURLHELP_HTTP},
   {"-e, --referer <URL>",
    "Referrer URL",
@@ -604,7 +604,7 @@ const struct helptxt helptext[] = {
    "Write output to a file named as the remote file",
    CURLHELP_IMPORTANT | CURLHELP_OUTPUT},
   {"    --remote-name-all",
-   "Use the remote file name for all URLs",
+   "Use the remote filename for all URLs",
    CURLHELP_OUTPUT},
   {"-R, --remote-time",
    "Set the remote file's time on the local output",
@@ -679,7 +679,7 @@ const struct helptxt helptext[] = {
    "SOCKS5 proxy service name for GSS-API",
    CURLHELP_PROXY | CURLHELP_AUTH},
   {"    --socks5-hostname <host[:port]>",
-   "SOCKS5 proxy, pass host name to proxy",
+   "SOCKS5 proxy, pass hostname to proxy",
    CURLHELP_PROXY},
   {"-Y, --speed-limit <speed>",
    "Stop transfers slower than this",
@@ -754,7 +754,7 @@ const struct helptxt helptext[] = {
    "TLS password",
    CURLHELP_TLS | CURLHELP_AUTH},
   {"    --tlsuser <name>",
-   "TLS user name",
+   "TLS username",
    CURLHELP_TLS | CURLHELP_AUTH},
   {"-1, --tlsv1",
    "Use TLSv1.0 or greater",

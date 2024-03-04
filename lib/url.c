@@ -265,17 +265,13 @@ CURLcode Curl_close(struct Curl_easy **datap)
     free(data->state.range);
 
   /* freed here just in case DONE wasn't called */
-  Curl_free_request_state(data);
+  Curl_req_free(&data->req, data);
 
   /* Close down all open SSL info and sessions */
   Curl_ssl_close_all(data);
   Curl_safefree(data->state.first_host);
   Curl_safefree(data->state.scratch);
   Curl_ssl_free_certinfo(data);
-
-  /* Cleanup possible redirect junk */
-  free(data->req.newurl);
-  data->req.newurl = NULL;
 
   if(data->state.referer_alloc) {
     Curl_safefree(data->state.referer);
@@ -284,7 +280,6 @@ CURLcode Curl_close(struct Curl_easy **datap)
   data->state.referer = NULL;
 
   up_free(data);
-  Curl_safefree(data->state.buffer);
   Curl_dyn_free(&data->state.headerb);
   Curl_safefree(data->state.ulbuf);
   Curl_flush_cookies(data, TRUE);
@@ -330,16 +325,7 @@ CURLcode Curl_close(struct Curl_easy **datap)
   Curl_safefree(data->state.aptr.proxyuser);
   Curl_safefree(data->state.aptr.proxypasswd);
 
-#ifndef CURL_DISABLE_DOH
-  if(data->req.doh) {
-    Curl_dyn_free(&data->req.doh->probe[0].serverdoh);
-    Curl_dyn_free(&data->req.doh->probe[1].serverdoh);
-    curl_slist_free_all(data->req.doh->headers);
-    Curl_safefree(data->req.doh);
-  }
-#endif
-
-#ifndef CURL_DISABLE_HTTP
+#if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_FORM_API)
   Curl_mime_cleanpart(data->state.formp);
   Curl_safefree(data->state.formp);
 #endif
@@ -450,11 +436,13 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
 
   /* Set the default CA cert bundle/path detected/specified at build time.
    *
-   * If Schannel is the selected SSL backend then these locations are
-   * ignored. We allow setting CA location for schannel only when explicitly
-   * specified by the user via CURLOPT_CAINFO / --cacert.
+   * If Schannel or SecureTransport is the selected SSL backend then these
+   * locations are ignored. We allow setting CA location for schannel and
+   * securetransport when explicitly specified by the user via
+   *  CURLOPT_CAINFO / --cacert.
    */
-  if(Curl_ssl_backend() != CURLSSLBACKEND_SCHANNEL) {
+  if(Curl_ssl_backend() != CURLSSLBACKEND_SCHANNEL &&
+     Curl_ssl_backend() != CURLSSLBACKEND_SECURETRANSPORT) {
 #if defined(CURL_CA_BUNDLE)
     result = Curl_setstropt(&set->str[STRING_SSL_CAFILE], CURL_CA_BUNDLE);
     if(result)
@@ -535,9 +523,17 @@ CURLcode Curl_open(struct Curl_easy **curl)
 
   data->magic = CURLEASY_MAGIC_NUMBER;
 
+  result = Curl_req_init(&data->req);
+  if(result) {
+    DEBUGF(fprintf(stderr, "Error: request init failed\n"));
+    free(data);
+    return result;
+  }
+
   result = Curl_resolver_init(data, &data->state.async.resolver);
   if(result) {
     DEBUGF(fprintf(stderr, "Error: resolver_init failed\n"));
+    Curl_req_free(&data->req, data);
     free(data);
     return result;
   }
@@ -561,6 +557,7 @@ CURLcode Curl_open(struct Curl_easy **curl)
     Curl_resolver_cleanup(data->state.async.resolver);
     Curl_dyn_free(&data->state.headerb);
     Curl_freeset(data);
+    Curl_req_free(&data->req, data);
     free(data);
     data = NULL;
   }
@@ -609,9 +606,6 @@ static void conn_free(struct Curl_easy *data, struct connectdata *conn)
   Curl_safefree(conn->sasl_authzid);
   Curl_safefree(conn->options);
   Curl_safefree(conn->oauth_bearer);
-#ifndef CURL_DISABLE_HTTP
-  Curl_dyn_free(&conn->trailer);
-#endif
   Curl_safefree(conn->host.rawalloc); /* host name buffer */
   Curl_safefree(conn->conn_to_host.rawalloc); /* host name buffer */
   Curl_safefree(conn->hostname_resolve);
@@ -2072,24 +2066,6 @@ static CURLcode setup_connection_internals(struct Curl_easy *data,
     conn->port = p->defport;
 
   return CURLE_OK;
-}
-
-/*
- * Curl_free_request_state() should free temp data that was allocated in the
- * Curl_easy for this single request.
- */
-
-void Curl_free_request_state(struct Curl_easy *data)
-{
-  Curl_safefree(data->req.p.http);
-  Curl_safefree(data->req.newurl);
-#ifndef CURL_DISABLE_DOH
-  if(data->req.doh) {
-    Curl_close(&data->req.doh->probe[0].easy);
-    Curl_close(&data->req.doh->probe[1].easy);
-  }
-#endif
-  Curl_client_cleanup(data);
 }
 
 
@@ -3629,7 +3605,7 @@ static CURLcode create_conn(struct Curl_easy *data,
         (void)conn->handler->done(data, result, FALSE);
         goto out;
       }
-      Curl_setup_transfer(data, -1, -1, FALSE, -1);
+      Curl_xfer_setup(data, -1, -1, FALSE, -1);
     }
 
     /* since we skip do_init() */
@@ -3640,10 +3616,10 @@ static CURLcode create_conn(struct Curl_easy *data,
 #endif
 
   /* Setup filter for network connections */
-  conn->recv[FIRSTSOCKET] = Curl_conn_recv;
-  conn->send[FIRSTSOCKET] = Curl_conn_send;
-  conn->recv[SECONDARYSOCKET] = Curl_conn_recv;
-  conn->send[SECONDARYSOCKET] = Curl_conn_send;
+  conn->recv[FIRSTSOCKET] = Curl_cf_recv;
+  conn->send[FIRSTSOCKET] = Curl_cf_send;
+  conn->recv[SECONDARYSOCKET] = Curl_cf_recv;
+  conn->send[SECONDARYSOCKET] = Curl_cf_send;
   conn->bits.tcp_fastopen = data->set.tcp_fastopen;
 
   /* Complete the easy's SSL configuration for connection cache matching */
@@ -3868,6 +3844,9 @@ CURLcode Curl_setup_conn(struct Curl_easy *data,
   if(!conn->bits.reuse)
     result = Curl_conn_setup(data, conn, FIRSTSOCKET, conn->dns_entry,
                              CURL_CF_SSL_DEFAULT);
+  if(!result)
+    result = Curl_headers_init(data);
+
   /* not sure we need this flag to be passed around any more */
   *protocol_done = FALSE;
   return result;
@@ -3883,10 +3862,7 @@ CURLcode Curl_connect(struct Curl_easy *data,
   *asyncp = FALSE; /* assume synchronous resolves by default */
 
   /* init the single-transfer specific data */
-  Curl_free_request_state(data);
-  memset(&data->req, 0, sizeof(struct SingleRequest));
-  data->req.size = data->req.maxdownload = -1;
-  data->req.no_body = data->set.opt_no_body;
+  Curl_req_reset(&data->req, data);
 
   /* call the stuff that needs to be called */
   result = create_conn(data, &conn, asyncp);
@@ -3952,12 +3928,14 @@ CURLcode Curl_init_do(struct Curl_easy *data, struct connectdata *conn)
     /* in HTTP lingo, no body means using the HEAD request... */
     data->state.httpreq = HTTPREQ_HEAD;
 
-  k->start = Curl_now(); /* start time */
+  result = Curl_req_start(&data->req, data);
+  if(result)
+    return result;
+
   k->header = TRUE; /* assume header */
   k->bytecount = 0;
   k->ignorebody = FALSE;
 
-  Curl_client_cleanup(data);
   Curl_speedinit(data);
   Curl_pgrsSetUploadCounter(data, 0);
   Curl_pgrsSetDownloadCounter(data, 0);

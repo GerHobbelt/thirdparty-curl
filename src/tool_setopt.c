@@ -240,22 +240,11 @@ static char *c_escape(const char *str, curl_off_t len)
       if(p && *p)
         result = Curl_dyn_addn(&escaped, to + 2 * (p - from), 2);
       else {
-        const char *format = "\\x%02x";
-
-        if(len > 1 && ISXDIGIT(s[1])) {
-          /* Octal escape to avoid >2 digit hex. */
-          format = "\\%03o";
-        }
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-        result = Curl_dyn_addf(&escaped, format,
+        result = Curl_dyn_addf(&escaped,
+                                /* Octal escape to avoid >2 digit hex. */
+                                (len > 1 && ISXDIGIT(s[1])) ?
+                                  "\\%03o" : "\\x%02x",
                                 (unsigned int) *(unsigned char *) s);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
       }
     }
   }
@@ -660,7 +649,7 @@ CURLcode tool_setopt(CURL *curl, bool str, struct GlobalConfig *global,
       if(escape) {
         curl_off_t len = ZERO_TERMINATED;
         if(tag == CURLOPT_POSTFIELDS)
-          len = config->postfieldsize;
+          len = Curl_dyn_len(&config->postdata);
         escaped = c_escape(value, len);
         NULL_CHECK(escaped);
         CODE2("curl_easy_setopt(hnd, %s, \"%s\");", name, escaped);

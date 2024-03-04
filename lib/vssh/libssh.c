@@ -168,7 +168,7 @@ const struct Curl_handler Curl_handler_scp = {
   ZERO_NULL,                    /* domore_getsock */
   myssh_getsock,                /* perform_getsock */
   scp_disconnect,               /* disconnect */
-  ZERO_NULL,                    /* readwrite */
+  ZERO_NULL,                    /* write_resp */
   ZERO_NULL,                    /* connection_check */
   ZERO_NULL,                    /* attach connection */
   PORT_SSH,                     /* defport */
@@ -221,7 +221,7 @@ const struct Curl_handler Curl_handler_sftp = {
   ZERO_NULL,                            /* domore_getsock */
   myssh_getsock,                        /* perform_getsock */
   sftp_disconnect,                      /* disconnect */
-  ZERO_NULL,                            /* readwrite */
+  ZERO_NULL,                            /* write_resp */
   ZERO_NULL,                            /* connection_check */
   ZERO_NULL,                            /* attach connection */
   PORT_SSH,                             /* defport */
@@ -1348,13 +1348,14 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
           }
           /* seekerr == CURL_SEEKFUNC_CANTSEEK (can't seek to offset) */
           do {
+            char scratch[4*1024];
             size_t readthisamountnow =
-              (data->state.resume_from - passed > data->set.buffer_size) ?
-              (size_t)data->set.buffer_size :
-              curlx_sotouz(data->state.resume_from - passed);
+              (data->state.resume_from - passed >
+                (curl_off_t)sizeof(scratch)) ?
+              sizeof(scratch) : curlx_sotouz(data->state.resume_from - passed);
 
             size_t actuallyread =
-              data->state.fread_func(data->state.buffer, 1,
+              data->state.fread_func(scratch, 1,
                                      readthisamountnow, data->state.in);
 
             passed += actuallyread;
@@ -1388,9 +1389,9 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         Curl_pgrsSetUploadSize(data, data->state.infilesize);
       }
       /* upload data */
-      Curl_setup_transfer(data, -1, -1, FALSE, FIRSTSOCKET);
+      Curl_xfer_setup(data, -1, -1, FALSE, FIRSTSOCKET);
 
-      /* not set by Curl_setup_transfer to preserve keepon bits */
+      /* not set by Curl_xfer_setup to preserve keepon bits */
       conn->sockfd = conn->writesockfd;
 
       /* store this original bitmask setup to use later on if we can't
@@ -1617,7 +1618,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       sshc->sftp_dir = NULL;
 
       /* no data to transfer */
-      Curl_setup_transfer(data, -1, -1, FALSE, -1);
+      Curl_xfer_setup(data, -1, -1, FALSE, -1);
       state(data, SSH_STOP);
       break;
 
@@ -1707,6 +1708,8 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
             size = 0;
           }
           else {
+            if((to - from) == CURL_OFF_T_MAX)
+              return CURLE_RANGE_ERROR;
             size = to - from + 1;
           }
 
@@ -1760,14 +1763,14 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
     /* Setup the actual download */
     if(data->req.size == 0) {
       /* no data to transfer */
-      Curl_setup_transfer(data, -1, -1, FALSE, -1);
+      Curl_xfer_setup(data, -1, -1, FALSE, -1);
       infof(data, "File already completely downloaded");
       state(data, SSH_STOP);
       break;
     }
-    Curl_setup_transfer(data, FIRSTSOCKET, data->req.size, FALSE, -1);
+    Curl_xfer_setup(data, FIRSTSOCKET, data->req.size, FALSE, -1);
 
-    /* not set by Curl_setup_transfer to preserve keepon bits */
+    /* not set by Curl_xfer_setup to preserve keepon bits */
     conn->writesockfd = conn->sockfd;
 
     /* we want to use the _receiving_ function even when the socket turns
@@ -1921,9 +1924,9 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       }
 
       /* upload data */
-      Curl_setup_transfer(data, -1, data->req.size, FALSE, FIRSTSOCKET);
+      Curl_xfer_setup(data, -1, data->req.size, FALSE, FIRSTSOCKET);
 
-      /* not set by Curl_setup_transfer to preserve keepon bits */
+      /* not set by Curl_xfer_setup to preserve keepon bits */
       conn->sockfd = conn->writesockfd;
 
       /* store this original bitmask setup to use later on if we can't
@@ -2001,9 +2004,9 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
         /* download data */
         bytecount = ssh_scp_request_get_size(sshc->scp_session);
         data->req.maxdownload = (curl_off_t) bytecount;
-        Curl_setup_transfer(data, FIRSTSOCKET, bytecount, FALSE, -1);
+        Curl_xfer_setup(data, FIRSTSOCKET, bytecount, FALSE, -1);
 
-        /* not set by Curl_setup_transfer to preserve keepon bits */
+        /* not set by Curl_xfer_setup to preserve keepon bits */
         conn->writesockfd = conn->sockfd;
 
         /* we want to use the _receiving_ function even when the socket turns

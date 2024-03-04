@@ -740,9 +740,6 @@ ${SIZEOF___INT64_CODE}
 /* if libPSL is in use */
 #cmakedefine USE_LIBPSL 1
 
-/* If you want to build curl with the built-in manual */
-#cmakedefine USE_MANUAL 1
-
 /* if you want to use OpenLDAP code instead of legacy ldap implementation */
 #cmakedefine USE_OPENLDAP 1
 
