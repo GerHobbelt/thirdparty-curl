@@ -24,6 +24,7 @@
 include(CheckCSourceCompiles)
 
 option(CURL_HIDDEN_SYMBOLS "Hide libcurl internal symbols (=hide all symbols that are not officially external)" ON)
+option(CURL_HIDDEN_EXTERN_SYMBOLS "Set to ON to hide libcurl external symbols." OFF)
 mark_as_advanced(CURL_HIDDEN_SYMBOLS)
 
 if(WIN32 AND (ENABLE_DEBUG OR ENABLE_CURLDEBUG))
@@ -77,4 +78,8 @@ else()
 endif()
 
 set(CURL_CFLAG_SYMBOLS_HIDE ${_cflag_symbols_hide})
-set(CURL_EXTERN_SYMBOL ${_symbol_extern})
+if(CURL_HIDDEN_EXTERN_SYMBOLS)
+  set(CURL_EXTERN_SYMBOL "")
+else()
+  set(CURL_EXTERN_SYMBOL ${_symbol_extern})
+endif()
