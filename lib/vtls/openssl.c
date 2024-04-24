@@ -82,6 +82,10 @@
 #include <openssl/tls1.h>
 #include <openssl/evp.h>
 
+#ifndef OPENSSL_IS_BORINGSSL
+#error "Make sure BoringSSL is first in include path"
+#endif
+
 #if (OPENSSL_VERSION_NUMBER >= 0x0090808fL) && !defined(OPENSSL_NO_OCSP)
 #include <openssl/ocsp.h>
 #endif
