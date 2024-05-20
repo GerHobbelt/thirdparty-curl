@@ -1684,6 +1684,28 @@ add_cert_to_certinfo(const CERT_CONTEXT *ccert_context, bool reverse_order,
   return args->result == CURLE_OK;
 }
 
+static void schannel_session_free(void *sessionid, size_t idsize)
+{
+  /* this is expected to be called under sessionid lock */
+  struct Curl_schannel_cred *cred = sessionid;
+
+  (void)idsize;
+  if(cred) {
+    cred->refcount--;
+    if(cred->refcount == 0) {
+      s_pSecFn->FreeCredentialsHandle(&cred->cred_handle);
+      curlx_unicodefree(cred->sni_hostname);
+#ifdef HAS_CLIENT_CERT_PATH
+      if(cred->client_cert_store) {
+        CertCloseStore(cred->client_cert_store, 0);
+        cred->client_cert_store = NULL;
+      }
+#endif
+      Curl_safefree(cred);
+    }
+  }
+}
+
 static CURLcode
 schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
 {
@@ -1761,7 +1783,6 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
   /* save the current session data for possible reuse */
   if(ssl_config->primary.sessionid) {
     bool incache;
-    bool added = FALSE;
     struct Curl_schannel_cred *old_cred = NULL;
 
     Curl_ssl_sessionid_lock(data);
@@ -1777,19 +1798,14 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
       }
     }
     if(!incache) {
+      /* Up ref count since call takes ownership */
+      backend->cred->refcount++;
       result = Curl_ssl_addsessionid(cf, data, &connssl->peer, backend->cred,
                                      sizeof(struct Curl_schannel_cred),
-                                     &added);
+                                     schannel_session_free);
       if(result) {
         Curl_ssl_sessionid_unlock(data);
-        failf(data, "schannel: failed to store credential handle");
         return result;
-      }
-      else if(added) {
-        /* this cred session is now also referenced by sessionid cache */
-        backend->cred->refcount++;
-        DEBUGF(infof(data,
-                     "schannel: stored credential handle in session cache"));
       }
     }
     Curl_ssl_sessionid_unlock(data);
@@ -2470,27 +2486,6 @@ static bool schannel_data_pending(struct Curl_cfilter *cf,
     return FALSE;
 }
 
-static void schannel_session_free(void *ptr)
-{
-  /* this is expected to be called under sessionid lock */
-  struct Curl_schannel_cred *cred = ptr;
-
-  if(cred) {
-    cred->refcount--;
-    if(cred->refcount == 0) {
-      s_pSecFn->FreeCredentialsHandle(&cred->cred_handle);
-      curlx_unicodefree(cred->sni_hostname);
-#ifdef HAS_CLIENT_CERT_PATH
-      if(cred->client_cert_store) {
-        CertCloseStore(cred->client_cert_store, 0);
-        cred->client_cert_store = NULL;
-      }
-#endif
-      Curl_safefree(cred);
-    }
-  }
-}
-
 /* shut down the SSL connection and clean up related memory.
    this function can be called multiple times on the same connection including
    if the SSL connection failed (eg connection made but failed handshake). */
@@ -2574,7 +2569,7 @@ static int schannel_shutdown(struct Curl_cfilter *cf,
   /* free SSPI Schannel API credential handle */
   if(backend->cred) {
     Curl_ssl_sessionid_lock(data);
-    schannel_session_free(backend->cred);
+    schannel_session_free(backend->cred, 0);
     Curl_ssl_sessionid_unlock(data);
     backend->cred = NULL;
   }
@@ -2937,7 +2932,6 @@ const struct Curl_ssl Curl_ssl_schannel = {
   schannel_get_internals,            /* get_internals */
   schannel_close,                    /* close_one */
   Curl_none_close_all,               /* close_all */
-  schannel_session_free,             /* session_free */
   Curl_none_set_engine,              /* set_engine */
   Curl_none_set_engine_default,      /* set_engine_default */
   Curl_none_engines_list,            /* engines_list */
