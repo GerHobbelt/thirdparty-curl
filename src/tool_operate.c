@@ -387,11 +387,11 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
       free(cleaned_url);
   }
 
-  if(!curl || !config)
-    return result;
-
   *retryp = FALSE;
   *delay = 0; /* for no retry, keep it zero */
+
+  if(!curl || !config)
+    return result;
 
   if(per->infdopen)
     close(per->infd);
