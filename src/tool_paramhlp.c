@@ -103,7 +103,7 @@ ParameterError file2string(char **bufp, FILE *file)
       char *ptr;
       size_t nread = fread(buffer, 1, sizeof(buffer), file);
       if(ferror(file)) {
-        curlx_dyn_free(&dyn);
+        Curl_dyn_free(&dyn);
         *bufp = NULL;
         return PARAM_READ_ERROR;
       }
