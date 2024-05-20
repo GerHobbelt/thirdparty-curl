@@ -2651,34 +2651,33 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
      */
     if(tls_backend_info->backend != CURLSSLBACKEND_SCHANNEL) {
       char *env;
-      env = tool_getenv_local("CURL_CA_BUNDLE");
+      env = curl_getenv("CURL_CA_BUNDLE");
       if(env) {
         config->cacert = strdup(env);
+        curl_free(env);
         if(!config->cacert) {
-          curl_free(env);
           curl_easy_cleanup(curltls);
           errorf(global, "out of memory");
           return CURLE_OUT_OF_MEMORY;
         }
       }
       else {
-        env = tool_getenv_local("SSL_CERT_DIR");
+        env = curl_getenv("SSL_CERT_DIR");
         if(env) {
           config->capath = strdup(env);
+          curl_free(env);
           if(!config->capath) {
-            curl_free(env);
             curl_easy_cleanup(curltls);
             errorf(global, "out of memory");
             return CURLE_OUT_OF_MEMORY;
           }
-          curl_free(env);
           capath_from_env = true;
         }
-        env = tool_getenv_local("SSL_CERT_FILE");
+        env = curl_getenv("SSL_CERT_FILE");
         if(env) {
           config->cacert = strdup(env);
+          curl_free(env);
           if(!config->cacert) {
-            curl_free(env);
             if(capath_from_env)
               free(config->capath);
             curl_easy_cleanup(curltls);
@@ -2688,13 +2687,10 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
         }
       }
 
-      if(env)
-        curl_free(env);
 #ifdef _WIN32
-      else {
+      if(!env)
         result = FindWin32CACert(config, tls_backend_info->backend,
                                  TEXT("curl-ca-bundle.crt"));
-      }
 #endif
     }
     curl_easy_cleanup(curltls);

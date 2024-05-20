@@ -1,3 +1,4 @@
+#!/bin/sh
 #***************************************************************************
 #                                  _   _ ____  _
 #  Project                     ___| | | |  _ \| |
@@ -22,38 +23,45 @@
 #
 ###########################################################################
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
+cat <<MOO
+# Release tools
 
-MANPAGE = curl.1
-ASCIIPAGE = curl.txt
+The following tools and their Debian package version numbers were used to
+produce this release tarball.
 
-include Makefile.inc
+MOO
 
-EXTRA_DIST = $(DPAGES) MANPAGE.md $(SUPPORT) CMakeLists.txt mainpage.idx
+exists=`which dpkg`;
+if test ! -e "$exists"; then
+    echo "(unknown, could not find dpkg)"
+    exit
+fi
 
-GEN = $(GN_$(V))
-GN_0 = @echo "  GENERATE" $@;
-GN_1 =
-GN_ = $(GN_0)
+debian() {
+    echo - $1: `dpkg -l $1 | grep ^ii | awk '{print $3}'`
+}
+debian autoconf
+debian automake
+debian libtool
+debian make
+debian perl
+debian git
 
-MANAGEN=$(abs_top_srcdir)/scripts/managen
+cat <<MOO
 
-if BUILD_DOCS
-CLEANFILES = $(MANPAGE) $(ASCIIPAGE)
-man_MANS = $(MANPAGE)
+# Reproduce the tarball
 
-all: $(MANPAGE) $(ASCIIPAGE)
+- Clone the repo and checkout the release tag
+- Install the same set of tools + versions as listed above
 
-endif
+## Do a standard build
 
-$(MANPAGE): $(DPAGES) $(SUPPORT) mainpage.idx Makefile.inc $(MANAGEN)
-	$(GEN)(rm -f $(MANPAGE) && (cd $(srcdir) && @PERL@ $(MANAGEN) mainpage $(DPAGES)) > manpage.tmp.$$$$ && mv manpage.tmp.$$$$ $(MANPAGE))
+- autoreconf -fi
+- ./configure [...]
+- make
 
-$(ASCIIPAGE): $(DPAGES) $(SUPPORT) mainpage.idx Makefile.inc $(MANAGEN)
-	$(GEN)(rm -f $(ASCIIPAGE) && (cd $(srcdir) && @PERL@ $(MANAGEN) ascii $(DPAGES)) > asciipage.tmp.$$$$ && mv asciipage.tmp.$$$$ $(ASCIIPAGE))
+## Generate the tarball
 
-listhelp:
-	$(MANAGEN) listhelp $(DPAGES) > $(top_builddir)/src/tool_listhelp.c
+- ./maketgz [version]
 
-listcats:
-	@$(MANAGEN) listcats $(DPAGES)
+MOO

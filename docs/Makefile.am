@@ -81,7 +81,7 @@ EXTRA_DIST =                                    \
  INSTALL.md                                     \
  INTERNALS.md                                   \
  KNOWN_BUGS                                     \
- MAIL-ETIQUETTE                                 \
+ MAIL-ETIQUETTE.md                              \
  MQTT.md                                        \
  NEW-PROTOCOL.md                                \
  options-in-versions                            \
