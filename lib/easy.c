@@ -1314,7 +1314,7 @@ static int conn_upkeep(struct Curl_easy *data,
     conn->handler->connection_check(data, conn, CONNCHECK_KEEPALIVE);
   }
   else {
-    /* Do the generic action on the FIRSTSOCKE filter chain */
+    /* Do the generic action on the FIRSTSOCKET filter chain */
     Curl_conn_keep_alive(data, conn, FIRSTSOCKET);
   }
   Curl_detach_connection(data);

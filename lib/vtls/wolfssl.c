@@ -756,9 +756,13 @@ wolfssl_connect_step2(struct Curl_cfilter *cf, struct Curl_easy *data)
   struct wolfssl_ssl_backend_data *backend =
     (struct wolfssl_ssl_backend_data *)connssl->backend;
   struct ssl_primary_config *conn_config = Curl_ssl_cf_get_primary_config(cf);
+#ifndef CURL_DISABLE_PROXY
   const char * const pinnedpubkey = Curl_ssl_cf_is_proxy(cf)?
     data->set.str[STRING_SSL_PINNEDPUBLICKEY_PROXY]:
     data->set.str[STRING_SSL_PINNEDPUBLICKEY];
+#else
+  const char * const pinnedpubkey = data->set.str[STRING_SSL_PINNEDPUBLICKEY];
+#endif
 
   DEBUGASSERT(backend);
 
@@ -898,6 +902,7 @@ wolfssl_connect_step2(struct Curl_cfilter *cf, struct Curl_easy *data)
                                   pinnedpubkey,
                                   (const unsigned char *)pubkey->header,
                                   (size_t)(pubkey->end - pubkey->header));
+    wolfSSL_FreeX509(x509);
     if(result) {
       failf(data, "SSL: public key does not match pinned public key");
       return result;
