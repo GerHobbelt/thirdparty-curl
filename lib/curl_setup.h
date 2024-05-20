@@ -76,6 +76,11 @@
 # endif
 #endif
 
+/* Compatibility */
+#if defined(ENABLE_IPV6)
+#  define USE_IPV6 1
+#endif
+
 /*
  * Include configuration script results or hand-crafted
  * configuration file for platforms which lack config tool.
@@ -321,7 +326,7 @@
 #include <TargetConditionals.h>
 #define USE_RESOLVE_ON_IPS 1
 #  if TARGET_OS_MAC && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) && \
-     defined(ENABLE_IPV6)
+     defined(USE_IPV6)
 #    define CURL_MACOS_CALL_COPYPROXIES 1
 #  endif
 #endif
@@ -633,9 +638,9 @@ extern "C" {
  * Mutually exclusive CURLRES_* definitions.
  */
 
-#if defined(HAVE_GETADDRINFO)
+#if defined(USE_IPV6) && defined(HAVE_GETADDRINFO)
 #  define CURLRES_IPV6
-#elif defined(ENABLE_IPV6) && (defined(_WIN32) || defined(__CYGWIN__))
+#elif defined(USE_IPV6) && (defined(_WIN32) || defined(__CYGWIN__))
 /* assume on Windows that IPv6 without getaddrinfo is a broken build */
 #  error "Unexpected build: IPv6 is enabled but getaddrinfo was not found."
 #else
@@ -885,7 +890,6 @@ int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf,
 #error "Multi-SSL combined with QUIC is not supported"
 #endif
 
-#define ENABLE_QUIC
 #define USE_HTTP3
 #endif
 

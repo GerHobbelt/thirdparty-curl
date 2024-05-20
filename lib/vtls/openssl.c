@@ -2151,14 +2151,14 @@ CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
   int target; /* target type, GEN_DNS or GEN_IPADD */
   size_t addrlen = 0;
   STACK_OF(GENERAL_NAME) *altnames;
-#ifdef ENABLE_IPV6
+#ifdef USE_IPV6
   struct in6_addr addr;
 #else
   struct in_addr addr;
 #endif
   CURLcode result = CURLE_OK;
   bool dNSName = FALSE; /* if a dNSName field exists in the cert */
-  bool iPAddress = FALSE; /* if a iPAddress field exists in the cert */
+  bool iPAddress = FALSE; /* if an iPAddress field exists in the cert */
   size_t hostlen;
 
   (void)conn;
@@ -2170,7 +2170,7 @@ CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
     target = GEN_IPADD;
     addrlen = sizeof(struct in_addr);
     break;
-#ifdef ENABLE_IPV6
+#ifdef USE_IPV6
   case CURL_SSL_PEER_IPV6:
     if(!Curl_inet_pton(AF_INET6, peer->hostname, &addr))
       return CURLE_PEER_FAILED_VERIFICATION;

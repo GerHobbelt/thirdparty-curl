@@ -105,7 +105,7 @@ typedef unsigned int curl_prot_t;
 #define PROTO_FAMILY_SSH  (CURLPROTO_SCP|CURLPROTO_SFTP)
 
 #if !defined(CURL_DISABLE_FTP) || defined(USE_SSH) ||   \
-  !defined(CURL_DISABLE_POP3)
+  !defined(CURL_DISABLE_POP3) || !defined(CURL_DISABLE_FILE)
 /* these protocols support CURLOPT_DIRLISTONLY */
 #define CURL_LIST_ONLY_PROTOCOL 1
 #endif
@@ -986,7 +986,7 @@ struct connectdata {
   int remote_port; /* the remote port, not the proxy port! */
   int conn_to_port; /* the remote port to connect to. valid only if
                        bits.conn_to_port is set */
-#ifdef ENABLE_IPV6
+#ifdef USE_IPV6
   unsigned int scope_id;  /* Scope id for IPv6 */
 #endif
   unsigned short localport;
@@ -1715,7 +1715,7 @@ struct UserDefined {
   unsigned int new_file_perms;      /* when creating remote files */
   char *str[STRING_LAST]; /* array of strings, pointing to allocated memory */
   struct curl_blob *blobs[BLOB_LAST];
-#ifdef ENABLE_IPV6
+#ifdef USE_IPV6
   unsigned int scope_id;  /* Scope id for IPv6 */
 #endif
   curl_prot_t allowed_protocols;
