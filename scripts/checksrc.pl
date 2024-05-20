@@ -756,7 +756,7 @@ sub scanfile {
         if($istoolsrc && $l =~ /^(.*\W)(curlx?_getenv)\s*\(/x) {
             checkwarn("BANNEDFUNC",
                       $line, length($1), $file, $ol,
-                      "use of $2 is banned in curl tool, use tool_getenv.h");
+                      "use of $2 is banned in curl tool, use curl_getenv.h");
         }
 
         # scan for use of snprintf for curl-internals reasons

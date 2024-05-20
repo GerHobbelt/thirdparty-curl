@@ -297,7 +297,7 @@ CURLcode convert_url_to_file_path(char **filename, const char *url)
        */
 #ifdef DEBUGBUILD
       {
-      char *tdir = tool_getenv("CURL_TESTDIR");
+      char *tdir = curl_getenv("CURL_TESTDIR");
         if(tdir) {
           char *alt = aprintf("%s/%s", tdir, *filename);
           Curl_safefree(*filename);

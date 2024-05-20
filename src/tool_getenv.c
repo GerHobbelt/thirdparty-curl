@@ -27,7 +27,7 @@
 #include "memdebug.h" /* keep this as LAST include */
 
 #if defined(WIN32) && defined(_UNICODE)
-char *tool_getenv_utf8(const char *variable)
+char *curl_getenv_utf8(const char *variable)
 {
   char *buf;
   WCHAR *w_buf, *w_var;
@@ -63,7 +63,7 @@ char *tool_getenv_utf8(const char *variable)
 }
 #endif /* WIN32 && _UNICODE */
 
-char *tool_getenv_local(const char *variable)
+char *curl_getenv_local(const char *variable)
 {
   char *dupe, *env;
   /* !checksrc! disable BANNEDFUNC 1 */

@@ -25,20 +25,20 @@
 
 #if defined(WIN32) && defined(_UNICODE)
 /* returns environment variable value in Unicode UTF-8 encoding. */
-char *tool_getenv_utf8(const char *variable);
+char *curl_getenv_utf8(const char *variable);
 #endif
 
 /* returns environment variable value in current locale encoding. */
-char *tool_getenv_local(const char *variable);
+char *curl_getenv_local(const char *variable);
 
 #if defined(WIN32) && defined(_UNICODE)
 /* Windows Unicode builds of curl/libcurl always expect UTF-8 strings for
    internal file paths, regardless of current locale. For paths (or other
    values) passed to a dependency that will always expect local encoding, call
-   tool_getenv_local directly instead.*/
-#define tool_getenv(variable) tool_getenv_utf8(variable)
+   curl_getenv_local directly instead.*/
+#define curl_getenv(variable) curl_getenv_utf8(variable)
 #else
-#define tool_getenv(variable) tool_getenv_local(variable)
+#define curl_getenv(variable) curl_getenv_local(variable)
 #endif
 
 #endif /* HEADER_CURL_TOOL_GETENV_H */
