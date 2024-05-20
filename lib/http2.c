@@ -121,7 +121,6 @@ static ssize_t populate_binsettings(uint8_t *binsettings,
 
 struct cf_h2_ctx {
   nghttp2_session *h2;
-  uint32_t max_concurrent_streams;
   /* The easy handle used in the current filter call, cleared at return */
   struct cf_call_data call_data;
 
@@ -130,6 +129,7 @@ struct cf_h2_ctx {
   struct bufc_pool stream_bufcp; /* spares for stream buffers */
 
   size_t drain_total; /* sum of all stream's UrlState drain */
+  uint32_t max_concurrent_streams;
   int32_t goaway_error;
   int32_t last_stream_id;
   BIT(conn_closed);
@@ -172,7 +172,6 @@ static CURLcode h2_progress_egress(struct Curl_cfilter *cf,
  * All about the H2 internals of a stream
  */
 struct h2_stream_ctx {
-  int32_t id; /* HTTP/2 protocol identifier for stream */
   struct bufq recvbuf; /* response buffer */
   struct bufq sendbuf; /* request buffer */
   struct h1_req_parser h1; /* parsing the request */
@@ -189,13 +188,14 @@ struct h2_stream_ctx {
   int status_code; /* HTTP response status code */
   uint32_t error; /* stream error code */
   uint32_t local_window_size; /* the local recv window size */
-  bool resp_hds_complete; /* we have a complete, final response */
-  bool closed; /* TRUE on stream close */
-  bool reset;  /* TRUE on stream reset */
-  bool close_handled; /* TRUE if stream closure is handled by libcurl */
-  bool bodystarted;
-  bool send_closed; /* transfer is done sending, we might have still
-                        buffered data in stream->sendbuf to upload. */
+  int32_t id; /* HTTP/2 protocol identifier for stream */
+  BIT(resp_hds_complete); /* we have a complete, final response */
+  BIT(closed); /* TRUE on stream close */
+  BIT(reset);  /* TRUE on stream reset */
+  BIT(close_handled); /* TRUE if stream closure is handled by libcurl */
+  BIT(bodystarted);
+  BIT(send_closed); /* transfer is done sending, we might have still
+                       buffered data in stream->sendbuf to upload. */
 };
 
 #define H2_STREAM_CTX(d)    ((struct h2_stream_ctx *)(((d) && \
@@ -271,6 +271,15 @@ static CURLcode http2_data_setup(struct Curl_cfilter *cf,
   return CURLE_OK;
 }
 
+static void free_push_headers(struct h2_stream_ctx *stream)
+{
+  size_t i;
+  for(i = 0; i<stream->push_headers_used; i++)
+    free(stream->push_headers[i]);
+  Curl_safefree(stream->push_headers);
+  stream->push_headers_used = 0;
+}
+
 static void http2_data_done(struct Curl_cfilter *cf,
                             struct Curl_easy *data, bool premature)
 {
@@ -306,15 +315,7 @@ static void http2_data_done(struct Curl_cfilter *cf,
   Curl_bufq_free(&stream->sendbuf);
   Curl_h1_req_parse_free(&stream->h1);
   Curl_dynhds_free(&stream->resp_trailers);
-  if(stream->push_headers) {
-    /* if they weren't used and then freed before */
-    for(; stream->push_headers_used > 0; --stream->push_headers_used) {
-      free(stream->push_headers[stream->push_headers_used - 1]);
-    }
-    free(stream->push_headers);
-    stream->push_headers = NULL;
-  }
-
+  free_push_headers(stream);
   free(stream);
   H2_STREAM_LCTX(data) = NULL;
 }
@@ -839,9 +840,8 @@ fail:
 static void discard_newhandle(struct Curl_cfilter *cf,
                               struct Curl_easy *newhandle)
 {
-  if(!newhandle->req.p.http) {
+  if(newhandle->req.p.http) {
     http2_data_done(cf, newhandle, TRUE);
-    newhandle->req.p.http = NULL;
   }
   (void)Curl_close(&newhandle);
 }
@@ -861,7 +861,6 @@ static int push_promise(struct Curl_cfilter *cf,
     struct curl_pushheaders heads;
     CURLMcode rc;
     CURLcode result;
-    size_t i;
     /* clone the parent */
     struct Curl_easy *newhandle = h2_duphandle(cf, data);
     if(!newhandle) {
@@ -906,11 +905,7 @@ static int push_promise(struct Curl_cfilter *cf,
     Curl_set_in_callback(data, false);
 
     /* free the headers again */
-    for(i = 0; i<stream->push_headers_used; i++)
-      free(stream->push_headers[i]);
-    free(stream->push_headers);
-    stream->push_headers = NULL;
-    stream->push_headers_used = 0;
+    free_push_headers(stream);
 
     if(rv) {
       DEBUGASSERT((rv > CURL_PUSH_OK) && (rv <= CURL_PUSH_ERROROUT));
@@ -1422,7 +1417,7 @@ static int on_header(nghttp2_session *session, const nghttp2_frame *frame,
       stream->push_headers = malloc(stream->push_headers_alloc *
                                     sizeof(char *));
       if(!stream->push_headers)
-        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
       stream->push_headers_used = 0;
     }
     else if(stream->push_headers_used ==
@@ -1431,15 +1426,15 @@ static int on_header(nghttp2_session *session, const nghttp2_frame *frame,
       if(stream->push_headers_alloc > 1000) {
         /* this is beyond crazy many headers, bail out */
         failf(data_s, "Too many PUSH_PROMISE headers");
-        Curl_safefree(stream->push_headers);
-        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        free_push_headers(stream);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
       }
       stream->push_headers_alloc *= 2;
-      headp = Curl_saferealloc(stream->push_headers,
-                               stream->push_headers_alloc * sizeof(char *));
+      headp = realloc(stream->push_headers,
+                      stream->push_headers_alloc * sizeof(char *));
       if(!headp) {
-        stream->push_headers = NULL;
-        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        free_push_headers(stream);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
       }
       stream->push_headers = headp;
     }

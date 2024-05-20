@@ -41,6 +41,7 @@ autobuilds
 Autoconf
 autoconf
 Automake
+automake
 Autotools
 autotools
 AVR
@@ -116,6 +117,7 @@ cmake
 CMake's
 cmake's
 CMakeLists
+CNA
 CodeQL
 codeql
 CODESET
@@ -426,6 +428,7 @@ libssh
 libSSH
 libssh2
 Libtool
+libtool
 libuv
 libWebSocket
 libz

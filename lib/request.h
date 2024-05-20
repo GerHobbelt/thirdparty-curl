@@ -119,8 +119,6 @@ struct SingleRequest {
 #ifndef CURL_DISABLE_DOH
   struct dohdata *doh; /* DoH specific data for this request */
 #endif
-  char fread_eof[2]; /* the body read callback (index 0) returned EOF or
-                        the trailer read callback (index 1) returned EOF */
 #ifndef CURL_DISABLE_COOKIES
   unsigned char setcookies;
 #endif
@@ -129,6 +127,7 @@ struct SingleRequest {
   BIT(download_done); /* set to TRUE when download is complete */
   BIT(eos_written);   /* iff EOS has been written to client */
   BIT(eos_read);      /* iff EOS has been read from the client */
+  BIT(rewind_read);   /* iff reader needs rewind at next start */
   BIT(upload_done);   /* set to TRUE when all request data has been sent */
   BIT(upload_aborted); /* set to TRUE when upload was aborted. Will also
                         * show `upload_done` as TRUE. */
@@ -140,9 +139,6 @@ struct SingleRequest {
   BIT(upload_chunky); /* set TRUE if we are doing chunked transfer-encoding
                          on upload */
   BIT(getheader);    /* TRUE if header parsing is wanted */
-  BIT(forbidchunk);  /* used only to explicitly forbid chunk-upload for
-                        specific upload buffers. See readmoredata() in http.c
-                        for details. */
   BIT(no_body);      /* the response has no body */
   BIT(authneg);      /* TRUE when the auth phase has started, which means
                         that we are creating a request with an auth header,

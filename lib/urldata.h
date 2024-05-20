@@ -876,8 +876,6 @@ struct connectdata {
 #endif                        /* however, some of them are ftp specific. */
 
   struct Curl_llist easyq;    /* List of easy handles using this connection */
-  curl_seek_callback seek_func; /* function that seeks the input */
-  void *seek_client;            /* pointer to pass to the seek() above */
 
   /*************** Request - specific items ************/
 #if defined(USE_WINDOWS_SSPI) && defined(SECPKG_ATTR_ENDPOINT_BINDINGS)
@@ -1392,9 +1390,6 @@ struct UrlState {
   BIT(url_alloc);   /* URL string is malloc()'ed */
   BIT(referer_alloc); /* referer string is malloc()ed */
   BIT(wildcard_resolve); /* Set to true if any resolve change is a wildcard */
-  BIT(rewindbeforesend);/* TRUE when the sending couldn't be stopped even
-                           though it will be discarded. We must call the data
-                           rewind callback before trying to send again. */
   BIT(reported_need_more_data);   /* noise suppression for this info/warning */
   BIT(internal); /* internal: true if this easy handle was created for
                     internal use and the user does not have ownership of the

@@ -27,7 +27,7 @@ Data
 http
 </server>
 <name>
-HTTP Continue response without second set of headers
+HTTP Continue response without final response
 </name>
 <command>
 http://%HOSTIP:%HTTPPORT/%TESTNUMBER

@@ -67,6 +67,9 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
+
+static CURLcode cr_hyper_add(struct Curl_easy *data);
+
 typedef enum {
     USERDATA_NOT_SET = 0, /* for tasks with no userdata set; must be zero */
     USERDATA_RESP_BODY
@@ -154,9 +157,6 @@ static int hyper_each_header(void *userdata,
     data->state.hresult = CURLE_TOO_LARGE;
     return HYPER_ITER_BREAK;
   }
-
-  if(!data->req.bytecount)
-    Curl_pgrsTime(data, TIMER_STARTTRANSFER);
 
   Curl_dyn_reset(&data->state.headerb);
   if(name_len) {
@@ -363,7 +363,7 @@ CURLcode Curl_hyper_stream(struct Curl_easy *data,
       k->exp100 = EXP100_SEND_DATA;
       k->keepon |= KEEP_SEND;
       Curl_expire_done(data, EXPIRE_100_TIMEOUT);
-      infof(data, "Done waiting for 100-continue");
+      infof(data, "Done waiting for 100-continue after %ldms", (long)ms);
       if(data->hyp.exp100_waker) {
         hyper_waker_wake(data->hyp.exp100_waker);
         data->hyp.exp100_waker = NULL;
@@ -721,14 +721,12 @@ out:
 }
 
 /*
- * bodysend() sets up headers in the outgoing request for an HTTP transfer that
- * sends a body
+ * finalize_request() sets up last headers and optional body settings
  */
-
-static CURLcode bodysend(struct Curl_easy *data,
-                         hyper_headers *headers,
-                         hyper_request *hyperreq,
-                         Curl_HttpReq httpreq)
+static CURLcode finalize_request(struct Curl_easy *data,
+                                 hyper_headers *headers,
+                                 hyper_request *hyperreq,
+                                 Curl_HttpReq httpreq)
 {
   CURLcode result = CURLE_OK;
   struct dynbuf req;
@@ -760,7 +758,8 @@ static CURLcode bodysend(struct Curl_easy *data,
       result = CURLE_OUT_OF_MEMORY;
     }
   }
-  return result;
+
+  return cr_hyper_add(data);
 }
 
 static CURLcode cookies(struct Curl_easy *data,
@@ -848,7 +847,9 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
      may be parts of the request that is not yet sent, since we can deal with
      the rest of the request in the PERFORM phase. */
   *done = TRUE;
-  Curl_client_reset(data);
+  result = Curl_client_start(data);
+  if(result)
+    return result;
 
   /* Add collecting of headers written to client. For a new connection,
    * we might have done that already, but reuse
@@ -883,9 +884,9 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
       return result;
   }
 
-  result = Curl_http_resume(data, conn, httpreq);
+  result = Curl_http_req_set_reader(data, httpreq, &te);
   if(result)
-    return result;
+    goto error;
 
   result = Curl_http_range(data, httpreq);
   if(result)
@@ -1005,10 +1006,6 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
     result = CURLE_OUT_OF_MEMORY;
     goto error;
   }
-
-  result = Curl_http_body(data, conn, httpreq, &te);
-  if(result)
-    goto error;
 
   if(data->state.aptr.host) {
     result = Curl_hyper_header(data, headers, data->state.aptr.host);
@@ -1132,7 +1129,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   if(result)
     goto error;
 
-  result = bodysend(data, headers, req, httpreq);
+  result = finalize_request(data, headers, req, httpreq);
   if(result)
     goto error;
 
@@ -1217,6 +1214,50 @@ void Curl_hyper_done(struct Curl_easy *data)
     hyper_waker_free(h->exp100_waker);
     h->exp100_waker = NULL;
   }
+  if(h->send_body_waker) {
+    hyper_waker_free(h->send_body_waker);
+    h->send_body_waker = NULL;
+  }
+}
+
+static CURLcode cr_hyper_unpause(struct Curl_easy *data,
+                                 struct Curl_creader *reader)
+{
+  (void)reader;
+  if(data->hyp.send_body_waker) {
+    hyper_waker_wake(data->hyp.send_body_waker);
+    data->hyp.send_body_waker = NULL;
+  }
+  return CURLE_OK;
+}
+
+/* Hyper client reader, handling unpausing */
+static const struct Curl_crtype cr_hyper_protocol = {
+  "cr-hyper",
+  Curl_creader_def_init,
+  Curl_creader_def_read,
+  Curl_creader_def_close,
+  Curl_creader_def_needs_rewind,
+  Curl_creader_def_total_length,
+  Curl_creader_def_resume_from,
+  Curl_creader_def_rewind,
+  cr_hyper_unpause,
+  sizeof(struct Curl_creader)
+};
+
+static CURLcode cr_hyper_add(struct Curl_easy *data)
+{
+  struct Curl_creader *reader = NULL;
+  CURLcode result;
+
+  result = Curl_creader_create(&reader, data, &cr_hyper_protocol,
+                               CURL_CR_PROTOCOL);
+  if(!result)
+    result = Curl_creader_add(data, reader);
+
+  if(result && reader)
+    Curl_creader_free(data, reader);
+  return result;
 }
 
 #endif /* !defined(CURL_DISABLE_HTTP) && defined(USE_HYPER) */
