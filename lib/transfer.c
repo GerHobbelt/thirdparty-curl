@@ -483,7 +483,7 @@ CURLcode Curl_readwrite(struct Curl_easy *data,
   }
 
   /* If we still have writing to do, we check if we have a writable socket. */
-  if((k->keepon & KEEP_SEND) && (select_res & CURL_CSELECT_OUT) ||
+  if(((k->keepon & KEEP_SEND) && (select_res & CURL_CSELECT_OUT)) ||
      (k->keepon & KEEP_SEND_TIMED)) {
     /* write */
 
