@@ -142,7 +142,8 @@ static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *opaque)
 }
 
 static int add_transfer(CURLM *multi, CURLSH *share,
-                         struct curl_slist *resolve, const char *url)
+                         struct curl_slist *resolve,
+                         const char *url, int http_version)
 {
   CURL *easy;
   CURLMcode mc;
@@ -159,7 +160,7 @@ static int add_transfer(CURLM *multi, CURLSH *share,
   curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(easy, CURLOPT_AUTOREFERER, 1L);
   curl_easy_setopt(easy, CURLOPT_FAILONERROR, 1L);
-  curl_easy_setopt(easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+  curl_easy_setopt(easy, CURLOPT_HTTP_VERSION, http_version);
   curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, write_cb);
   curl_easy_setopt(easy, CURLOPT_WRITEDATA, NULL);
   curl_easy_setopt(easy, CURLOPT_HTTPGET, 1L);
@@ -196,13 +197,19 @@ int main(int argc, const char **argv)
   int msgs_in_queue;
   int add_more, waits, ongoing = 0;
   char *host, *port;
+  int http_version = CURL_HTTP_VERSION_1_1;
 
-  if(argc != 2) {
-    fprintf(stderr, "%s URL\n", argv[0]);
+  if(argc != 3) {
+    fprintf(stderr, "%s proto URL\n", argv[0]);
     return 2;
   }
 
-  url = argv[1];
+  if(!strcmp("h2", argv[1]))
+    http_version = CURL_HTTP_VERSION_2;
+  else if(!strcmp("h3", argv[1]))
+    http_version = CURL_HTTP_VERSION_3ONLY;
+
+  url = argv[2];
   cu = curl_url();
   if(!cu) {
     fprintf(stderr, "out of memory\n");
@@ -240,7 +247,7 @@ int main(int argc, const char **argv)
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
 
 
-  if (add_transfer(multi, share, &resolve, url))
+  if (add_transfer(multi, share, &resolve, url, http_version))
 	return 1;
 
   ++ongoing;
@@ -268,7 +275,7 @@ int main(int argc, const char **argv)
     }
     else {
       while(add_more) {
-        if (add_transfer(multi, share, &resolve, url))
+        if (add_transfer(multi, share, &resolve, url, http_version))
 		  return 1;
         ++ongoing;
         --add_more;
