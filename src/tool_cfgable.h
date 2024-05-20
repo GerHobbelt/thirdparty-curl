@@ -304,6 +304,12 @@ struct OperationConfig {
 									  i.e. non-hidden (UNIX dotfiles) and without
 									  any crufty chracters that may thwart your
 									  fileesystem. */
+#ifdef USE_ECH
+  char *ech;                      /* Config set by --ech keywords */
+  char *ech_config;               /* Config set by "--ech esl:" option */
+  char *ech_public;               /* Config set by "--ech pn:" option */
+#endif
+
 };
 
 struct GlobalConfig {

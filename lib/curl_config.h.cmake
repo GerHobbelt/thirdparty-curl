@@ -752,6 +752,9 @@ ${SIZEOF___INT64_CODE}
 /* if OpenSSL is in use */
 #cmakedefine USE_OPENSSL 1
 
+/* if librtmp/rtmpdump is in use */
+#cmakedefine USE_LIBRTMP 1
+
 /* Define to 1 if you don't want the OpenSSL configuration to be loaded
    automatically */
 #cmakedefine CURL_DISABLE_OPENSSL_AUTO_LOAD_CONFIG 1
@@ -833,6 +836,9 @@ ${SIZEOF___INT64_CODE}
 /* to enable Windows IDN */
 #cmakedefine USE_WIN32_IDN 1
 
+/* to enable Apple IDN */
+#cmakedefine USE_APPLE_IDN 1
+
 /* Define to 1 to enable websocket support. */
 #cmakedefine USE_WEBSOCKETS 1
 
@@ -844,3 +850,9 @@ ${SIZEOF___INT64_CODE}
 
 /* Define to 1 to enable TLS-SRP support. */
 #cmakedefine USE_TLS_SRP 1
+
+/* Define to 1 to query for HTTPSRR when using DoH */
+#cmakedefine USE_HTTPSRR 1
+
+/* if ECH support is available */
+#cmakedefine USE_ECH 1

@@ -56,6 +56,15 @@
 
 struct curl_trc_featt;
 
+#ifdef USE_ECH
+/* CURLECH_ bits for the tls_ech option */
+# define CURLECH_DISABLE    (1<<0)
+# define CURLECH_GREASE     (1<<1)
+# define CURLECH_ENABLE     (1<<2)
+# define CURLECH_HARD       (1<<3)
+# define CURLECH_CLA_CFG    (1<<4)
+#endif
+
 #ifdef USE_WEBSOCKETS
 /* CURLPROTO_GOPHERS (29) is the highest publicly used protocol bit number,
  * the rest are internal information. If we use higher bits we only do this on
@@ -629,6 +638,9 @@ enum doh_slots {
   DOH_PROBE_SLOT_IPADDR_V6 = 1, /* 'V6' likewise */
 
   /* Space here for (possibly build-specific) additional slot definitions */
+#ifdef USE_HTTPSRR
+  DOH_PROBE_SLOT_HTTPS = 2,     /* for HTTPS RR */
+#endif
 
   /* for example */
   /* #ifdef WANT_DOH_FOOBAR_TXT */
@@ -1391,7 +1403,6 @@ struct UrlState {
   BIT(done); /* set to FALSE when Curl_init_do() is called and set to TRUE
                 when multi_done() is called, to prevent multi_done() to get
                 invoked twice when the multi interface is used. */
-  BIT(previouslypending); /* this transfer WAS in the multi->pending queue */
 #ifndef CURL_DISABLE_COOKIES
   BIT(cookie_engine);
 #endif
@@ -1540,6 +1551,8 @@ enum dupstring {
 #ifndef CURL_DISABLE_PROXY
   STRING_HAPROXY_CLIENT_IP,     /* CURLOPT_HAPROXY_CLIENT_IP */
 #endif
+  STRING_ECH_CONFIG,            /* CURLOPT_ECH_CONFIG */
+  STRING_ECH_PUBLIC,            /* CURLOPT_ECH_PUBLIC */
 
   /* -- end of null-terminated strings -- */
 
@@ -1878,6 +1891,9 @@ struct UserDefined {
 #endif
   BIT(sanitize_with_extreme_prejudice);       /* sanitize URLs and output filenames
                           without compunction, producing filenames safe for all (modern) file systems */
+#ifdef USE_ECH
+  int tls_ech;      /* TLS ECH configuration  */
+#endif
 };
 
 #ifndef CURL_DISABLE_MIME

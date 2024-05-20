@@ -328,9 +328,11 @@ class TestDownload:
         self.check_downloads(client, srcfile, count)
 
     # download, several at a time, pause and abort paused
-    @pytest.mark.parametrize("proto", ['http/1.1', 'h2'])
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
     def test_02_23a_lib_abort_paused(self, env: Env, httpd, nghttpx, proto, repeat):
-        if proto == 'h2':
+        if proto == 'h3' and env.curl_uses_ossl_quic():
+            pytest.skip('OpenSSL QUIC fails here')
+        if proto in ['h2', 'h3']:
             count = 200
             max_parallel = 100
             pause_offset = 64 * 1024
@@ -353,9 +355,11 @@ class TestDownload:
         self.check_downloads(client, srcfile, count, complete=False)
 
     # download, several at a time, abort after n bytes
-    @pytest.mark.parametrize("proto", ['http/1.1', 'h2'])
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
     def test_02_23b_lib_abort_offset(self, env: Env, httpd, nghttpx, proto, repeat):
-        if proto == 'h2':
+        if proto == 'h3' and env.curl_uses_ossl_quic():
+            pytest.skip('OpenSSL QUIC fails here')
+        if proto in ['h2', 'h3']:
             count = 200
             max_parallel = 100
             abort_offset = 64 * 1024
@@ -378,9 +382,11 @@ class TestDownload:
         self.check_downloads(client, srcfile, count, complete=False)
 
     # download, several at a time, abort after n bytes
-    @pytest.mark.parametrize("proto", ['http/1.1', 'h2'])
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
     def test_02_23c_lib_fail_offset(self, env: Env, httpd, nghttpx, proto, repeat):
-        if proto == 'h2':
+        if proto == 'h3' and env.curl_uses_ossl_quic():
+            pytest.skip('OpenSSL QUIC fails here')
+        if proto in ['h2', 'h3']:
             count = 200
             max_parallel = 100
             fail_offset = 64 * 1024
@@ -445,12 +451,30 @@ class TestDownload:
         r.check_exit_code(0)
 
     # test on paused transfers, based on issue #11982
-    def test_02_27_paused_no_cl(self, env: Env, httpd, nghttpx, repeat):
-        proto = 'h2'
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
+    def test_02_27a_paused_no_cl(self, env: Env, httpd, nghttpx, proto, repeat):
         url = f'https://{env.authority_for(env.domain1, proto)}' \
-            '/tweak?&chunks=2&chunk_size=16000'
+            '/curltest/tweak/?&chunks=6&chunk_size=8000'
         client = LocalClient(env=env, name='h2-pausing')
-        r = client.run(args=[url])
+        r = client.run(args=['-V', proto, url])
+        r.check_exit_code(0)
+
+    # test on paused transfers, based on issue #11982
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
+    def test_02_27b_paused_no_cl(self, env: Env, httpd, nghttpx, proto, repeat):
+        url = f'https://{env.authority_for(env.domain1, proto)}' \
+            '/curltest/tweak/?error=502'
+        client = LocalClient(env=env, name='h2-pausing')
+        r = client.run(args=['-V', proto, url])
+        r.check_exit_code(0)
+
+    # test on paused transfers, based on issue #11982
+    @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
+    def test_02_27c_paused_no_cl(self, env: Env, httpd, nghttpx, proto, repeat):
+        url = f'https://{env.authority_for(env.domain1, proto)}' \
+            '/curltest/tweak/?status=200&chunks=1&chunk_size=100'
+        client = LocalClient(env=env, name='h2-pausing')
+        r = client.run(args=['-V', proto, url])
         r.check_exit_code(0)
 
     @pytest.mark.parametrize("proto", ['http/1.1', 'h2', 'h3'])
@@ -495,4 +519,3 @@ class TestDownload:
         r.check_exit_code(0)
         srcfile = os.path.join(httpd.docs_dir, docname)
         self.check_downloads(client, srcfile, count)
-
