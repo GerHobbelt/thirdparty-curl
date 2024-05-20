@@ -1847,7 +1847,6 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
   bool async;
   bool protocol_connected = FALSE;
   bool dophase_done = FALSE;
-  bool done = FALSE;
   CURLMcode rc;
   CURLcode result = CURLE_OK;
   timediff_t recv_timeout_ms;
@@ -1991,7 +1990,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
         hostname = conn->host.name;
 
       /* check if we have the name resolved by now */
-      dns = Curl_fetch_addr(data, hostname, (int)conn->port);
+      dns = Curl_fetch_addr(data, hostname, conn->primary.remote_port);
 
       if(dns) {
 #ifdef CURLRES_ASYNCH
@@ -2137,10 +2136,10 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
         /* call the prerequest callback function */
         Curl_set_in_callback(data, true);
         prereq_rc = data->set.fprereq(data->set.prereq_userp,
-                                      data->info.conn_primary_ip,
-                                      data->info.conn_local_ip,
-                                      data->info.conn_primary_port,
-                                      data->info.conn_local_port);
+                                      data->info.primary.remote_ip,
+                                      data->info.primary.local_ip,
+                                      data->info.primary.remote_port,
+                                      data->info.primary.local_port);
         Curl_set_in_callback(data, false);
         if(prereq_rc != CURL_PREREQFUNC_OK) {
           failf(data, "operation aborted by pre-request callback");
@@ -2411,7 +2410,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
       /* read/write data if it is ready to do so */
       result = Curl_readwrite(data, nowp, &done);
 
-      if(done || (result == CURLE_RECV_ERROR)) {
+      if(data->req.done || (result == CURLE_RECV_ERROR)) {
         /* If CURLE_RECV_ERROR happens early enough, we assume it was a race
          * condition and the server closed the reused connection exactly when
          * we wanted to use it, so figure out if that is indeed the case.
@@ -2426,7 +2425,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
           /* if we are to retry, set the result to OK and consider the
              request as done */
           result = CURLE_OK;
-          done = TRUE;
+          data->req.done = TRUE;
         }
       }
       else if((CURLE_HTTP2_STREAM == result) &&
@@ -2446,7 +2445,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
              as done */
           retry = TRUE;
           result = CURLE_OK;
-          done = TRUE;
+          data->req.done = TRUE;
         }
         else
           result = ret;
@@ -2468,7 +2467,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
         Curl_posttransfer(data);
         multi_done(data, result, TRUE);
       }
-      else if(done) {
+      else if(data->req.done) {
 
         /* call this even if the readwrite function returned error */
         Curl_posttransfer(data);

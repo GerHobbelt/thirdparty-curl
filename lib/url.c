@@ -1019,9 +1019,9 @@ ConnectionExists(struct Curl_easy *data,
 
     if(!canmultiplex) {
       if(Curl_resolver_asynch() &&
-         /* primary_ip[0] is NUL only if the resolving of the name hasn't
+         /* remote_ip[0] is NUL only if the resolving of the name hasn't
             completed yet and until then we don't reuse this connection */
-         !check->primary_ip[0])
+         !check->primary.remote_ip[0])
         continue;
     }
 
@@ -1344,11 +1344,15 @@ ConnectionExists(struct Curl_easy *data,
  */
 #ifndef CURL_DISABLE_VERBOSE_STRINGS
 void Curl_verboseconnect(struct Curl_easy *data,
-                         struct connectdata *conn)
+                         struct connectdata *conn, int sockindex)
 {
-  if(data->set.verbose)
+  if(data->set.verbose && sockindex == SECONDARYSOCKET)
+    infof(data, "Connected 2nd connection to %s port %u",
+          conn->secondary.remote_ip, conn->secondary.remote_port);
+  else
     infof(data, "Connected to %s (%s) port %u",
-          CURL_CONN_HOST_DISPNAME(conn), conn->primary_ip, conn->port);
+          CURL_CONN_HOST_DISPNAME(conn), conn->primary.remote_ip,
+          conn->primary.remote_port);
 }
 #endif
 
@@ -1368,7 +1372,7 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
   conn->sockfd = CURL_SOCKET_BAD;
   conn->writesockfd = CURL_SOCKET_BAD;
   conn->connection_id = -1;    /* no ID */
-  conn->port = -1; /* unknown at this point */
+  conn->primary.remote_port = -1; /* unknown at this point */
   conn->remote_port = -1; /* unknown at this point */
 
   /* Default protocol-independent behavior doesn't support persistent
@@ -1982,7 +1986,7 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
   }
   else {
     unsigned long port = strtoul(data->state.up.port, NULL, 10);
-    conn->port = conn->remote_port =
+    conn->primary.remote_port = conn->remote_port =
       (data->set.use_port && data->state.allow_port) ?
       data->set.use_port : curlx_ultous(port);
   }
@@ -2058,10 +2062,10 @@ static CURLcode setup_connection_internals(struct Curl_easy *data,
     p = conn->handler;              /* May have changed. */
   }
 
-  if(conn->port < 0)
+  if(conn->primary.remote_port < 0)
     /* we check for -1 here since if proxy was detected already, this
        was very likely already set to the proxy port */
-    conn->port = p->defport;
+    conn->primary.remote_port = p->defport;
 
   return CURLE_OK;
 }
@@ -2307,8 +2311,9 @@ static CURLcode parse_proxy(struct Curl_easy *data,
   }
   if(port >= 0) {
     proxyinfo->port = port;
-    if(conn->port < 0 || sockstype || !conn->socks_proxy.host.rawalloc)
-      conn->port = port;
+    if(conn->primary.remote_port < 0 || sockstype ||
+       !conn->socks_proxy.host.rawalloc)
+      conn->primary.remote_port = port;
   }
 
   /* now, clone the proxy host name */
@@ -3206,8 +3211,8 @@ static CURLcode resolve_proxy(struct Curl_easy *data,
   if(!conn->hostname_resolve)
     return CURLE_OUT_OF_MEMORY;
 
-  rc = Curl_resolv_timeout(data, conn->hostname_resolve, (int)conn->port,
-                           &hostaddr, timeout_ms);
+  rc = Curl_resolv_timeout(data, conn->hostname_resolve,
+                           conn->primary.remote_port, &hostaddr, timeout_ms);
   conn->dns_entry = hostaddr;
   if(rc == CURLRESOLV_PENDING)
     *async = TRUE;
@@ -3237,7 +3242,7 @@ static CURLcode resolve_host(struct Curl_easy *data,
 
   /* If not connecting via a proxy, extract the port from the URL, if it is
    * there, thus overriding any defaults that might have been set above. */
-  conn->port = conn->bits.conn_to_port ? conn->conn_to_port :
+  conn->primary.remote_port = conn->bits.conn_to_port ? conn->conn_to_port :
     conn->remote_port;
 
   /* Resolve target host right on */
@@ -3245,8 +3250,8 @@ static CURLcode resolve_host(struct Curl_easy *data,
   if(!conn->hostname_resolve)
     return CURLE_OUT_OF_MEMORY;
 
-  rc = Curl_resolv_timeout(data, conn->hostname_resolve, (int)conn->port,
-                           &hostaddr, timeout_ms);
+  rc = Curl_resolv_timeout(data, conn->hostname_resolve,
+                           conn->primary.remote_port, &hostaddr, timeout_ms);
   conn->dns_entry = hostaddr;
   if(rc == CURLRESOLV_PENDING)
     *async = TRUE;
@@ -3583,7 +3588,7 @@ static CURLcode create_conn(struct Curl_easy *data,
     /* this is supposed to be the connect function so we better at least check
        that the file is present here! */
     DEBUGASSERT(conn->handler->connect_it);
-    Curl_persistconninfo(data, conn, NULL, -1);
+    Curl_persistconninfo(data, conn, NULL);
     result = conn->handler->connect_it(data, &done);
 
     /* Setup a "faked" transfer that'll do nothing */
@@ -3852,8 +3857,8 @@ CURLcode Curl_connect(struct Curl_easy *data,
 
   *asyncp = FALSE; /* assume synchronous resolves by default */
 
-  /* init the single-transfer specific data */
-  Curl_req_reset(&data->req, data);
+  /* Set the request to virgin state based on transfer settings */
+  Curl_req_hard_reset(&data->req, data);
 
   /* call the stuff that needs to be called */
   result = create_conn(data, &conn, asyncp);
@@ -3896,8 +3901,6 @@ CURLcode Curl_connect(struct Curl_easy *data,
 
 CURLcode Curl_init_do(struct Curl_easy *data, struct connectdata *conn)
 {
-  struct SingleRequest *k = &data->req;
-
   /* if this is a pushed stream, we need this: */
   CURLcode result = Curl_preconnect(data);
   if(result)
@@ -3913,7 +3916,6 @@ CURLcode Curl_init_do(struct Curl_easy *data, struct connectdata *conn)
   }
 
   data->state.done = FALSE; /* *_done() is not called yet */
-  data->state.expect100header = FALSE;
 
   if(data->req.no_body)
     /* in HTTP lingo, no body means using the HEAD request... */
@@ -3922,10 +3924,6 @@ CURLcode Curl_init_do(struct Curl_easy *data, struct connectdata *conn)
   result = Curl_req_start(&data->req, data);
   if(result)
     return result;
-
-  k->header = TRUE; /* assume header */
-  k->bytecount = 0;
-  k->ignorebody = FALSE;
 
   Curl_speedinit(data);
   Curl_pgrsSetUploadCounter(data, 0);

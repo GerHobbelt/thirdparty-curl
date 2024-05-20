@@ -762,8 +762,7 @@ static int cb_h3_stream_close(nghttp3_conn *conn, int64_t stream_id,
 static CURLcode write_resp_hds(struct Curl_easy *data,
                                const char *buf, size_t blen)
 {
-  bool done;
-  return Curl_xfer_write_resp(data, (char *)buf, blen, FALSE, &done);
+  return Curl_xfer_write_resp(data, (char *)buf, blen, FALSE);
 }
 
 static int cb_h3_recv_data(nghttp3_conn *conn, int64_t stream3_id,
@@ -775,7 +774,6 @@ static int cb_h3_recv_data(nghttp3_conn *conn, int64_t stream3_id,
   struct Curl_easy *data = stream_user_data;
   struct h3_stream_ctx *stream = H3_STREAM_CTX(data);
   CURLcode result;
-  bool done;
 
   (void)conn;
   (void)stream3_id;
@@ -783,7 +781,7 @@ static int cb_h3_recv_data(nghttp3_conn *conn, int64_t stream3_id,
   if(!stream)
     return NGHTTP3_ERR_CALLBACK_FAILURE;
 
-  result = Curl_xfer_write_resp(data, (char *)buf, blen, FALSE, &done);
+  result = Curl_xfer_write_resp(data, (char *)buf, blen, FALSE);
   if(result) {
     CURL_TRC_CF(data, cf, "[%" PRId64 "] DATA len=%zu, ERROR receiving %d",
                 stream->id, blen, result);
@@ -1034,7 +1032,7 @@ static ssize_t recv_closed_stream(struct Curl_cfilter *cf,
   if(stream->reset) {
     failf(data,
           "HTTP/3 stream %" PRId64 " reset by server", stream->id);
-    *err = stream->resp_hds_complete? CURLE_PARTIAL_FILE : CURLE_HTTP3;
+    *err = data->req.bytecount? CURLE_PARTIAL_FILE : CURLE_HTTP3;
     goto out;
   }
   else if(!stream->resp_hds_complete) {
@@ -1980,8 +1978,7 @@ static CURLcode cf_connect_start(struct Curl_cfilter *cf,
   if(result)
     return result;
 
-  Curl_cf_socket_peek(cf->next, data, &ctx->q.sockfd,
-                      &sockaddr, NULL, NULL, NULL, NULL);
+  Curl_cf_socket_peek(cf->next, data, &ctx->q.sockfd, &sockaddr, NULL);
   if(!sockaddr)
     return CURLE_QUIC_CONNECT_ERROR;
   ctx->q.local_addrlen = sizeof(ctx->q.local_addr);
@@ -2096,13 +2093,11 @@ out:
 
 #ifndef CURL_DISABLE_VERBOSE_STRINGS
   if(result) {
-    const char *r_ip = NULL;
-    int r_port = 0;
+    struct ip_quadruple ip;
 
-    Curl_cf_socket_peek(cf->next, data, NULL, NULL,
-                        &r_ip, &r_port, NULL, NULL);
+    Curl_cf_socket_peek(cf->next, data, NULL, NULL, &ip);
     infof(data, "QUIC connect to %s port %u failed: %s",
-          r_ip, r_port, curl_easy_strerror(result));
+          ip.remote_ip, ip.remote_port, curl_easy_strerror(result));
   }
 #endif
   if(!result && ctx->qconn) {

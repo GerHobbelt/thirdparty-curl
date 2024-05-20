@@ -8,6 +8,8 @@ See-also:
   - CURLINFO_APPCONNECT_TIME_T (3)
   - curl_easy_getinfo (3)
   - curl_easy_setopt (3)
+Protocol:
+  - All
 ---
 
 # NAME
@@ -34,10 +36,6 @@ delayed due to waits in line for the pipeline and more.
 When a redirect is followed, the time from each request is added together.
 
 See also the TIMES overview in the curl_easy_getinfo(3) man page.
-
-# PROTOCOLS
-
-All
 
 # EXAMPLE
 

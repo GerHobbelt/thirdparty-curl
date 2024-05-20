@@ -10,6 +10,8 @@ See-also:
   - CURLOPT_POSTFIELDSIZE (3)
   - CURLOPT_READFUNCTION (3)
   - CURLOPT_UPLOAD (3)
+Protocol:
+  - HTTP
 ---
 
 # NAME
@@ -68,10 +70,6 @@ CURLOPT_MIMEPOST(3) option combined with curl_mime_init(3).
 # DEFAULT
 
 NULL
-
-# PROTOCOLS
-
-HTTP
 
 # EXAMPLE
 

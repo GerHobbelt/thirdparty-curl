@@ -164,7 +164,6 @@ typedef ssize_t (Curl_recv)(struct Curl_easy *data,   /* transfer */
 typedef CURLcode (*Curl_datastream)(struct Curl_easy *data,
                                     struct connectdata *conn,
                                     int *didwhat,
-                                    bool *done,
                                     int select_res);
 #endif
 
@@ -582,6 +581,14 @@ struct hostname {
 #define KEEP_RECV_PAUSE (1<<4) /* reading is paused */
 #define KEEP_SEND_PAUSE (1<<5) /* writing is paused */
 
+/* KEEP_SEND_TIMED is set when the transfer should attempt sending
+ * at timer (or other) events. A transfer waiting on a timer will
+  * remove KEEP_SEND to suppress POLLOUTs of the connection.
+  * Adding KEEP_SEND_TIMED will then attempt to send whenever the transfer
+  * enters the "readwrite" loop, e.g. when a timer fires.
+  * This is used in HTTP for 'Expect: 100-continue' waiting. */
+#define KEEP_SEND_TIMED (1<<6)
+
 #define KEEP_RECVBITS (KEEP_RECV | KEEP_RECV_HOLD | KEEP_RECV_PAUSE)
 #define KEEP_SENDBITS (KEEP_SEND | KEEP_SEND_HOLD | KEEP_SEND_PAUSE)
 
@@ -705,7 +712,7 @@ struct Curl_handler {
      allow the protocol to do extra handling in writing response to
      the client. */
   CURLcode (*write_resp)(struct Curl_easy *data, const char *buf, size_t blen,
-                         bool is_eos, bool *done);
+                         bool is_eos);
 
   /* This function can perform various checks on the connection. See
      CONNCHECK_* for more information about the checks that can be performed,
@@ -760,6 +767,13 @@ struct Curl_handler {
 
 #define CONNRESULT_NONE 0                /* No extra information. */
 #define CONNRESULT_DEAD (1<<0)           /* The connection is dead. */
+
+struct ip_quadruple {
+  char remote_ip[MAX_IPADR_LEN];
+  char local_ip[MAX_IPADR_LEN];
+  int remote_port;
+  int local_port;
+};
 
 struct proxy_info {
   struct hostname host;
@@ -816,14 +830,13 @@ struct connectdata {
   struct proxy_info socks_proxy;
   struct proxy_info http_proxy;
 #endif
-  /* 'primary_ip' and 'primary_port' get filled with peer's numerical
-     ip address and port number whenever an outgoing connection is
-     *attempted* from the primary socket to a remote address. When more
-     than one address is tried for a connection these will hold data
+  /* 'primary' and 'secondary' get filled with IP quadruple
+     (local/remote numerical ip address and port) whenever a is *attempted*.
+     When more than one address is tried for a connection these will hold data
      for the last attempt. When the connection is actually established
      these are updated with data which comes directly from the socket. */
-
-  char primary_ip[MAX_IPADR_LEN];
+  struct ip_quadruple primary;
+  struct ip_quadruple secondary;
   char *user;    /* user name string, allocated */
   char *passwd;  /* password string, allocated */
   char *options; /* options string, allocated */
@@ -969,7 +982,6 @@ struct connectdata {
   int socks5_gssapi_enctype;
 #endif
   /* The field below gets set in connect.c:connecthost() */
-  int port;        /* which port to use locally - to connect to */
   int remote_port; /* the remote port, not the proxy port! */
   int conn_to_port; /* the remote port to connect to. valid only if
                        bits.conn_to_port is set */
@@ -1024,22 +1036,16 @@ struct PureInfo {
   curl_off_t retry_after; /* info from Retry-After: header */
   unsigned int header_size;  /* size of read header(s) in bytes */
 
-  /* PureInfo members 'conn_primary_ip', 'conn_primary_port', 'conn_local_ip'
-     and, 'conn_local_port' are copied over from the connectdata struct in
-     order to allow curl_easy_getinfo() to return this information even when
-     the session handle is no longer associated with a connection, and also
-     allow curl_easy_reset() to clear this information from the session handle
-     without disturbing information which is still alive, and that might be
-     reused, in the connection cache. */
-
-  char conn_primary_ip[MAX_IPADR_LEN];
-  int conn_primary_port; /* this is the destination port to the connection,
-                            which might have been a proxy */
+  /* PureInfo primary ip_quadruple is copied over from the connectdata
+     struct in order to allow curl_easy_getinfo() to return this information
+     even when the session handle is no longer associated with a connection,
+     and also allow curl_easy_reset() to clear this information from the
+     session handle without disturbing information which is still alive, and
+     that might be reused, in the connection cache. */
+  struct ip_quadruple primary;
   int conn_remote_port;  /* this is the "remote port", which is the port
                             number of the used URL, independent of proxy or
                             not */
-  char conn_local_ip[MAX_IPADR_LEN];
-  int conn_local_port;
   const char *conn_scheme;
   unsigned int conn_protocol;
   struct curl_certinfo certs; /* info about the certs. Asked for with
@@ -1371,7 +1377,6 @@ struct UrlState {
   BIT(authproblem); /* TRUE if there's some problem authenticating */
   /* set after initial USER failure, to prevent an authentication loop */
   BIT(wildcardmatch); /* enable wildcard matching */
-  BIT(expect100header);  /* TRUE if we added Expect: 100-continue */
   BIT(disableexpect);    /* TRUE if Expect: is disabled due to a previous
                             417 response */
   BIT(use_range);

@@ -370,12 +370,10 @@ static CURLcode recvmmsg_packets(struct Curl_cfilter *cf,
         goto out;
       }
       if(!cf->connected && SOCKERRNO == ECONNREFUSED) {
-        const char *r_ip = NULL;
-        int r_port = 0;
-        Curl_cf_socket_peek(cf->next, data, NULL, NULL,
-                            &r_ip, &r_port, NULL, NULL);
+        struct ip_quadruple ip;
+        Curl_cf_socket_peek(cf->next, data, NULL, NULL, &ip);
         failf(data, "QUIC: connection to %s port %u refused",
-              r_ip, r_port);
+              ip.remote_ip, ip.remote_port);
         result = CURLE_COULDNT_CONNECT;
         goto out;
       }
@@ -441,12 +439,10 @@ static CURLcode recvmsg_packets(struct Curl_cfilter *cf,
         goto out;
       }
       if(!cf->connected && SOCKERRNO == ECONNREFUSED) {
-        const char *r_ip = NULL;
-        int r_port = 0;
-        Curl_cf_socket_peek(cf->next, data, NULL, NULL,
-                            &r_ip, &r_port, NULL, NULL);
+        struct ip_quadruple ip;
+        Curl_cf_socket_peek(cf->next, data, NULL, NULL, &ip);
         failf(data, "QUIC: connection to %s port %u refused",
-              r_ip, r_port);
+              ip.remote_ip, ip.remote_port);
         result = CURLE_COULDNT_CONNECT;
         goto out;
       }
@@ -501,12 +497,10 @@ static CURLcode recvfrom_packets(struct Curl_cfilter *cf,
         goto out;
       }
       if(!cf->connected && SOCKERRNO == ECONNREFUSED) {
-        const char *r_ip = NULL;
-        int r_port = 0;
-        Curl_cf_socket_peek(cf->next, data, NULL, NULL,
-                            &r_ip, &r_port, NULL, NULL);
+        struct ip_quadruple ip;
+        Curl_cf_socket_peek(cf->next, data, NULL, NULL, &ip);
         failf(data, "QUIC: connection to %s port %u refused",
-              r_ip, r_port);
+              ip.remote_ip, ip.remote_port);
         result = CURLE_COULDNT_CONNECT;
         goto out;
       }

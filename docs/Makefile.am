@@ -90,6 +90,7 @@ EXTRA_DIST =                                    \
  RUSTLS.md                                      \
  ROADMAP.md                                     \
  SECURITY-ADVISORY.md                           \
+ SPONSORS.md                                    \
  SSL-PROBLEMS.md                                \
  SSLCERTS.md                                    \
  THANKS                                         \
