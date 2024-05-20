@@ -193,12 +193,8 @@ struct HTTP {
   struct websocket ws;
 #endif
 
-#ifndef CURL_DISABLE_HTTP
-  void *h2_ctx;              /* HTTP/2 implementation context */
-  void *h3_ctx;              /* HTTP/3 implementation context */
-#else
+  /* TODO: no longer used, we should remove it from SingleRequest */
   char unused;
-#endif
 };
 
 CURLcode Curl_http_size(struct Curl_easy *data);
