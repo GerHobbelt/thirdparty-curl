@@ -307,7 +307,7 @@ const struct helptxt helptext[] = {
    "Allow insecure server connections",
    CURLHELP_TLS | CURLHELP_SFTP | CURLHELP_SCP},
   {"    --interface <name>",
-   "Use network INTERFACE (or address)",
+   "Use network interface",
    CURLHELP_CONNECTION},
   {"    --ipfs-gateway <URL>",
    "Gateway for IPFS",
