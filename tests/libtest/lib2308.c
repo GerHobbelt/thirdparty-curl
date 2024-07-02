@@ -21,41 +21,34 @@
  * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
-#include "tool_setup.h"
 
-#ifdef HAVE_SYS_SELECT_H
-#  include <sys/select.h>
-#elif defined(HAVE_UNISTD_H)
-#  include <unistd.h>
-#endif
+#include "test.h"
+#include "testtrace.h"
 
-#ifdef HAVE_POLL_H
-#  include <poll.h>
-#elif defined(HAVE_SYS_POLL_H)
-#  include <sys/poll.h>
-#endif
+#include <curl/curl.h>
 
-#ifdef MSDOS
-#  include <dos.h>
-#endif
-
-#include "tool_sleep.h"
-
-#include "memdebug.h" /* keep this as LAST include */
-
-void tool_go_sleep(long ms)
+static size_t cb_curl(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-#if defined(MSDOS)
-  delay(ms);
-#elif defined(_WIN32)
-  Sleep((DWORD)ms);
-#elif defined(HAVE_POLL_FINE)
-  (void)poll((void *)0, 0, (int)ms);
-#else
-  struct timeval timeout;
-  timeout.tv_sec = ms / 1000L;
-  ms = ms % 1000L;
-  timeout.tv_usec = (int)ms * 1000;
-  select(0, NULL,  NULL, NULL, &timeout);
-#endif
+  (void)buffer;
+  (void)size;
+  (void)nmemb;
+  (void)userp;
+  return CURL_WRITEFUNC_ERROR;
+}
+
+CURLcode test(char *URL)
+{
+  CURL *curl;
+  CURLcode res = CURLE_OK;
+
+  global_init(CURL_GLOBAL_ALL);
+  curl = curl_easy_init();
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cb_curl);
+  curl_easy_setopt(curl, CURLOPT_URL, URL);
+  res = curl_easy_perform(curl);
+  printf("Returned %d, should be %d.\n", res, CURLE_WRITE_ERROR);
+  fflush(stdout);
+  curl_easy_cleanup(curl);
+  curl_global_cleanup();
+  return CURLE_OK;
 }

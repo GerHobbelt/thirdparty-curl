@@ -255,7 +255,7 @@ int main(int argc, const char **argv)
   result = win32_init();
   if(result) {
     errorf(&global, "(%d) Windows-specific init failed", result);
-    return result;
+    return (int)result;
   }
 #endif
 
