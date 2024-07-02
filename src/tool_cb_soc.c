@@ -1,5 +1,3 @@
-#ifndef HEADER_CURL_TOOL_WRITEOUT_JSON_H
-#define HEADER_CURL_TOOL_WRITEOUT_JSON_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -24,16 +22,37 @@
  *
  ***************************************************************************/
 #include "tool_setup.h"
-#include "tool_writeout.h"
-#include "dynbuf.h"
 
-int jsonquoted(const char *in, size_t len,
-               struct dynbuf *out, bool lowercase);
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h> /* IPPROTO_TCP */
+#endif
 
-void ourWriteOutJSON(FILE *stream, const struct writeoutvar mappings[],
-                     size_t nentries,
-                     struct per_transfer *per, CURLcode per_result);
-void headerJSON(FILE *stream, struct per_transfer *per);
-void jsonWriteString(FILE *stream, const char *in, bool lowercase);
+#include "tool_cb_soc.h"
 
-#endif /* HEADER_CURL_TOOL_WRITEOUT_H */
+/*
+** callback for CURLOPT_OPENSOCKETFUNCTION
+**
+** Notice that only Linux is supported for the moment.
+*/
+
+curl_socket_t tool_socket_open_mptcp_cb(void *clientp,
+                                        curlsocktype purpose,
+                                        struct curl_sockaddr *addr)
+{
+  int protocol = addr->protocol;
+
+  (void)clientp;
+  (void)purpose;
+
+  if(protocol == IPPROTO_TCP)
+#if defined(__linux__)
+#  ifndef IPPROTO_MPTCP
+#  define IPPROTO_MPTCP 262
+#  endif
+    protocol = IPPROTO_MPTCP;
+#else
+    return CURL_SOCKET_BAD;
+#endif
+
+  return socket(addr->family, addr->socktype, protocol);
+}

@@ -126,7 +126,7 @@ int Curl_blockread_all(struct Curl_cfilter *cf,
     }
     nread = Curl_conn_cf_recv(cf->next, data, buf, buffersize, &err);
     if(nread <= 0) {
-      result = err;
+      result = (int)err;
       if(CURLE_AGAIN == err)
         continue;
       if(err) {
@@ -1252,6 +1252,7 @@ struct Curl_cftype Curl_cft_socks_proxy = {
   socks_proxy_cf_destroy,
   socks_proxy_cf_connect,
   socks_proxy_cf_close,
+  Curl_cf_def_shutdown,
   socks_cf_get_host,
   socks_cf_adjust_pollset,
   Curl_cf_def_data_pending,
