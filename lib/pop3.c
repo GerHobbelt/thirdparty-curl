@@ -113,7 +113,7 @@ static CURLcode pop3_get_message(struct Curl_easy *data, struct bufref *out);
  */
 
 const struct Curl_handler Curl_handler_pop3 = {
-  "POP3",                           /* scheme */
+  "pop3",                           /* scheme */
   pop3_setup_connection,            /* setup_connection */
   pop3_do,                          /* do_it */
   pop3_done,                        /* done */
@@ -143,7 +143,7 @@ const struct Curl_handler Curl_handler_pop3 = {
  */
 
 const struct Curl_handler Curl_handler_pop3s = {
-  "POP3S",                          /* scheme */
+  "pop3s",                          /* scheme */
   pop3_setup_connection,            /* setup_connection */
   pop3_do,                          /* do_it */
   pop3_done,                        /* done */
