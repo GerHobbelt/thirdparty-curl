@@ -462,7 +462,7 @@ extern "C" {
 #endif
 
 #ifndef SIZEOF_TIME_T
-/* assume default size of time_t to be 32 bit */
+/* assume default size of time_t to be 32 bits */
 #define SIZEOF_TIME_T 4
 #endif
 
