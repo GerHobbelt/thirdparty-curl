@@ -25,13 +25,15 @@
 #include "curl_setup.h"
 
 #if defined(USE_GNUTLS) || defined(USE_WOLFSSL) ||      \
-  defined(USE_SCHANNEL) || defined(USE_SECTRANSP)
+  defined(USE_SCHANNEL) || defined(USE_SECTRANSP) ||    \
+  defined(USE_MBEDTLS)
 
 #if defined(USE_WOLFSSL) || defined(USE_SCHANNEL)
 #define WANT_PARSEX509 /* uses Curl_parseX509() */
 #endif
 
-#if defined(USE_GNUTLS) || defined(USE_SCHANNEL) || defined(USE_SECTRANSP)
+#if defined(USE_GNUTLS) || defined(USE_SCHANNEL) || defined(USE_SECTRANSP) || \
+  defined(USE_MBEDTLS)
 #define WANT_EXTRACT_CERTINFO /* uses Curl_extract_certinfo() */
 #define WANT_PARSEX509 /* ... uses Curl_parseX509() */
 #endif
@@ -692,6 +694,11 @@ static CURLcode encodeDN(struct dynbuf *store, struct Curl_asn1Element *dn)
         goto error;
 
       str = Curl_dyn_ptr(&temp);
+
+      if(!str) {
+        result = CURLE_BAD_FUNCTION_ARGUMENT;
+        goto error;
+      }
 
       /* Encode delimiter.
          If attribute has a short uppercase name, delimiter is ", ". */
