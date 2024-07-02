@@ -164,7 +164,7 @@ static int get_address_family(curl_socket_t sockfd)
 }
 #endif
 
-#if defined(IP_TOS) || defined(IPV6_TCLASS)
+#if defined(IP_TOS) || defined(IPV6_TCLASS) || defined(SO_PRIORITY)
 static int sockopt_callback(void *clientp, curl_socket_t curlfd,
                             curlsocktype purpose)
 {
@@ -173,6 +173,7 @@ static int sockopt_callback(void *clientp, curl_socket_t curlfd,
     return CURL_SOCKOPT_OK;
   (void)config;
   (void)curlfd;
+#if defined(IP_TOS) || defined(IPV6_TCLASS)
   if(config->ip_tos > 0) {
     int tos = (int)config->ip_tos;
     int result = 0;
@@ -197,6 +198,18 @@ static int sockopt_callback(void *clientp, curl_socket_t curlfd,
             tos, error, strerror(error));
     }
   }
+#endif
+#ifdef SO_PRIORITY
+  if(config->vlan_priority > 0) {
+    int priority = (int)config->vlan_priority;
+    if(setsockopt(curlfd, SOL_SOCKET, SO_PRIORITY,
+      (const char *)&priority, sizeof(priority)) != 0) {
+      int error = errno;
+      warnf(config->global, "VLAN priority %d failed with errno %d: %s;\n",
+            priority, error, strerror(error));
+    }
+  }
+#endif
   return CURL_SOCKOPT_OK;
 }
 #endif
@@ -518,7 +531,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
 
   /* if retry-max-time is non-zero, make sure we haven't exceeded the
      time */
-  if(per->retry_numretries &&
+  if(per->retry_remaining &&
      (!config->retry_maxtime ||
       (tvdiff(tvnow(), per->retrystart) <
        config->retry_maxtime*1000L)) ) {
@@ -640,9 +653,9 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
       warnf(config->global, "Problem %s. "
             "Will retry in %ld seconds. "
             "%ld retries left.",
-            m[retry], sleeptime/1000L, per->retry_numretries);
+            m[retry], sleeptime/1000L, per->retry_remaining);
 
-      per->retry_numretries--;
+      per->retry_remaining--;
       if(!config->retry_delay) {
         per->retry_sleep *= 2;
         if(per->retry_sleep > RETRY_SLEEP_MAX)
@@ -680,10 +693,11 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
         outs->bytes = 0; /* clear for next round */
       }
       *retryp = TRUE;
+      per->num_retries++;
       *delay = sleeptime;
       return CURLE_OK;
     }
-  } /* if retry_numretries */
+  } /* if retry_remaining */
 noretry:
 
   if((global->progressmode == CURL_PROGRESS_BAR || global->progressmode == CURL_PROGRESS_PERCENT) &&
@@ -2156,6 +2170,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             my_setopt(curl, CURLOPT_TCP_KEEPIDLE, config->alivetime);
             my_setopt(curl, CURLOPT_TCP_KEEPINTVL, config->alivetime);
           }
+          if(config->alivecnt)
+            my_setopt(curl, CURLOPT_TCP_KEEPCNT, config->alivecnt);
         }
         else
           my_setopt(curl, CURLOPT_TCP_KEEPALIVE, 0L);
@@ -2318,20 +2334,28 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 #endif
 
         /* new in 8.9.0 */
-        if(config->ip_tos > 0) {
-#if defined(IP_TOS) || defined(IPV6_TCLASS)
+        if(config->ip_tos > 0 || config->vlan_priority > 0) {
+#if defined(IP_TOS) || defined(IPV6_TCLASS) || defined(SO_PRIORITY)
           my_setopt(curl, CURLOPT_SOCKOPTFUNCTION, sockopt_callback);
           my_setopt(curl, CURLOPT_SOCKOPTDATA, config);
 #else
-          warnf(config->global,
-                "Type of service is not supported in this build.");
+          if(config->ip_tos > 0) {
+            errorf(config->global,
+                  "Type of service is not supported in this build.");
+            result = CURLE_NOT_BUILT_IN;
+          }
+          if(config->vlan_priority > 0) {
+            errorf(config->global,
+                  "VLAN priority is not supported in this build.");
+            result = CURLE_NOT_BUILT_IN;
+          }
 #endif
         }
 
         /* initialize retry vars for loop below */
         per->retry_sleep_default = (config->retry_delay) ?
           config->retry_delay*1000L : RETRY_SLEEP_DEFAULT; /* ms */
-        per->retry_numretries = config->req_retry;
+        per->retry_remaining = config->req_retry;
         per->retry_sleep = per->retry_sleep_default; /* ms */
         per->retrystart = tvnow();
 

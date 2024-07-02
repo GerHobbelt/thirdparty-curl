@@ -483,6 +483,7 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
   set->tcp_keepalive = FALSE;
   set->tcp_keepintvl = 60;
   set->tcp_keepidle = 60;
+  set->tcp_keepcnt = 9;
   set->tcp_maxseg = -1;
   set->tcp_fastopen = FALSE;
   set->tcp_nodelay = TRUE;
@@ -3565,7 +3566,7 @@ static CURLcode create_conn(struct Curl_easy *data,
         (void)conn->handler->done(data, result, FALSE);
         goto out;
       }
-      Curl_xfer_setup(data, -1, -1, FALSE, -1);
+      Curl_xfer_setup_nop(data);
     }
 
     /* since we skip do_init() */

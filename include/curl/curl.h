@@ -2264,28 +2264,31 @@ typedef enum {
   /* millisecond version */
   CURLOPT(CURLOPT_SERVER_RESPONSE_TIMEOUT_MS, CURLOPTTYPE_LONG, 324),
 
-  /* set ECH configuration  */
+  /* set ECH configuration */
   CURLOPT(CURLOPT_ECH, CURLOPTTYPE_STRINGPOINT, 325),
 
+  /* maximum number of keepalive probes (Linux, *BSD, macOS, etc.) */
+  CURLOPT(CURLOPT_TCP_KEEPCNT, CURLOPTTYPE_LONG, 326),
+
   /* Connection timeout per address attempt in milliseconds */
-  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 326),
+  CURLOPT(CURLOPT_TIMEOUT_PER_ADDR, CURLOPTTYPE_LONG, 327),
 
   /* TCP maximum segment size (MSS) as set through TCP_MAXSEG */
-  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 327),
+  CURLOPT(CURLOPT_TCP_MAXSEG, CURLOPTTYPE_LONG, 328),
   
   /* Set secure authentication mechanisms flags. */
-  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 328),
+  CURLOPT(CURLOPT_SAFE_AUTH, CURLOPTTYPE_LONG, 329),
 
-  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 329),
+  CURLOPT(CURLOPT_NOCLOBBER_OUTPUT_FILE, CURLOPTTYPE_LONG, 330),
 	  
   /* Sanitize without extreme prejudice */
-  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 330),
+  CURLOPT(CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE, CURLOPTTYPE_LONG, 331),
 
   /* Automatically create local directories in the generated outut file path when they don't exist yet */
-  CURLOPT(CURLOPT_CREATE_DIRS_FOR_OUTPUT, CURLOPTTYPE_LONG, 331),
+  CURLOPT(CURLOPT_CREATE_DIRS_FOR_OUTPUT, CURLOPTTYPE_LONG, 332),
 
   /* The generated output file path is derived from the fully qualified URI. (Takes no-clobber and a few other options into account though, so the file name may end uplooking slightly different.) */
-  CURLOPT(CURLOPT_OUTPUT_PATH_MIMICS_URL, CURLOPTTYPE_LONG, 332),
+  CURLOPT(CURLOPT_OUTPUT_PATH_MIMICS_URL, CURLOPTTYPE_LONG, 333),
 
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
