@@ -170,6 +170,7 @@ for my $n (@out) {
     chomp $n;
     $n =~ s/\\/\\\\/g;
     $n =~ s/\"/\\\"/g;
+    $n =~ s/\t/\\t/g;
 
     if(!$n) {
         $blank++;
