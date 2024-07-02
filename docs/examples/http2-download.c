@@ -34,10 +34,8 @@
 #include <errno.h>
 
 /* somewhat unix-specific */
-#if !defined(_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
-#  include <sys/time.h>
-#endif
-#if !defined(_WIN32)
+#ifndef _WIN32
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 

@@ -37,10 +37,8 @@
 #include <errno.h>
 
 /* somewhat unix-specific */
-#if !defined(_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#ifndef _MSC_VER
 #include <sys/time.h>
-#endif
-#if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
@@ -55,6 +53,26 @@
 #endif
 
 #define NUM_HANDLES 1000
+
+#ifdef _MSC_VER
+#define gettimeofday(a, b) my_gettimeofday((a), (b))
+int my_gettimeofday(struct timeval *tp, void *tzp)
+{
+  (void)tzp;
+  if(tp) {
+    /* Offset between 1601-01-01 and 1970-01-01 in 100 nanosec units */
+    #define _WIN32_FT_OFFSET (116444736000000000)
+    union {
+      CURL_TYPEOF_CURL_OFF_T ns100; /* time since 1 Jan 1601 in 100ns units */
+      FILETIME ft;
+    } _now;
+    GetSystemTimeAsFileTime(&_now.ft);
+    tp->tv_usec = (long)((_now.ns100 / 10) % 1000000);
+    tp->tv_sec = (long)((_now.ns100 - _WIN32_FT_OFFSET) / 10000000);
+  }
+  return 0;
+}
+#endif
 
 struct input {
   FILE *in;

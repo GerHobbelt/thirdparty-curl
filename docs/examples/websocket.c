@@ -27,9 +27,13 @@
  */
 #include <stdio.h>
 #include <string.h>
-#if !defined(_WIN32)
+#ifdef _WIN32
+#include <windows.h>
+#define sleep(s) Sleep((DWORD)(s))
+#else
 #include <unistd.h>
 #endif
+
 #include <curl/curl.h>
 
 #ifdef _WIN32

@@ -33,7 +33,7 @@ if [ "${APPVEYOR_BUILD_WORKER_IMAGE}" = 'Visual Studio 2022' ]; then
 else
   openssl_root_win='C:/OpenSSL-v111-Win64'
 fi
-openssl_root="$(cygpath -u "${openssl_root_win}")"
+openssl_root="$(cygpath "${openssl_root_win}")"
 
 if [ "${BUILD_SYSTEM}" = 'CMake' ]; then
   options=''
@@ -43,7 +43,7 @@ if [ "${BUILD_SYSTEM}" = 'CMake' ]; then
   [ "${PRJ_CFG}" = 'Release' ] && options+=' -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE='
   [[ "${PRJ_GEN}" = *'Visual Studio'* ]] && options+=' -DCMAKE_VS_GLOBALS=TrackFileAccess=false'
   if [ "${PRJ_GEN}" = 'Visual Studio 9 2008' ]; then
-    [ "${PRJ_CFG}" = 'Debug' ] && [ "${DEBUG}" = 'ON' ] && [ "${SHARED}" = 'ON' ] && SKIP_RUN='Crash on startup in -DDEBUGBUILD shared builds'
+    [ "${DEBUG}" = 'ON' ] && [ "${SHARED}" = 'ON' ] && SKIP_RUN='Crash on startup in ENABLE_DEBUG=ON shared builds'
     # Fails to run without this due to missing MSVCR90.dll / MSVCR90D.dll
     options+=' -DCURL_STATIC_CRT=ON'
   fi
@@ -121,10 +121,10 @@ fi
 
 if [ "${TESTING}" = 'ON' ]; then
   export TFLAGS=''
-  if [ -x "$(cygpath -u "${WINDIR}/System32/curl.exe")" ]; then
-    TFLAGS+=" -ac $(cygpath -u "${WINDIR}/System32/curl.exe")"
-  elif [ -x "$(cygpath -u 'C:/msys64/usr/bin/curl.exe')" ]; then
-    TFLAGS+=" -ac $(cygpath -u 'C:/msys64/usr/bin/curl.exe')"
+  if [ -x "$(cygpath "${SYSTEMROOT}/System32/curl.exe")" ]; then
+    TFLAGS+=" -ac $(cygpath "${SYSTEMROOT}/System32/curl.exe")"
+  elif [ -x "$(cygpath 'C:/msys64/usr/bin/curl.exe')" ]; then
+    TFLAGS+=" -ac $(cygpath 'C:/msys64/usr/bin/curl.exe')"
   fi
   TFLAGS+=" ${DISABLED_TESTS:-}"
   if [ "${BUILD_SYSTEM}" = 'CMake' ]; then

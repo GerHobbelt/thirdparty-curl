@@ -32,10 +32,8 @@
 #include <string.h>
 
 /* somewhat unix-specific */
-#if !defined(_WIN32) && !defined(CURL_AVOID_SYS_TIME_H)
+#ifndef _WIN32
 #include <sys/time.h>
-#endif
-#if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
