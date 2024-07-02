@@ -211,7 +211,7 @@ static CURLcode Curl_wssl_init_ssl(struct curl_tls_ctx *ctx,
 
   if(alpn)
     wolfSSL_set_alpn_protos(ctx->wssl.handle, (const unsigned char *)alpn,
-                            (int)alpn_len);
+                            (unsigned int)alpn_len);
 
   if(peer->sni) {
     wolfSSL_UseSNI(ctx->wssl.handle, WOLFSSL_SNI_HOST_NAME,
@@ -262,10 +262,9 @@ void Curl_vquic_tls_cleanup(struct curl_tls_ctx *ctx)
   if(ctx->ossl.ssl_ctx)
     SSL_CTX_free(ctx->ossl.ssl_ctx);
 #elif defined(USE_GNUTLS)
-  if(ctx->gtls.cred)
-    gnutls_certificate_free_credentials(ctx->gtls.cred);
   if(ctx->gtls.session)
     gnutls_deinit(ctx->gtls.session);
+  Curl_gtls_shared_creds_free(&ctx->gtls.shared_creds);
 #elif defined(USE_WOLFSSL)
   if(ctx->wssl.handle)
     wolfSSL_free(ctx->wssl.handle);
@@ -293,7 +292,7 @@ CURLcode Curl_vquic_tls_before_recv(struct curl_tls_ctx *ctx,
       return result;
   }
 #elif defined(USE_GNUTLS)
-  if(!ctx->gtls.trust_setup) {
+  if(!ctx->gtls.shared_creds->trust_setup) {
     CURLcode result = Curl_gtls_client_trust_setup(cf, data, &ctx->gtls);
     if(result)
       return result;
