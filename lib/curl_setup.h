@@ -50,7 +50,7 @@
 
 #ifdef _WIN32
 /*
- * Don't include unneeded stuff in Windows headers to avoid compiler
+ * Do not include unneeded stuff in Windows headers to avoid compiler
  * warnings and macro clashes.
  * Make sure to define this macro before including any Windows headers.
  *
@@ -320,7 +320,7 @@
 
 /*
  * Use getaddrinfo to resolve the IPv4 address literal. If the current network
- * interface doesn't support IPv4, but supports IPv6, NAT64, and DNS64,
+ * interface does not support IPv4, but supports IPv6, NAT64, and DNS64,
  * performing this task will result in a synthesized IPv6 address.
  */
 #if defined(__APPLE__) && !defined(USE_ARES)
@@ -485,7 +485,7 @@ extern "C" {
 #endif
 
 /*
- * Default sizeof(off_t) in case it hasn't been defined in config file.
+ * Default sizeof(off_t) in case it has not been defined in config file.
  */
 
 #ifndef SIZEOF_OFF_T
@@ -552,7 +552,7 @@ extern "C" {
 #endif
 
 #ifndef SIZE_T_MAX
-/* some limits.h headers have this defined, some don't */
+/* some limits.h headers have this defined, some do not */
 #if defined(SIZEOF_SIZE_T) && (SIZEOF_SIZE_T > 4)
 #define SIZE_T_MAX 18446744073709551615U
 #else
@@ -561,7 +561,7 @@ extern "C" {
 #endif
 
 #ifndef SSIZE_T_MAX
-/* some limits.h headers have this defined, some don't */
+/* some limits.h headers have this defined, some do not */
 #if defined(SIZEOF_SIZE_T) && (SIZEOF_SIZE_T > 4)
 #define SSIZE_T_MAX 9223372036854775807
 #else
@@ -570,7 +570,7 @@ extern "C" {
 #endif
 
 /*
- * Arg 2 type for gethostname in case it hasn't been defined in config file.
+ * Arg 2 type for gethostname in case it has not been defined in config file.
  */
 
 #ifndef GETHOSTNAME_TYPE_ARG2
@@ -802,7 +802,7 @@ extern "C" {
 #endif
 
 /*
- * shutdown() flags for systems that don't define them
+ * shutdown() flags for systems that do not define them
  */
 
 #ifndef SHUT_RD
@@ -850,7 +850,7 @@ endings either CRLF or LF so 't' is appropriate.
 #define FOPEN_APPENDTEXT "a"
 #endif
 
-/* for systems that don't detect this in configure */
+/* for systems that do not detect this in configure */
 #ifndef CURL_SA_FAMILY_T
 #  if defined(HAVE_SA_FAMILY_T)
 #    define CURL_SA_FAMILY_T sa_family_t

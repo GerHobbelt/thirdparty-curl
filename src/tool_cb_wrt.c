@@ -517,7 +517,7 @@ bool tool_create_output_file(struct OutStruct *outs,
 
     do {
       fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
-      /* Keep retrying in the hope that it isn't interrupted sometime */
+      /* Keep retrying in the hope that it is not interrupted sometime */
     } while(fd == -1 && errno == EINTR);
     if (fd == -1) {
       int next_num = 1;
@@ -535,10 +535,10 @@ bool tool_create_output_file(struct OutStruct *outs,
 
       bool has_risky_filename = hidden;
 
-      while(fd == -1 && /* haven't successfully opened a file */
+      while(fd == -1 && /* have not successfully opened a file */
             (errno == EEXIST || errno == EISDIR) &&
             /* because we keep having files that already exist */
-            next_num < 100 /* and we haven't reached the retry limit */ ) {
+            next_num < 100 /* and we have not reached the retry limit */ ) {
         free(newname);
         newname = aprintf("%.*s%s.%02d%s", fn_ext_pos, fname, (has_risky_filename ? "__hidden__" : ""), next_num, fn_ext);
         if (!newname) {
@@ -550,7 +550,7 @@ bool tool_create_output_file(struct OutStruct *outs,
         next_num++;
         do {
           fd = open(newname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
-          /* Keep retrying in the hope that it isn't interrupted sometime */
+          /* Keep retrying in the hope that it is not interrupted sometime */
         } while(fd == -1 && errno == EINTR);
       }
 

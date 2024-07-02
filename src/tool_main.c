@@ -82,7 +82,7 @@ int _CRT_glob = 0;
 #if defined(HAVE_PIPE) && defined(HAVE_FCNTL)
 /*
  * Ensure that file descriptors 0, 1 and 2 (stdin, stdout, stderr) are
- * open before starting to run.  Otherwise, the first three network
+ * open before starting to run. Otherwise, the first three network
  * sockets opened by curl could be used for input sources, downloaded data
  * or error logs as they will effectively be stdin, stdout and/or stderr.
  *
@@ -111,7 +111,7 @@ static void memory_tracking_init(void)
   /* if CURL_MEMDEBUG is set, this starts memory tracking message logging */
   env = curl_getenv("CURL_MEMDEBUG");
   if(env) {
-    /* use the value as file name */
+    /* use the value as filename */
     char fname[CURL_MT_LOGFNAME_BUFSIZE];
     if(strlen(env) >= CURL_MT_LOGFNAME_BUFSIZE)
       env[CURL_MT_LOGFNAME_BUFSIZE-1] = '\0';
@@ -221,7 +221,7 @@ static void main_free(struct GlobalConfig *config)
 
 #if defined(_UNICODE) && !defined(BUILD_MONOLITHIC)    // in monolithic mode, the caller already has converted everything to char/UTF8, so we're good...
 #if defined(__GNUC__)
-/* GCC doesn't know about wmain() */
+/* GCC does not know about wmain() */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"

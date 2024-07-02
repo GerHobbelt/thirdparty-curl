@@ -56,9 +56,9 @@
 #endif
 
 #ifdef _WIN32
-#  define _use_lfn(f) (1)   /* long file names always available */
+#  define _use_lfn(f) (1)   /* long filenames always available */
 #elif !defined(__DJGPP__) || (__DJGPP__ < 2)  /* DJGPP 2.0 has _use_lfn() */
-#  define _use_lfn(f) (0)  /* long file names never available */
+#  define _use_lfn(f) (0)  /* long filenames never available */
 #elif defined(__DJGPP__)
 #  include <fcntl.h>                /* _use_lfn(f) prototype */
 #endif
@@ -110,8 +110,8 @@ CURL_SANITIZE_ALLOW_ONLY_RELATIVE_PATH:  Allow only a relative path spec.
 Absolute and UNC paths are sanitized to relative path form. Implies CURL_SANITIZE_ALLOW_PATH.
 
 CURL_SANITIZE_ALLOW_RESERVED:   Allow reserved device names.
-Without this flag a reserved device name is renamed (COM1 => _COM1) unless it's
-in a \\ prefixed path (eg: \\?\, \\.\, UNC) where the names are always allowed.
+Without this flag a reserved device name is renamed (COM1 => _COM1) unless it
+is in a \\ prefixed path (eg: \\?\, \\.\, UNC) where the names are always allowed.
 
 CURL_SANITIZE_ALLOW_TRUNCATE:   Allow truncating a long filename.
 Without this flag if the sanitized filename or path will be too long an error
@@ -397,7 +397,7 @@ static size_t get_max_sanitized_len(const char *file_name, int flags)
 
 /*
 Test if truncating a path to a file will leave at least a single character in
-the filename. Filenames suffixed by an alternate data stream can't be
+the filename. Filenames suffixed by an alternate data stream cannot be
 truncated. This performs a dry run, nothing is modified.
 
 Good truncate_pos 9:    C:\foo\bar  =>  C:\foo\ba
@@ -413,7 +413,7 @@ Error truncate_pos 7:   C:\foo      =>  (pos out of range)
 Bad truncate_pos 1:     C:\foo\     =>  C
 
 * C:foo is ambiguous, C could end up being a drive or file therefore something
-  like C:superlongfilename can't be truncated.
+  like C:superlongfilename cannot be truncated.
 
 Returns
 SANITIZE_ERR_OK: Good -- 'path' can be truncated
@@ -438,7 +438,7 @@ CurlSanitizeCode truncate_dryrun(const char *path, const size_t truncate_pos)
   if(strpbrk(&path[truncate_pos - 1], "\\/:"))
     return CURL_SANITIZE_ERR_INVALID_PATH;
 
-  /* C:\foo can be truncated but C:\foo:ads can't */
+  /* C:\foo can be truncated but C:\foo:ads cannot */
   if(truncate_pos > 1) {
     const char *p = &path[truncate_pos - 1];
     do {
@@ -517,8 +517,8 @@ CurlSanitizeCode msdosify(char **const sanitized, const char *file_name,
         *d = ':';
       else if((flags & CURL_SANITIZE_ALLOW_PATH) && (*s == '/' || *s == '\\'))
         *d = *s;
-      /* Dots are special: DOS doesn't allow them as the leading character,
-         and a file name cannot have more than a single dot.  We leave the
+      /* Dots are special: DOS does not allow them as the leading character,
+         and a filename cannot have more than a single dot. We leave the
          first non-leading dot alone, unless it comes too close to the
          beginning of the name: we want sh.lex.c to become sh_lex.c, not
          sh.lex-c.  */
@@ -605,7 +605,7 @@ CurlSanitizeCode msdosify(char **const sanitized, const char *file_name,
 #endif /* MSDOS || UNITTESTS */
 
 /*
-Rename file_name if it's a reserved dos device name.
+Rename file_name if it is a reserved dos device name.
 
 This is a supporting function for curl_sanitize_file_name.
 
@@ -746,9 +746,10 @@ CurlSanitizeCode rename_if_reserved_dos_device_name(char **const sanitized,
   /* This is the legacy portion from rename_if_dos_device_name that checks for
      reserved device names. It only works on MSDOS. On Windows XP the stat
      check errors with EINVAL if the device name is reserved. On Windows
-     Vista/7/8 it sets mode S_IFREG (regular file or device). According to MSDN
-     stat doc the latter behavior is correct, but that doesn't help us identify
-     whether it's a reserved device name and not a regular file name. */
+     Vista/7/8 it sets mode S_IFREG (regular file or device). According to
+     MSDN stat doc the latter behavior is correct, but that does not help us
+     identify whether it is a reserved device name and not a regular
+     filename. */
 #ifdef MSDOS
   if(base && ((stat(base, &st_buf)) == 0) && (S_ISCHR(st_buf.st_mode))) {
     /* Prepend a '_' */
@@ -899,7 +900,7 @@ struct curl_slist *GetLoadedModulePaths(void)
 
 #ifdef UNICODE
     /* sizeof(mod.szExePath) is the max total bytes of wchars. the max total
-       bytes of multibyte chars won't be more than twice that. */
+       bytes of multibyte chars will not be more than twice that. */
     char buffer[sizeof(mod.szExePath) * 2];
     if(!WideCharToMultiByte(CP_ACP, 0, mod.szExePath, -1,
                             buffer, sizeof(buffer), NULL, NULL))

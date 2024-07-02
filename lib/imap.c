@@ -513,7 +513,7 @@ static CURLcode imap_perform_login(struct Curl_easy *data,
   char *passwd;
 
   /* Check we have a username and password to authenticate with and end the
-     connect phase if we don't */
+     connect phase if we do not */
   if(!data->state.aptr.user) {
     imap_state(data, IMAP_STOP);
 
@@ -616,7 +616,7 @@ static CURLcode imap_perform_authentication(struct Curl_easy *data,
   saslprogress progress;
 
   /* Check if already authenticated OR if there is enough data to authenticate
-     with and end the connect phase if we don't */
+     with and end the connect phase if we do not */
   if(imapc->preauth ||
      !Curl_sasl_can_authenticate(&imapc->sasl, data)) {
     imap_state(data, IMAP_STOP);
@@ -1236,7 +1236,7 @@ static CURLcode imap_state_fetch_resp(struct Curl_easy *data,
         chunk = (size_t)size;
 
       if(!chunk) {
-        /* no size, we're done with the data */
+        /* no size, we are done with the data */
         imap_state(data, IMAP_STOP);
         return CURLE_OK;
       }
@@ -1274,7 +1274,7 @@ static CURLcode imap_state_fetch_resp(struct Curl_easy *data,
     }
   }
   else {
-    /* We don't know how to parse this line */
+    /* We do not know how to parse this line */
     failf(data, "Failed to parse FETCH response.");
     result = CURLE_WEIRD_SERVER_REPLY;
   }
