@@ -910,11 +910,6 @@ struct connectdata {
   CtxtHandle *sslContext;
 #endif
 
-#if defined(_WIN32) && defined(USE_WINSOCK)
-  struct curltime last_sndbuf_update;  /* last time readwrite_upload called
-                                          win_update_buffer_size */
-#endif
-
 #ifdef USE_GSASL
   struct gsasldata gsasl;
 #endif
@@ -1380,7 +1375,7 @@ struct UrlState {
   unsigned char select_bits; /* != 0 -> bitmask of socket events for this
                                  transfer overriding anything the socket may
                                  report */
-#ifdef CURLDEBUG
+#ifdef DEBUGBUILD
   BIT(conncache_lock);
 #endif
   /* when curl_easy_perform() is called, the multi handle is "owned" by

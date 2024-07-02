@@ -1,5 +1,5 @@
-#ifndef HEADER_CURL_EASYIF_H
-#define HEADER_CURL_EASYIF_H
+#ifndef HEADER_CURL_TERMINAL_H
+#define HEADER_CURL_TERMINAL_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -23,19 +23,8 @@
  * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
+#include "tool_setup.h"
 
-/*
- * Prototypes for library-wide functions provided by easy.c
- */
-CURLcode Curl_senddata(struct Curl_easy *data, const void *buffer,
-                       size_t buflen, size_t *n);
+unsigned int get_terminal_columns(void);
 
-#ifdef USE_WEBSOCKETS
-CURLcode Curl_connect_only_attach(struct Curl_easy *data);
-#endif
-
-#ifdef DEBUGBUILD
-CURL_EXTERN CURLcode curl_easy_perform_ev(struct Curl_easy *easy);
-#endif
-
-#endif /* HEADER_CURL_EASYIF_H */
+#endif /* HEADER_CURL_TERMINAL_H */

@@ -32,12 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* somewhat unix-specific */
-#ifndef _WIN32
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
 /* curl stuff */
 
 #ifndef CURLPIPE_MULTIPLEX
