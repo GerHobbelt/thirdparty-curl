@@ -1819,7 +1819,7 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
                        (data->set.disallow_username_in_url ?
                         CURLU_DISALLOW_USER : 0) |
                        (data->set.path_as_is ? CURLU_PATH_AS_IS : 0) |
-		               CURLU_ALLOW_SPACE);
+		                   CURLU_ALLOW_SPACE));
     if(uc) {
       failf(data, "URL rejected: %s", curl_url_strerror(uc));
       return Curl_uc_to_curlcode(uc);

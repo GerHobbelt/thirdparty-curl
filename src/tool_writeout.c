@@ -543,7 +543,7 @@ void ourWriteOut(struct OperationConfig *config, struct per_transfer *per,
   if(!writeinfo)
     return;
 
-  curlx_dyn_init(&name, MAX_WRITEOUT_NAME_LENGTH);
+  Curl_dyn_init(&name, MAX_WRITEOUT_NAME_LENGTH);
   while(ptr && *ptr && !done) {
     if('%' == *ptr && ptr[1]) {
       if('%' == ptr[1]) {
@@ -566,9 +566,9 @@ void ourWriteOut(struct OperationConfig *config, struct per_transfer *per,
           }
           vlen = end - ptr;
 
-          curlx_dyn_reset(&name);
-          if(!curlx_dyn_addn(&name, ptr, vlen)) {
-            find.name = curlx_dyn_ptr(&name);
+          Curl_dyn_reset(&name);
+          if(!Curl_dyn_addn(&name, ptr, vlen)) {
+            find.name = Curl_dyn_ptr(&name);
             wv = bsearch(&find,
                          variables, sizeof(variables)/sizeof(variables[0]),
                          sizeof(variables[0]), matchvar);
@@ -695,5 +695,5 @@ void ourWriteOut(struct OperationConfig *config, struct per_transfer *per,
   }
   if(fclose_stream)
     fclose(stream);
-  curlx_dyn_free(&name);
+  Curl_dyn_free(&name);
 }
