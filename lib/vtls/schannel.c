@@ -2924,6 +2924,7 @@ const struct Curl_ssl Curl_ssl_schannel = {
 #endif
   SSLSUPP_PINNEDPUBKEY |
   SSLSUPP_TLS13_CIPHERSUITES |
+  SSLSUPP_CA_CACHE |
   SSLSUPP_HTTPS_PROXY,
 
   sizeof(struct schannel_ssl_backend_data),

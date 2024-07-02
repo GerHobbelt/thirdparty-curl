@@ -2853,8 +2853,8 @@ typedef long ctx_option_t;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) /* 1.1.0 */
 static CURLcode
 ossl_set_ssl_version_min_max_legacy(ctx_option_t *ctx_options,
-                                       struct Curl_cfilter *cf,
-                                       struct Curl_easy *data)
+                                    struct Curl_cfilter *cf,
+                                    struct Curl_easy *data)
 {
   struct ssl_primary_config *conn_config = Curl_ssl_cf_get_primary_config(cf);
   long ssl_version = conn_config->version;
@@ -3541,9 +3541,6 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
   const char * const ssl_cert_type = ssl_config->cert_type;
   const bool verifypeer = conn_config->verifypeer;
   char error_buffer[256];
-#ifdef USE_ECH
-  struct ssl_connect_data *connssl = cf->ctx;
-#endif
 
   /* Make funny stuff to get random input */
   result = ossl_seed(data);
@@ -3942,7 +3939,8 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
     else {
       struct Curl_dns_entry *dns = NULL;
 
-      dns = Curl_fetch_addr(data, connssl->peer.hostname, connssl->peer.port);
+      if(peer->hostname)
+        dns = Curl_fetch_addr(data, peer->hostname, peer->port);
       if(!dns) {
         infof(data, "ECH: requested but no DNS info available");
         if(data->set.tls_ech & CURLECH_HARD)
@@ -3991,9 +3989,9 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
 # else
     if(trying_ech_now && outername) {
       infof(data, "ECH: inner: '%s', outer: '%s'",
-            connssl->peer.hostname, outername);
+            peer->hostname ? peer->hostname : "NULL", outername);
       result = SSL_ech_set_server_names(octx->ssl,
-                                        connssl->peer.hostname, outername,
+                                        peer->hostname, outername,
                                         0 /* do send outer */);
       if(result != 1) {
         infof(data, "ECH: rv failed to set server name(s) %d [ERROR]", result);
@@ -5279,6 +5277,7 @@ const struct Curl_ssl Curl_ssl_openssl = {
 #ifdef USE_ECH
   SSLSUPP_ECH |
 #endif
+  SSLSUPP_CA_CACHE |
   SSLSUPP_HTTPS_PROXY,
 
   sizeof(struct ossl_ctx),
