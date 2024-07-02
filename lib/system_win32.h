@@ -28,6 +28,8 @@
 
 #ifdef _WIN32
 
+#include <curl/curl.h>
+
 #if 0
 extern LARGE_INTEGER Curl_freq;
 extern bool Curl_isVistaOrGreater;
