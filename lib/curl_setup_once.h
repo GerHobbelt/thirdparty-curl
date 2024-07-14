@@ -109,7 +109,7 @@
  * Definition of timeval struct for platforms that do not have it.
  */
 
-#ifndef HAVE_STRUCT_TIMEVAL
+#if !defined(HAVE_STRUCT_TIMEVAL) && !defined(_STRUCT_TIMEVAL)
 struct timeval {
  long tv_sec;
  long tv_usec;
