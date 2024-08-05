@@ -1020,7 +1020,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               return CURLE_OK;
             }
             else {
-              Curl_infof(per->curl, "E-Tag data will be written to etags file: %s", config->etag_save_file);
+							notef(global, "E-Tag data will be written to etags file: %s", config->etag_save_file);
 
               etag_save->filename = config->etag_save_file;
               etag_save->s_isreg = TRUE;
