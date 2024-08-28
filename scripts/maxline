@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 #***************************************************************************
 #                                  _   _ ____  _
 #  Project                     ___| | | |  _ \| |
@@ -21,15 +22,19 @@
 # SPDX-License-Identifier: curl
 #
 ###########################################################################
-# File containing various utilities
 
-# Returns number of arguments that evaluate to true
-function(count_true _output_count_var)
-  set(lst_len 0)
-  foreach(option_var IN LISTS ARGN)
-    if(${option_var})
-      math(EXPR lst_len "${lst_len} + 1")
-    endif()
-  endforeach()
-  set(${_output_count_var} ${lst_len} PARENT_SCOPE)
-endfunction()
+# The provided value is the max allowed length.
+my $max = $ARGV[0];
+my $line = 0;
+my $error;
+while(<STDIN>) {
+    my $i = length($_);
+    $line++;
+    if($i > $max) {
+        print STDERR "<STDIN>:$line ERROR line too long, $i > $max\n";
+        print STDERR "<STDIN>:$line $_";
+        $error++;
+    }
+    print $_;
+}
+exit $error;

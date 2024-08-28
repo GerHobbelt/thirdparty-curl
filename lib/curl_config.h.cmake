@@ -810,11 +810,6 @@ ${SIZEOF___INT64_CODE}
 /* Version number of package */
 #cmakedefine VERSION ${VERSION}
 
-/* Define to 1 if OS is AIX. */
-#ifndef _ALL_SOURCE
-#  undef _ALL_SOURCE
-#endif
-
 /* Number of bits in a file offset, on hosts where this is settable. */
 #cmakedefine _FILE_OFFSET_BITS ${_FILE_OFFSET_BITS}
 

@@ -600,6 +600,7 @@ CURL_CHECK_WIN32_LARGEFILE
 CURL_CHECK_WIN32_CRYPTO
 
 CURL_DARWIN_CFLAGS
+
 case $host_os in
   darwin*)
     CURL_SUPPORTS_BUILTIN_AVAILABLE
@@ -2522,6 +2523,32 @@ AC_SUBST([CURL_LT_SHLIB_VERSIONED_FLAVOUR],
 AM_CONDITIONAL([CURL_LT_SHLIB_USE_VERSIONED_SYMBOLS],
   [test "x$versioned_symbols" = 'xyes'])
 
+dnl ----------------------------
+dnl check Windows Unicode option
+dnl ----------------------------
+
+want_winuni="no"
+if test "$curl_cv_native_windows" = "yes"; then
+  AC_MSG_CHECKING([whether to enable Windows Unicode (Windows native builds only)])
+  OPT_WINUNI="default"
+  AC_ARG_WITH(windows-unicode,
+  AS_HELP_STRING([--with-windows-unicode],[enable Windows Unicode])
+  AS_HELP_STRING([--without-windows-unicode], [disable Windows Unicode (default)]),
+    OPT_WINUNI=$withval)
+  case "$OPT_WINUNI" in
+    yes)
+      CPPFLAGS="${CPPFLAGS} -DUNICODE -D_UNICODE"
+      want_winuni="yes"
+      AC_MSG_RESULT([yes])
+      ;;
+    *)
+      AC_MSG_RESULT([no])
+      ;;
+  esac
+fi
+
+AM_CONDITIONAL([USE_UNICODE], [test "$want_winuni" = "yes"])
+
 dnl -------------------------------------------------
 dnl check winidn option before other IDN libraries
 dnl -------------------------------------------------
@@ -2754,7 +2781,6 @@ dnl **********************************************************************
 dnl Check for the presence of AppleIDN
 dnl **********************************************************************
 
-CURL_DARWIN_CFLAGS
 case $host_os in
   darwin*)
     AC_MSG_CHECKING([whether to build with Apple IDN])
@@ -2780,7 +2806,7 @@ case $host_os in
               AC_DEFINE(USE_APPLE_IDN, 1, [if AppleIDN])
               AC_SUBST(USE_APPLE_IDN, [1])
               AC_SUBST([IDN_ENABLED], [1])
-              LIBS="-licucore $LIBS"
+              LIBS="-licucore -liconv $LIBS"
             )
           ])
           ;;
@@ -4990,6 +5016,9 @@ else
   ])
 fi
 
+if test "x$want_winuni" = "xyes"; then
+  SUPPORT_FEATURES="$SUPPORT_FEATURES Unicode"
+fi
 if test "x$want_debug" = "xyes"; then
   SUPPORT_FEATURES="$SUPPORT_FEATURES Debug"
 fi
@@ -5215,7 +5244,8 @@ AC_MSG_NOTICE([Configured to build curl/libcurl:
   Features:         ${SUPPORT_FEATURES}
 ])
 
-non13=`echo "$TLSCHOICE" | $EGREP -io 'bearssl|secure-transport'`;
+# grep -o would simplify this, but is nonportable
+[non13=`echo "$TLSCHOICE" | $AWK '{split("bearssl secure-transport", a); for (i in a) if(match(tolower($0), a[i])) print a[i];}'`]
 if test -n "$non13"; then
  for a in $non13; do
    AC_MSG_WARN([$a is enabled for TLS but it does not support TLS 1.3])

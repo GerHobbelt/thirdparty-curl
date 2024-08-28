@@ -30,7 +30,7 @@ EXTRA_DIST = Makefile.mk config-win32.h config-win32ce.h config-plan9.h    \
  libcurl.plist libcurl.rc config-amigaos.h config-win32ce.h                \
  config-os400.h setup-os400.h                                              \
  $(CMAKE_DIST) firefox-db2pem.sh checksrc.pl setup-win32.h .checksrc       \
- config-freertos.h config-micrium.h Makefile.soname
+ config-freertos.h config-micrium.h Makefile.soname optiontable.pl
 
 lib_LTLIBRARIES = libcurl.la
 
