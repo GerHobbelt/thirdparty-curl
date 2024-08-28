@@ -634,7 +634,10 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
       case IF2IP_NOT_FOUND:
         if(iface_input && !host_input) {
           /* Do not fall back to treating it as a hostname */
-          failf(data, "Couldn't bind to interface '%s'", iface);
+          char buffer[STRERROR_LEN];
+          data->state.os_errno = error = SOCKERRNO;
+          failf(data, "Couldn't bind to interface '%s' with errno %d: %s",
+                iface, error, Curl_strerror(error, buffer, sizeof(buffer)));
           return CURLE_INTERFACE_FAILED;
         }
         break;
@@ -740,8 +743,11 @@ static CURLcode bindlocal(struct Curl_easy *data, struct connectdata *conn,
       /* errorbuf is set false so failf will overwrite any message already in
          the error buffer, so the user receives this error message instead of a
          generic resolve error. */
+      char buffer[STRERROR_LEN];
       data->state.errorbuf = FALSE;
-      failf(data, "Couldn't bind to '%s'", host);
+      data->state.os_errno = error = SOCKERRNO;
+      failf(data, "Couldn't bind to '%s' with errno %d: %s",
+            host, error, Curl_strerror(error, buffer, sizeof(buffer)));
       return CURLE_INTERFACE_FAILED;
     }
   }
@@ -1443,13 +1449,15 @@ static void win_update_sndbuf_size(struct cf_socket_ctx *ctx)
 #endif /* USE_WINSOCK */
 
 static ssize_t cf_socket_send(struct Curl_cfilter *cf, struct Curl_easy *data,
-                              const void *buf, size_t len, CURLcode *err)
+                              const void *buf, size_t len, bool eos,
+                              CURLcode *err)
 {
   struct cf_socket_ctx *ctx = cf->ctx;
   curl_socket_t fdsave;
   ssize_t nwritten;
   size_t orig_len = len;
 
+  (void)eos; /* unused */
   *err = CURLE_OK;
   fdsave = cf->conn->sock[cf->sockindex];
   cf->conn->sock[cf->sockindex] = ctx->sock;

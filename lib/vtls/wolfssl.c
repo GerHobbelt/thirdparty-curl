@@ -291,7 +291,7 @@ static int wolfssl_bio_cf_out_write(WOLFSSL_BIO *bio,
   CURLcode result = CURLE_OK;
 
   DEBUGASSERT(data);
-  nwritten = Curl_conn_cf_send(cf->next, data, buf, blen, &result);
+  nwritten = Curl_conn_cf_send(cf->next, data, buf, blen, FALSE, &result);
   backend->io_result = result;
   CURL_TRC_CF(data, cf, "bio_write(len=%d) -> %zd, %d",
               blen, nwritten, result);
@@ -1009,7 +1009,8 @@ wolfssl_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
 }
 
 
-static char *wolfssl_strerror(unsigned long error, char *buf, size_t size)
+static char *wolfssl_strerror(unsigned long error, char *buf,
+                              unsigned long size)
 {
   DEBUGASSERT(size);
   *buf = '\0';

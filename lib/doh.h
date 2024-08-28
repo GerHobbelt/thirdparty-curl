@@ -140,6 +140,8 @@ struct dohentry {
 #endif
 };
 
+void Curl_doh_close(struct Curl_easy *data);
+void Curl_doh_cleanup(struct Curl_easy *data);
 
 #if defined(UNITTESTS) || defined(BUILD_MONOLITHIC)
 UNITTEST DOHcode doh_encode(const char *host,

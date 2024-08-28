@@ -218,7 +218,7 @@ static CURLproxycode socks_state_send(struct Curl_cfilter *cf,
   CURLcode result;
 
   nwritten = Curl_conn_cf_send(cf->next, data, (char *)sx->outp,
-                               sx->outstanding, &result);
+                               sx->outstanding, FALSE, &result);
   if(nwritten <= 0) {
     if(CURLE_AGAIN == result) {
       return CURLPX_OK;

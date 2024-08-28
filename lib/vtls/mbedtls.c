@@ -200,7 +200,8 @@ static int mbedtls_bio_cf_write(void *bio,
   if(!data)
     return 0;
 
-  nwritten = Curl_conn_cf_send(cf->next, data, (char *)buf, blen, &result);
+  nwritten = Curl_conn_cf_send(cf->next, data, (char *)buf, blen, FALSE,
+                               &result);
   CURL_TRC_CF(data, cf, "mbedtls_bio_cf_out_write(len=%zu) -> %zd, err=%d",
               blen, nwritten, result);
   if(nwritten < 0 && CURLE_AGAIN == result) {
@@ -654,7 +655,7 @@ mbed_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
 
     if(ret) {
       mbedtls_strerror(ret, errorbuf, sizeof(errorbuf));
-      failf(data, "Error reading private key %s - mbedTLS: (-0x%04X) %s",
+      failf(data, "Error reading client cert data %s - mbedTLS: (-0x%04X) %s",
             ssl_config->key, -ret, errorbuf);
       return CURLE_SSL_CERTPROBLEM;
     }
