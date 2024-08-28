@@ -184,6 +184,30 @@ static bool xfer_recv_shutdown_started(struct Curl_easy *data)
   return Curl_shutdown_started(data, sockindex);
 }
 
+CURLcode Curl_xfer_send_shutdown(struct Curl_easy *data, bool *done)
+{
+  int sockindex;
+
+  if(!data || !data->conn)
+    return CURLE_FAILED_INIT;
+  if(data->conn->writesockfd == CURL_SOCKET_BAD)
+    return CURLE_FAILED_INIT;
+  sockindex = (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]);
+  return Curl_conn_shutdown(data, sockindex, done);
+}
+
+static bool xfer_send_shutdown_started(struct Curl_easy *data)
+{
+  int sockindex;
+
+  if(!data || !data->conn)
+    return CURLE_FAILED_INIT;
+  if(data->conn->writesockfd == CURL_SOCKET_BAD)
+    return CURLE_FAILED_INIT;
+  sockindex = (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]);
+  return Curl_shutdown_started(data, sockindex);
+}
+
 /**
  * Receive raw response data for the transfer.
  * @param data         the transfer
@@ -1322,18 +1346,6 @@ CURLcode Curl_xfer_send_close(struct Curl_easy *data)
 {
   Curl_conn_ev_data_done_send(data);
   return CURLE_OK;
-}
-
-CURLcode Curl_xfer_send_shutdown(struct Curl_easy *data, bool *done)
-{
-  int sockindex;
-
-  if(!data || !data->conn)
-    return CURLE_FAILED_INIT;
-  if(data->conn->writesockfd == CURL_SOCKET_BAD)
-    return CURLE_FAILED_INIT;
-  sockindex = (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]);
-  return Curl_conn_shutdown(data, sockindex, done);
 }
 
 bool Curl_xfer_is_blocked(struct Curl_easy *data)

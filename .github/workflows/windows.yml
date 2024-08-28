@@ -78,6 +78,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-${{ matrix.build }} make
             mingw-w64-${{ matrix.env }}-openssl
             mingw-w64-${{ matrix.env }}-libssh2
+            mingw-w64-${{ matrix.env }}-libpsl
 
       - name: 'autotools autoreconf'
         if: ${{ matrix.build == 'autotools' }}
@@ -480,7 +481,6 @@ jobs:
         run: |
           export TFLAGS='-j14 !TFTP !MQTT !WebSockets !SMTP !FTP ${{ matrix.tflags }}'
           if [[ '${{ matrix.config }}' = *'-DUSE_WIN32_IDN=ON'* ]]; then
-            TFLAGS+=' ~165'
             if [[ '${{ matrix.config }}' != *'-DENABLE_UNICODE=ON'* ]]; then
               TFLAGS+=' ~1448 ~2046 ~2047'
             fi

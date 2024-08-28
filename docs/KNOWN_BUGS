@@ -85,6 +85,8 @@ problems may have been fixed or changed somewhat since this was written.
  11.4 HTTP test server 'connection-monitor' problems
  11.5 Connection information when using TCP Fast Open
  11.6 test cases sometimes timeout
+ 11.7 AppleIDN test failures
+ 11.8 WinIDN test failures
 
  12. LDAP
  12.1 OpenLDAP hangs after returning results
@@ -105,7 +107,6 @@ problems may have been fixed or changed somewhat since this was written.
  15.13 CMake build with MIT Kerberos does not work
 
  16. aws-sigv4
- 16.1 aws-sigv4 does not sign requests with * correctly
  16.2 aws-sigv4 does not handle multipart/form-data correctly
  16.3 aws-sigv4 has problems with particular URLs
  16.6 aws-sigv4 does not behave well with AWS VPC Lattice
@@ -527,6 +528,16 @@ problems may have been fixed or changed somewhat since this was written.
 
  See https://github.com/curl/curl/issues/13350
 
+11.7 AppleIDN test failures
+
+ Test 1034 and 1035 fail on macOS when built to use AppleIDN.
+
+ See https://github.com/curl/curl/issues/14176
+
+11.8 WinIDN test failures
+
+ Test 165 disabled when built with WinIDN.
+
 12. LDAP
 
 12.1 OpenLDAP hangs after returning results
@@ -617,10 +628,6 @@ problems may have been fixed or changed somewhat since this was written.
  https://github.com/curl/curl/issues/6904
 
 16. aws-sigv4
-
-16.1 aws-sigv4 does not sign requests with * correctly
-
- https://github.com/curl/curl/issues/7559
 
 16.2 aws-sigv4 does not handle multipart/form-data correctly
 
