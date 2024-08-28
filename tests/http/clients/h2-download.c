@@ -25,10 +25,8 @@
  * HTTP/2 server push
  * </DESC>
  */
-
 /* curl stuff */
 #include <curl/curl.h>
-#include <curl/mprintf.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,14 +35,18 @@
 
 #if !defined(_WIN32)
 /* somewhat Unix-specific */
-#include <sys/time.h>
-#include <unistd.h>
+#include <unistd.h>  /* getopt() */
+#endif
+
+#ifdef _MSC_VER
+#define snprintf _snprintf
 #endif
 
 #ifndef CURLPIPE_MULTIPLEX
 #error "too old libcurl, cannot do HTTP/2 server push!"
 #endif
 
+#ifndef _MSC_VER
 static int verbose = 1;
 
 static void log_line_start(FILE *log, const char *idsbuf, curl_infotype type)
@@ -84,11 +86,10 @@ static int debug_cb(CURL *handle, curl_infotype type,
   if(!curl_easy_getinfo(handle, CURLINFO_XFER_ID, &xfer_id) && xfer_id >= 0) {
     if(!curl_easy_getinfo(handle, CURLINFO_CONN_ID, &conn_id) &&
         conn_id >= 0) {
-      curl_msnprintf(idsbuf, sizeof(idsbuf), TRC_IDS_FORMAT_IDS_2,
-                     xfer_id, conn_id);
+      snprintf(idsbuf, sizeof(idsbuf), TRC_IDS_FORMAT_IDS_2, xfer_id, conn_id);
     }
     else {
-      curl_msnprintf(idsbuf, sizeof(idsbuf), TRC_IDS_FORMAT_IDS_1, xfer_id);
+      snprintf(idsbuf, sizeof(idsbuf), TRC_IDS_FORMAT_IDS_1, xfer_id);
     }
   }
   else
@@ -184,8 +185,7 @@ static size_t my_write_cb(char *buf, size_t nitems, size_t buflen,
   fprintf(stderr, "[t-%d] RECV %ld bytes, total=%ld, pause_at=%ld\n",
           t->idx, (long)blen, (long)t->recv_size, (long)t->pause_at);
   if(!t->out) {
-    curl_msnprintf(t->filename, sizeof(t->filename)-1, "download_%u.data",
-                   t->idx);
+    snprintf(t->filename, sizeof(t->filename)-1, "download_%u.data", t->idx);
     t->out = fopen(t->filename, "wb");
     if(!t->out)
       return 0;
@@ -275,6 +275,7 @@ static void usage(const char *msg)
     "  -V http_version (http/1.1, h2, h3) http version to use\n"
   );
 }
+#endif /* !_MSC_VER */
 
 #if defined(BUILD_MONOLITHIC)
 #define main      curl_example_h2_download_main
@@ -285,6 +286,7 @@ static void usage(const char *msg)
  */
 int main(int argc, const char **argv)
 {
+#ifndef _MSC_VER
   CURLM *multi_handle;
   struct CURLMsg *m;
   const char *url;
@@ -484,4 +486,10 @@ int main(int argc, const char **argv)
   curl_multi_cleanup(multi_handle);
 
   return 0;
+#else
+  (void)argc;
+  (void)argv;
+  fprintf(stderr, "Not supported with this compiler.\n");
+  return 1;
+#endif /* !_MSC_VER */
 }

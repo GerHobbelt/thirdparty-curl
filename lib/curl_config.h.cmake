@@ -310,9 +310,6 @@
 /* if you have the GNU gssapi libraries */
 #cmakedefine HAVE_GSSGNU 1
 
-/* Define to 1 if you have the `idna_strerror' function. */
-#cmakedefine HAVE_IDNA_STRERROR 1
-
 /* Define to 1 if you have the <ifaddrs.h> header file. */
 #cmakedefine HAVE_IFADDRS_H 1
 
@@ -763,6 +760,12 @@ ${SIZEOF___INT64_CODE}
 
 /* if GSASL is in use */
 #cmakedefine USE_GSASL 1
+
+/* if libuv is in use */
+#cmakedefine USE_LIBUV 1
+
+/* Define to 1 if you have the <uv.h> header file. */
+#cmakedefine HAVE_UV_H 1
 
 /* Define to 1 if you do not want the OpenSSL configuration to be loaded
    automatically */

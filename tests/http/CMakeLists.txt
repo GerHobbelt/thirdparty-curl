@@ -22,18 +22,30 @@
 #
 ###########################################################################
 
-# Get 'check_PROGRAMS' variable
-transform_makefile_inc("Makefile.inc"
-  "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
-include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
+find_program(CADDY "caddy")  # /usr/bin/caddy
+if(NOT CADDY)
+  set(CADDY "")
+endif()
+find_program(VSFTPD "vsftpd")  # /usr/sbin/vsftpd
+if(NOT VSFTPD)
+  set(VSFTPD "")
+endif()
+find_program(HTTPD "apache2")  # /usr/sbin/apache2
+if(NOT HTTPD)
+  set(HTTPD "")
+endif()
+find_program(APACHECTL "apache2ctl")  # /usr/sbin/apache2ctl
+if(NOT APACHECTL)
+  set(APACHECTL "")
+endif()
+find_program(APXS "apxs")
+if(NOT APXS)
+  set(APXS "")
+endif()
+find_program(HTTPD_NGHTTPX "nghttpx" PATHS "/usr/bin" "/usr/local/bin")
+if(NOT HTTPD_NGHTTPX)
+  set(HTTPD_NGHTTPX "")
+endif()
 
-foreach(_example IN LISTS check_PROGRAMS)
-  set(_example_target "curl-example-${_example}")
-  add_executable(${_example_target} "${_example}.c")
-  target_link_libraries(${_example_target} ${LIB_SELECTED} ${CURL_LIBS})
-  target_compile_definitions(${_example_target} PRIVATE "CURL_NO_OLDIES")
-  if(LIB_SELECTED STREQUAL LIB_STATIC AND WIN32)
-    set_property(TARGET ${_example_target} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_STATICLIB")
-  endif()
-  set_target_properties(${_example_target} PROPERTIES OUTPUT_NAME "${_example}" UNITY_BUILD OFF)
-endforeach()
+# APXS, HTTPD, APACHECTL, HTTPD_NGHTTPX, CADDY, VSFTPD
+configure_file("config.ini.in" "${CMAKE_CURRENT_BINARY_DIR}/config.ini" @ONLY)
