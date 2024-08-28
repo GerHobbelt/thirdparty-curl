@@ -353,7 +353,7 @@ static CURLcode readwrite_data(struct Curl_easy *data,
       maxloops = 0;
     }
 
-  } while(maxloops-- && data_pending(data));
+  } while(maxloops--);
 
   if((maxloops <= 0) || data_pending(data)) {
     /* did not read until EAGAIN or there is still pending data, mark as

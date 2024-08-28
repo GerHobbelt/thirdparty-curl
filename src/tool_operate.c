@@ -1387,9 +1387,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result)
           break;
 
-        /* result is only used when for ipfs and ipns, ignored otherwise */
         result = url_proto(&per->this_url, config, &use_proto);
-        if(result && (use_proto == proto_ipfs || use_proto == proto_ipns))
+        if(result)
           break;
 
 #ifndef DEBUGBUILD
@@ -2878,7 +2877,7 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
   /* Parse .curlrc if necessary */
   if((argc == 1) ||
      (first_arg && strncmp(first_arg, "-q", 2) &&
-      !curl_strequal(first_arg, "--disable"))) {
+      strcmp(first_arg, "--disable"))) {
     parseconfig(NULL, global); /* ignore possible failure */
 
     /* If we had no arguments then make sure a url was specified in .curlrc */
