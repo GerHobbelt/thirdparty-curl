@@ -30,11 +30,26 @@
 # LIBSSH2_LIBRARIES     The libssh2 library names
 # LIBSSH2_VERSION       Version of libssh2
 
-find_path(LIBSSH2_INCLUDE_DIR "libssh2.h")
+if(CURL_USE_PKGCONFIG)
+  find_package(PkgConfig QUIET)
+  pkg_check_modules(PC_LIBSSH2 "libssh2")
+endif()
 
-find_library(LIBSSH2_LIBRARY NAMES "ssh2" "libssh2")
+find_path(LIBSSH2_INCLUDE_DIR "libssh2.h"
+  HINTS
+    ${PC_LIBSSH2_INCLUDEDIR}
+    ${PC_LIBSSH2_INCLUDE_DIRS}
+)
 
-if(LIBSSH2_INCLUDE_DIR)
+find_library(LIBSSH2_LIBRARY NAMES "ssh2" "libssh2"
+  HINTS
+    ${PC_LIBSSH2_LIBDIR}
+    ${PC_LIBSSH2_LIBRARY_DIRS}
+)
+
+if(PC_LIBSSH2_VERSION)
+  set(LIBSSH2_VERSION ${PC_LIBSSH2_VERSION})
+elseif(LIBSSH2_INCLUDE_DIR)
   file(STRINGS "${LIBSSH2_INCLUDE_DIR}/libssh2.h" _libssh2_version_str REGEX "^#define[\t ]+LIBSSH2_VERSION[\t ]+\"(.*)\"")
   string(REGEX REPLACE "^.*\"([^\"]+)\"" "\\1" LIBSSH2_VERSION "${_libssh2_version_str}")
   unset(_libssh2_version_str)

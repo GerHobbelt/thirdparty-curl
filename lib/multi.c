@@ -247,10 +247,8 @@ static size_t trhash(void *key, size_t key_length, size_t slots_num)
 
 static size_t trhash_compare(void *k1, size_t k1_len, void *k2, size_t k2_len)
 {
-  (void)k1_len;
   (void)k2_len;
-
-  return *(struct Curl_easy **)k1 == *(struct Curl_easy **)k2;
+  return !memcmp(k1, k2, k1_len);
 }
 
 static void trhash_dtor(void *nada)
@@ -2668,7 +2666,7 @@ statemachine_end:
 CURLMcode curl_multi_perform(struct Curl_multi *multi, int *running_handles)
 {
   CURLMcode returncode = CURLM_OK;
-  struct Curl_tree *t;
+  struct Curl_tree *t = NULL;
   struct curltime now = Curl_now();
   struct Curl_llist_node *e;
   struct Curl_llist_node *n = NULL;
@@ -2719,7 +2717,7 @@ CURLMcode curl_multi_perform(struct Curl_multi *multi, int *running_handles)
     multi->timetree = Curl_splaygetbest(now, multi->timetree, &t);
     if(t) {
       /* the removed may have another timeout in queue */
-      struct Curl_easy *data = t->payload;
+      struct Curl_easy *data = Curl_splayget(t);
       if(data->mstate == MSTATE_PENDING) {
         bool stream_unused;
         CURLcode result_unused;
@@ -2729,7 +2727,7 @@ CURLMcode curl_multi_perform(struct Curl_multi *multi, int *running_handles)
           move_pending_to_connect(multi, data);
         }
       }
-      (void)add_next_timeout(now, multi, t->payload);
+      (void)add_next_timeout(now, multi, Curl_splayget(t));
     }
   } while(t);
 
@@ -2948,18 +2946,24 @@ CURLMcode Curl_multi_pollset_ev(struct Curl_multi *multi,
     }
     if(last_action && (last_action != cur_action)) {
       /* Socket was used already, but different action now */
-      if(last_action & CURL_POLL_IN)
+      if(last_action & CURL_POLL_IN) {
+        DEBUGASSERT(entry->readers);
         entry->readers--;
-      if(last_action & CURL_POLL_OUT)
+      }
+      if(last_action & CURL_POLL_OUT) {
+        DEBUGASSERT(entry->writers);
         entry->writers--;
-      if(cur_action & CURL_POLL_IN)
+      }
+      if(cur_action & CURL_POLL_IN) {
         entry->readers++;
+      }
       if(cur_action & CURL_POLL_OUT)
         entry->writers++;
     }
     else if(!last_action &&
             !Curl_hash_pick(&entry->transfers, (char *)&data, /* hash key */
                             sizeof(struct Curl_easy *))) {
+      DEBUGASSERT(entry->users < 100000); /* detect weird values */
       /* a new transfer using this socket */
       entry->users++;
       if(cur_action & CURL_POLL_IN)
@@ -3021,23 +3025,27 @@ CURLMcode Curl_multi_pollset_ev(struct Curl_multi *multi,
     if(entry) {
       unsigned char oldactions = last_ps->actions[i];
       /* this socket has been removed. Decrease user count */
+      DEBUGASSERT(entry->users);
       entry->users--;
       if(oldactions & CURL_POLL_OUT)
         entry->writers--;
       if(oldactions & CURL_POLL_IN)
         entry->readers--;
       if(!entry->users) {
+        bool dead = FALSE;
         if(multi->socket_cb) {
           set_in_callback(multi, TRUE);
           rc = multi->socket_cb(data, s, CURL_POLL_REMOVE,
                                 multi->socket_userp, entry->socketp);
           set_in_callback(multi, FALSE);
-          if(rc == -1) {
-            multi->dead = TRUE;
-            return CURLM_ABORTED_BY_CALLBACK;
-          }
+          if(rc == -1)
+            dead = TRUE;
         }
         sh_delentry(entry, &multi->sockhash, s);
+        if(dead) {
+          multi->dead = TRUE;
+          return CURLM_ABORTED_BY_CALLBACK;
+        }
       }
       else {
         /* still users, but remove this handle as a user of this socket */
@@ -3164,7 +3172,7 @@ static CURLMcode multi_socket(struct Curl_multi *multi,
 {
   CURLMcode result = CURLM_OK;
   struct Curl_easy *data = NULL;
-  struct Curl_tree *t;
+  struct Curl_tree *t = NULL;
   struct curltime now = Curl_now();
   bool run_conn_cache = FALSE;
   SIGPIPE_VARIABLE(pipe_st);
@@ -3267,8 +3275,8 @@ static CURLMcode multi_socket(struct Curl_multi *multi,
 
     multi->timetree = Curl_splaygetbest(now, multi->timetree, &t);
     if(t) {
-      data = t->payload; /* assign this for next loop */
-      (void)add_next_timeout(now, multi, t->payload);
+      data = Curl_splayget(t); /* assign this for next loop */
+      (void)add_next_timeout(now, multi, data);
     }
 
   } while(t);
@@ -3419,7 +3427,10 @@ static CURLMcode multi_timeout(struct Curl_multi *multi,
     /* splay the lowest to the bottom */
     multi->timetree = Curl_splay(tv_zero, multi->timetree);
 
-    if(Curl_splaycomparekeys(multi->timetree->key, now) > 0) {
+    /* 'multi->timetree' will be non-NULL here but the compilers sometimes
+       yell at us if we assume so */
+    if(multi->timetree &&
+       Curl_timediff_us(multi->timetree->key, now) > 0) {
       /* some time left before expiration */
       timediff_t diff = Curl_timediff_ceil(multi->timetree->key, now);
       /* this should be safe even on 32-bit archs, as we do not use that
@@ -3465,7 +3476,7 @@ CURLMcode Curl_update_timer(struct Curl_multi *multi)
   }
   if(timeout_ms < 0) {
     static const struct curltime none = {0, 0};
-    if(Curl_splaycomparekeys(none, multi->timer_lastcall)) {
+    if(Curl_timediff_us(none, multi->timer_lastcall)) {
       multi->timer_lastcall = none;
       /* there is no timeout now but there was one previously, tell the app to
          disable it */
@@ -3485,7 +3496,7 @@ CURLMcode Curl_update_timer(struct Curl_multi *multi)
    * timeout we got the (relative) time-out time for. We can thus easily check
    * if this is the same (fixed) time as we got in a previous call and then
    * avoid calling the callback again. */
-  if(Curl_splaycomparekeys(multi->timetree->key, multi->timer_lastcall) == 0)
+  if(Curl_timediff_us(multi->timetree->key, multi->timer_lastcall) == 0)
     return CURLM_OK;
 
   multi->timer_lastcall = multi->timetree->key;
@@ -3627,7 +3638,7 @@ void Curl_expire(struct Curl_easy *data, timediff_t milli, expire_id id)
   /* Indicate that we are in the splay tree and insert the new timer expiry
      value since it is our local minimum. */
   *nowp = set;
-  data->state.timenode.payload = data;
+  Curl_splayset(&data->state.timenode, data);
   multi->timetree = Curl_splayinsert(*nowp, multi->timetree,
                                      &data->state.timenode);
 }
