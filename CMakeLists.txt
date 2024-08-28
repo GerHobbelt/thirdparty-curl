@@ -165,7 +165,7 @@ option(ENABLE_DEBUG "Set to ON to enable curl debug features" OFF)
 option(ENABLE_CURLDEBUG "Set to ON to build with TrackMemory feature enabled" ${ENABLE_DEBUG})
 
 if(MSVC)
-  set(ENABLE_CURLDEBUG OFF)  # FIXME: TrackMemory fails with MSVC according to test 558 and 1330. Tested with static build, Debug mode.
+  set(ENABLE_CURLDEBUG OFF)  # FIXME: TrackMemory + MSVC fails test 558 and 1330. Tested with static build, Debug mode.
 endif()
 
 if(ENABLE_DEBUG)
@@ -594,9 +594,9 @@ if(CURL_USE_WOLFSSL)
   find_package(WolfSSL REQUIRED)
   set(_ssl_enabled ON)
   set(USE_WOLFSSL ON)
-  list(APPEND CURL_LIBS ${WolfSSL_LIBRARIES})
+  list(APPEND CURL_LIBS ${WOLFSSL_LIBRARIES})
   list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "wolfssl")
-  include_directories(${WolfSSL_INCLUDE_DIRS})
+  include_directories(${WOLFSSL_INCLUDE_DIRS})
 
   if(CURL_DEFAULT_SSL_BACKEND AND CURL_DEFAULT_SSL_BACKEND STREQUAL "wolfssl")
     set(_valid_default_ssl_backend TRUE)
@@ -688,11 +688,11 @@ option(CURL_ZSTD "Set to ON to enable building curl with zstd support." OFF)
 set(HAVE_ZSTD OFF)
 if(CURL_ZSTD)
   find_package(Zstd REQUIRED)
-  if(Zstd_FOUND AND NOT Zstd_VERSION VERSION_LESS 1.0.0)
+  if(ZSTD_FOUND AND NOT ZSTD_VERSION VERSION_LESS 1.0.0)
     set(HAVE_ZSTD ON)
-    list(APPEND CURL_LIBS ${Zstd_LIBRARIES})
+    list(APPEND CURL_LIBS ${ZSTD_LIBRARIES})
     list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libzstd")
-    include_directories(${Zstd_INCLUDE_DIRS})
+    include_directories(${ZSTD_INCLUDE_DIRS})
   else()
     message(WARNING "zstd v1.0.0 or newer is required, disabling zstd support.")
   endif()
@@ -712,8 +712,8 @@ macro(openssl_check_symbol_exists _symbol _files _variable _extra_libs)
       list(APPEND CMAKE_REQUIRED_LIBRARIES "bcrypt")  # for OpenSSL/LibreSSL
     endif()
   elseif(USE_WOLFSSL)
-    set(CMAKE_REQUIRED_INCLUDES   "${WolfSSL_INCLUDE_DIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES  "${WolfSSL_LIBRARIES}")
+    set(CMAKE_REQUIRED_INCLUDES   "${WOLFSSL_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_LIBRARIES  "${WOLFSSL_LIBRARIES}")
     if(HAVE_LIBZ)
       list(APPEND CMAKE_REQUIRED_INCLUDES  "${ZLIB_INCLUDE_DIRS}")  # Public wolfSSL headers require zlib headers
       list(APPEND CMAKE_REQUIRED_LIBRARIES "${ZLIB_LIBRARIES}")
@@ -734,7 +734,8 @@ macro(openssl_check_quic)
     if(USE_OPENSSL)
       openssl_check_symbol_exists("SSL_CTX_set_quic_method" "openssl/ssl.h" HAVE_SSL_CTX_SET_QUIC_METHOD "")
     elseif(USE_WOLFSSL)
-      openssl_check_symbol_exists("wolfSSL_set_quic_method" "wolfssl/options.h;wolfssl/openssl/ssl.h" HAVE_SSL_CTX_SET_QUIC_METHOD "")
+      openssl_check_symbol_exists("wolfSSL_set_quic_method" "wolfssl/options.h;wolfssl/openssl/ssl.h"
+        HAVE_SSL_CTX_SET_QUIC_METHOD "")
     endif()
   endif()
   if(NOT HAVE_SSL_CTX_SET_QUIC_METHOD)
@@ -796,28 +797,25 @@ option(USE_NGTCP2 "Use ngtcp2 and nghttp3 libraries for HTTP/3 support" OFF)
 if(USE_NGTCP2)
   if(USE_OPENSSL OR USE_WOLFSSL)
     if(USE_WOLFSSL)
-      find_package(NGTCP2 REQUIRED wolfSSL)
-      if(NOT WIN32)
-        find_library(MATH_LIBRARY m)
-      endif()
+      find_package(NGTCP2 REQUIRED "wolfSSL")
       list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libngtcp2_crypto_wolfssl")
     elseif(HAVE_BORINGSSL OR HAVE_AWSLC)
-      find_package(NGTCP2 REQUIRED BoringSSL)
+      find_package(NGTCP2 REQUIRED "BoringSSL")
       list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libngtcp2_crypto_boringssl")
     else()
-      find_package(NGTCP2 REQUIRED quictls)
+      find_package(NGTCP2 REQUIRED "quictls")
       list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libngtcp2_crypto_quictls")
     endif()
     openssl_check_quic()
   elseif(USE_GNUTLS)
-    find_package(NGTCP2 REQUIRED GnuTLS)
+    find_package(NGTCP2 REQUIRED "GnuTLS")
     list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libngtcp2_crypto_gnutls")
   else()
     message(FATAL_ERROR "ngtcp2 requires OpenSSL, wolfSSL or GnuTLS")
   endif()
   set(USE_NGTCP2 ON)
   include_directories(${NGTCP2_INCLUDE_DIRS})
-  list(APPEND CURL_LIBS ${NGTCP2_LIBRARIES} ${MATH_LIBRARY})
+  list(APPEND CURL_LIBS ${NGTCP2_LIBRARIES})
   list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libngtcp2")
 
   find_package(NGHTTP3 REQUIRED)
@@ -1133,7 +1131,7 @@ if(CURL_USE_GSASL)
   endif()
 endif()
 
-option(CURL_USE_GSSAPI "Use GSSAPI implementation (right now only Heimdal is supported with CMake build)" OFF)
+option(CURL_USE_GSSAPI "Use GSSAPI implementation" OFF)
 mark_as_advanced(CURL_USE_GSSAPI)
 
 if(CURL_USE_GSSAPI)
@@ -1755,8 +1753,11 @@ function(transform_makefile_inc _input_file _output_file)
   string(REGEX REPLACE "([a-zA-Z_][a-zA-Z0-9_]*)[\t ]*=[\t ]*([^\n]*)" "SET(\\1 \\2)" _makefile_inc_text ${_makefile_inc_text})
   string(REPLACE "!π!α!" "\n" _makefile_inc_text ${_makefile_inc_text})
 
-  string(REGEX REPLACE "\\$\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)" "\${\\1}" _makefile_inc_text ${_makefile_inc_text})  # Replace $() with ${}
-  string(REGEX REPLACE "@([a-zA-Z_][a-zA-Z0-9_]*)@" "\${\\1}" _makefile_inc_text ${_makefile_inc_text})  # Replace @@ with ${}, even if that may not be read by CMake scripts.
+  # Replace $() with ${}
+  string(REGEX REPLACE "\\$\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)" "\${\\1}" _makefile_inc_text ${_makefile_inc_text})
+  # Replace @@ with ${}, even if that may not be read by CMake scripts.
+  string(REGEX REPLACE "@([a-zA-Z_][a-zA-Z0-9_]*)@" "\${\\1}" _makefile_inc_text ${_makefile_inc_text})
+
   file(WRITE ${_output_file} ${_makefile_inc_text})
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_input_file}")
 endfunction()
@@ -2064,8 +2065,9 @@ if(NOT CURL_DISABLE_INSTALL)
   #   SUPPORT_FEATURES
   #   SUPPORT_PROTOCOLS
   #   VERSIONNUM
-  configure_file("${CURL_SOURCE_DIR}/curl-config.in"
-                 "${CURL_BINARY_DIR}/curl-config" @ONLY)
+  configure_file(
+    "${CURL_SOURCE_DIR}/curl-config.in"
+    "${CURL_BINARY_DIR}/curl-config" @ONLY)
   install(FILES "${CURL_BINARY_DIR}/curl-config"
     DESTINATION ${CMAKE_INSTALL_BINDIR}
     PERMISSIONS
@@ -2088,8 +2090,9 @@ if(NOT CURL_DISABLE_INSTALL)
   #   prefix
   #   SUPPORT_FEATURES
   #   SUPPORT_PROTOCOLS
-  configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
-                 "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
+  configure_file(
+    "${CURL_SOURCE_DIR}/libcurl.pc.in"
+    "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
   install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
