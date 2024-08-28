@@ -937,17 +937,17 @@ static ParameterError data_urlencode(struct GlobalConfig *global,
       char *n;
       replace_url_encoded_space_by_plus(enc);
       if(nlen > 0) { /* only append '=' if we have a name */
-        struct curlx_dynbuf dyn;
-        curlx_dyn_init(&dyn, MAX_DATAURLENCODE);
-        if(curlx_dyn_addn(&dyn, nextarg, nlen) ||
-           curlx_dyn_addn(&dyn, "=", 1) ||
-           curlx_dyn_add(&dyn, enc)) {
+        struct dynbuf dyn;
+        Curl_dyn_init(&dyn, MAX_DATAURLENCODE);
+        if(Curl_dyn_addn(&dyn, nextarg, nlen) ||
+					Curl_dyn_addn(&dyn, "=", 1) ||
+					Curl_dyn_add(&dyn, enc)) {
           curl_free(enc);
           return PARAM_NO_MEM;
         }
         curl_free(enc);
-        n = curlx_dyn_ptr(&dyn);
-        size = curlx_dyn_len(&dyn);
+        n = Curl_dyn_ptr(&dyn);
+        size = Curl_dyn_len(&dyn);
       }
       else {
         n = enc;

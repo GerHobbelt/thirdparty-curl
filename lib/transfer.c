@@ -345,10 +345,8 @@ static CURLcode readwrite_data(struct Curl_easy *data,
     if((k->keepon & KEEP_RECV_PAUSE) || !(k->keepon & KEEP_RECV))
       break;
 
-    if(Curl_pgrsLimitWaitTime(data->progress.downloaded,
-                              data->progress.dl_limit_size,
+    if(Curl_pgrsLimitWaitTime(&data->progress.dl,
                               data->set.max_recv_speed,
-                              data->progress.dl_limit_start,
                               *nowp)) {
       maxloops = 0;
     }
