@@ -670,8 +670,8 @@ CurlSanitizeCode rename_if_reserved_dos_device_name(char **const sanitized,
 
   /* Rename reserved device names that are known to be accessible without \\.\
      Examples: CON => _CON, CON.EXT => CON_EXT, CON:ADS => CON_ADS
-     https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.aspx
      https://web.archive.org/web/2014/http://support.microsoft.com/kb/74496
+     https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.aspx
 
      Windows API has some weird interpretations to find legacy names. It may
      check the beginning of the path and/or the basename so rename both.

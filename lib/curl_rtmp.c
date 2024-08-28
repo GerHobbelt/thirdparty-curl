@@ -41,7 +41,7 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
-#if (defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)) && !defined(USE_LWIPSOCK)
+#if defined(_WIN32) && !defined(USE_LWIPSOCK)
 #define setsockopt(a,b,c,d,e) (setsockopt)(a,b,c,(const char *)d,(int)e)
 #define SET_RCVTIMEO(tv,s)   int tv = s*1000
 #elif defined(LWIP_SO_SNDRCVTIMEO_NONSTANDARD)

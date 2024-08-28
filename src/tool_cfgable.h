@@ -182,8 +182,7 @@ struct OperationConfig {
   bool output_path_mimics_url;
   bool create_dirs;
   bool ftp_create_dirs;
-  long ftp_pasvp_ip_rule;   /* how to handle the IP address the FTP server
-                               passes on to us */
+  long ftp_pasvp_ip_rule;   /* how to handle the IP address the FTP server passes on to us */
   bool proxynegotiate;
   bool proxyntlm;
   bool proxydigest;

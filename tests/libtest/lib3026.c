@@ -28,7 +28,7 @@
 
 #define NUM_THREADS 100
 
-#if defined(WIN32) || defined(__MINGW32__)
+#ifdef _WIN32
 #if defined(_WIN32_WCE) || defined(CURL_WINDOWS_APP)
 static DWORD WINAPI run_thread(LPVOID ptr)
 #else

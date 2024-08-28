@@ -86,7 +86,10 @@ static bool hostmatch(const char *hostname,
   const char *pattern_label_end, *wildcard, *hostname_label_end;
   size_t prefixlen, suffixlen;
 
+  DEBUGASSERT(pattern);
   DEBUGASSERT(patternlen);
+  DEBUGASSERT(hostname);
+  DEBUGASSERT(hostlen);
 
   /* normalize pattern and hostname by stripping off trailing dots */
   if(hostname[hostlen-1]=='.')

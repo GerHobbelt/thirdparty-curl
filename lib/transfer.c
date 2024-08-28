@@ -269,7 +269,6 @@ static CURLcode sendrecv_dl(struct Curl_easy *data,
   CURLcode result = CURLE_OK;
   char *buf, *xfer_buf;
   size_t blen, xfer_blen;
-  ssize_t nread; /* number of bytes read */
   int maxloops = 10;
   curl_off_t total_received = 0;
   bool is_multiplex = FALSE;
@@ -283,14 +282,7 @@ static CURLcode sendrecv_dl(struct Curl_easy *data,
   do {
     bool is_eos = FALSE;
     size_t bytestoread;
-
-    /* make sure not more than the max recv speed bytes downloaded at once */
-    if(data->set.max_recv_speed && data->set.max_recv_speed < (curl_off_t)bytestoread) {
-      const curl_off_t toread = data->set.max_recv_speed -
-        (data->progress.downloaded - data->progress.dl_limit_size) %
-          data->set.max_recv_speed;
-      bytestoread = (size_t)toread;
-    }
+    ssize_t nread;
 
     if(!is_multiplex) {
       /* Multiplexed connection have inherent handling of EOF and we do not
@@ -362,12 +354,6 @@ static CURLcode sendrecv_dl(struct Curl_easy *data,
     /* if we are PAUSEd or stopped receiving, leave the loop */
     if((k->keepon & KEEP_RECV_PAUSE) || !(k->keepon & KEEP_RECV))
       break;
-
-    if(Curl_pgrsLimitWaitTime(&data->progress.dl,
-                              data->set.max_recv_speed,
-                              *nowp)) {
-      maxloops = 0;
-    }
 
   } while(maxloops--);
 
@@ -478,7 +464,7 @@ CURLcode Curl_sendrecv(struct Curl_easy *data, struct curltime *nowp)
      the stream was rewound (in which case we have data in a
      buffer) */
   if((k->keepon & KEEP_RECV) && (select_bits & CURL_CSELECT_IN)) {
-    result = sendrecv_dl(data, k, &didwhat);
+    result = sendrecv_dl(data, k, nowp, &didwhat);
     if(result || data->req.done)
       goto out;
   }

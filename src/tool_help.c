@@ -269,7 +269,7 @@ void tool_help(const char * const category)
     /* command line option help */
     const struct LongShort *a = NULL;
     if(category[1] == '-') {
-      char *lookup = &category[2];
+      const char *lookup = &category[2];
       bool noflagged = FALSE;
       if(!strncmp(lookup, "no-", 3)) {
         lookup += 3;

@@ -56,7 +56,7 @@ char *curlx_convert_wchar_to_UTF8(const wchar_t *str_w);
  * them.
  */
 
-#if ( defined(UNICODE) || defined(_UNICODE) ) && ( defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64) )
+#if ( defined(UNICODE) || defined(_UNICODE) ) && defined(_WIN32)
 
 #define curlx_convert_UTF8_to_tchar(ptr) curlx_convert_UTF8_to_wchar((ptr))
 #define curlx_convert_tchar_to_UTF8(ptr) curlx_convert_wchar_to_UTF8((ptr))

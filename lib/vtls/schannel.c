@@ -116,10 +116,6 @@
 #define SP_PROT_TLS1_3_CLIENT           0x00002000
 #endif
 
-#ifndef SP_PROT_TLS1_3_CLIENT
-#define SP_PROT_TLS1_3_CLIENT           0x00002000
-#endif
-
 #ifndef SCH_USE_STRONG_CRYPTO
 #define SCH_USE_STRONG_CRYPTO           0x00400000
 #endif

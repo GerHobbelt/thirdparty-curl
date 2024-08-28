@@ -33,5 +33,4 @@
 
 char *findfile(const char *fname, int dotscore);
 
-
 #endif /* HEADER_CURL_TOOL_HOMEDIR_H */

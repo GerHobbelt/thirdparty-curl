@@ -38,7 +38,7 @@
 #include "easy_lock.h"
 
 #ifdef USE_ARES
-#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) && \
+#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) &&   \
   defined(_WIN32)
 #    define CARES_STATICLIB
 #  endif

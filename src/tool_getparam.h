@@ -370,7 +370,7 @@ ParameterError getparameter(const char *flag, const char *nextarg,
                             struct GlobalConfig *global,
                             struct OperationConfig *operation);
 
-#if defined(DEBUGBUILD) || defined(BUILD_MONOLITHIC)
+#if defined(DEBUGBUILD) || defined(UNITTESTS) || defined(BUILD_MONOLITHIC)
 void parse_cert_parameter(const char *cert_parameter,
                           char **certname,
                           char **passphrase);

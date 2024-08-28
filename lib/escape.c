@@ -258,14 +258,14 @@ char* curl_clean_for_printing_to_console(const char* url)
 		"<ENQ>",    // Enquiry
 		"<ACK>",    // Acknowledge
 		"<BEL>",    // Bell, Alert
-		"<BS>",    // Backspace
-		"<HT>",    // Horizontal Tab
-		"<LF>",    // Line Feed
-		"<VT>",    // Vertical Tabulation
-		"<FF>",    // Form Feed
-		"<CR>",    // Carriage Return
-		"<SO>",    // Shift Out
-		"<SI>",    // Shift In
+		"<BS>",     // Backspace
+		"<HT>",     // Horizontal Tab
+		"<LF>",     // Line Feed
+		"<VT>",     // Vertical Tabulation
+		"<FF>",     // Form Feed
+		"<CR>",     // Carriage Return
+		"<SO>",     // Shift Out
+		"<SI>",     // Shift In
 		"<DLE>",    // Data Link Escape
 		"<DC1>",    // Device Control One(XON)
 		"<DC2>",    // Device Control Two
@@ -275,13 +275,13 @@ char* curl_clean_for_printing_to_console(const char* url)
 		"<SYN>",    // Synchronous Idle
 		"<ETB>",    // End of Transmission Block
 		"<CAN>",    // Cancel
-		"<EM>",    // End of medium
+		"<EM>",     // End of medium
 		"<SUB>",    // Substitute
 		"<ESC>",    // Escape
-		"<FS>",    // File Separator
-		"<GS>",    // Group Separator
-		"<RS>",    // Record Separator
-		"<US>",    // Unit Separator
+		"<FS>",     // File Separator
+		"<GS>",     // Group Separator
+		"<RS>",     // Record Separator
+		"<US>",     // Unit Separator
 		"<DEL>",    // Delete
 	};
 
