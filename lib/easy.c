@@ -113,6 +113,7 @@ static curl_simple_lock s_lock = CURL_SIMPLE_LOCK_INIT;
 #endif
 
 #if defined(_MSC_VER) && defined(_DLL)
+#  pragma warning(push)
 #  pragma warning(disable:4232) /* MSVC extension, dllimport identity */
 #endif
 
@@ -130,7 +131,7 @@ curl_wcsdup_callback Curl_cwcsdup = Curl_wcsdup;
 #endif
 
 #if defined(_MSC_VER) && defined(_DLL)
-#  pragma warning(default:4232) /* MSVC extension, dllimport identity */
+#  pragma warning(pop)
 #endif
 
 #ifdef DEBUGBUILD
@@ -597,10 +598,10 @@ static CURLcode wait_or_timeout(struct Curl_multi *multi, struct events *ev)
     }
     else {
       /* here pollrc is > 0 */
-      struct Curl_llist_element *e = multi->process.head;
+      struct Curl_llist_node *e = Curl_llist_head(&multi->process);
       struct Curl_easy *data;
       DEBUGASSERT(e);
-      data = e->ptr;
+      data = Curl_node_elem(e);
       DEBUGASSERT(data);
 
       /* loop over the monitored sockets to see which ones had activity */
@@ -1027,7 +1028,9 @@ struct Curl_easy *curl_easy_duphandle(struct Curl_easy *data)
       goto fail;
   }
 #endif /* USE_ARES */
-
+#ifndef CURL_DISABLE_HTTP
+  Curl_llist_init(&outcurl->state.httphdrs, NULL);
+#endif
   Curl_initinfo(outcurl);
 
   outcurl->magic = CURLEASY_MAGIC_NUMBER;

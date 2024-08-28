@@ -120,6 +120,7 @@ static void showsts(struct stsentry *e, int i, const char *chost)
 }
 
 UNITTEST_START
+{
   CURLcode result;
   struct stsentry *e;
   struct hsts *h = Curl_hsts_init();
@@ -161,7 +162,7 @@ UNITTEST_START
     showsts(e, i, chost);
   }
 
-  printf("Number of entries: %zu\n", h->list.size);
+  printf("Number of entries: %zu\n", Curl_llist_count(&h->list));
 
   /* verify that it is exists for 7 seconds */
   chost = "expire.example";
@@ -176,6 +177,6 @@ UNITTEST_START
   Curl_hsts_cleanup(&h);
   curl_easy_cleanup(easy);
   curl_global_cleanup();
-
+}
 UNITTEST_STOP
 #endif

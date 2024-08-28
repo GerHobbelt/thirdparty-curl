@@ -27,10 +27,10 @@
 #
 # NGHTTP2_FOUND         System has nghttp2
 # NGHTTP2_INCLUDE_DIRS  The nghttp2 include directories
-# NGHTTP2_LIBRARIES     The libraries needed to use nghttp2
+# NGHTTP2_LIBRARIES     The nghttp2 library names
 # NGHTTP2_VERSION       Version of nghttp2
 
-if(UNIX)
+if(CURL_USE_PKGCONFIG)
   find_package(PkgConfig QUIET)
   pkg_search_module(PC_NGHTTP2 "libnghttp2")
 endif()
@@ -53,8 +53,6 @@ endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(NGHTTP2
-  FOUND_VAR
-    NGHTTP2_FOUND
   REQUIRED_VARS
     NGHTTP2_INCLUDE_DIR
     NGHTTP2_LIBRARY
@@ -67,4 +65,4 @@ if(NGHTTP2_FOUND)
   set(NGHTTP2_LIBRARIES    ${NGHTTP2_LIBRARY})
 endif()
 
-mark_as_advanced(NGHTTP2_INCLUDE_DIRS NGHTTP2_LIBRARIES)
+mark_as_advanced(NGHTTP2_INCLUDE_DIR NGHTTP2_LIBRARY)

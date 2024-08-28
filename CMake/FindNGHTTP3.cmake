@@ -27,10 +27,10 @@
 #
 # NGHTTP3_FOUND         System has nghttp3
 # NGHTTP3_INCLUDE_DIRS  The nghttp3 include directories
-# NGHTTP3_LIBRARIES     The libraries needed to use nghttp3
+# NGHTTP3_LIBRARIES     The nghttp3 library names
 # NGHTTP3_VERSION       Version of nghttp3
 
-if(UNIX)
+if(CURL_USE_PKGCONFIG)
   find_package(PkgConfig QUIET)
   pkg_search_module(PC_NGHTTP3 "libnghttp3")
 endif()
@@ -65,4 +65,4 @@ if(NGHTTP3_FOUND)
   set(NGHTTP3_LIBRARIES    ${NGHTTP3_LIBRARY})
 endif()
 
-mark_as_advanced(NGHTTP3_INCLUDE_DIRS NGHTTP3_LIBRARIES)
+mark_as_advanced(NGHTTP3_INCLUDE_DIR NGHTTP3_LIBRARY)

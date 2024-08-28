@@ -201,6 +201,14 @@ else()
   set(LIB_SELECTED ${LIB_STATIC})
 endif()
 
+# Override to force-disable or force-enable the use of pkg-config.
+if(NOT MSVC OR VCPKG_TOOLCHAIN)
+  set(_curl_use_pkgconfig_default ON)
+else()
+  set(_curl_use_pkgconfig_default OFF)
+endif()
+option(CURL_USE_PKGCONFIG "use pkg-config to detect dependencies" ${_curl_use_pkgconfig_default})
+
 # Initialize CURL_LIBS
 set(CURL_LIBS "")
 set(LIBCURL_PC_REQUIRES_PRIVATE "")
@@ -208,7 +216,7 @@ set(LIBCURL_PC_REQUIRES_PRIVATE "")
 if(ENABLE_ARES)
   set(USE_ARES 1)
   find_package(CARES REQUIRED)
-  list(APPEND CURL_LIBS ${CARES_LIBRARY})
+  list(APPEND CURL_LIBS ${CARES_LIBRARIES})
   list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libcares")
 endif()
 
@@ -346,6 +354,7 @@ if(ENABLE_IPV6 AND NOT WIN32)
     set(_use_core_foundation_and_core_services ON)
 
     find_library(SYSTEMCONFIGURATION_FRAMEWORK "SystemConfiguration")
+    mark_as_advanced(SYSTEMCONFIGURATION_FRAMEWORK)
     if(NOT SYSTEMCONFIGURATION_FRAMEWORK)
       message(FATAL_ERROR "SystemConfiguration framework not found")
     endif()
@@ -449,6 +458,7 @@ cmake_dependent_option(CURL_USE_MBEDTLS "Enable mbedTLS for SSL/TLS" OFF CURL_EN
 cmake_dependent_option(CURL_USE_BEARSSL "Enable BearSSL for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
 cmake_dependent_option(CURL_USE_WOLFSSL "Enable wolfSSL for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
 cmake_dependent_option(CURL_USE_GNUTLS "Enable GnuTLS for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
+cmake_dependent_option(CURL_USE_RUSTLS "Enable rustls for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
 
 set(_openssl_default ON)
 if(WIN32 OR CURL_USE_SECTRANSP OR CURL_USE_SCHANNEL OR CURL_USE_MBEDTLS OR CURL_USE_WOLFSSL)
@@ -465,6 +475,7 @@ count_true(_enabled_ssl_options_count
   CURL_USE_BEARSSL
   CURL_USE_WOLFSSL
   CURL_USE_GNUTLS
+  CURL_USE_RUSTLS
 )
 if(_enabled_ssl_options_count GREATER 1)
   set(CURL_WITH_MULTI_SSL ON)
@@ -487,6 +498,7 @@ if(CURL_USE_SECTRANSP)
   set(_use_core_foundation_and_core_services ON)
 
   find_library(SECURITY_FRAMEWORK "Security")
+  mark_as_advanced(SECURITY_FRAMEWORK)
   if(NOT SECURITY_FRAMEWORK)
     message(FATAL_ERROR "Security framework not found")
   endif()
@@ -502,7 +514,9 @@ endif()
 
 if(_use_core_foundation_and_core_services)
   find_library(COREFOUNDATION_FRAMEWORK "CoreFoundation")
+  mark_as_advanced(COREFOUNDATION_FRAMEWORK)
   find_library(CORESERVICES_FRAMEWORK "CoreServices")
+  mark_as_advanced(CORESERVICES_FRAMEWORK)
 
   if(NOT COREFOUNDATION_FRAMEWORK)
     message(FATAL_ERROR "CoreFoundation framework not found")
@@ -556,7 +570,7 @@ if(CURL_USE_BEARSSL)
   find_package(BearSSL REQUIRED)
   set(_ssl_enabled ON)
   set(USE_BEARSSL ON)
-  list(APPEND CURL_LIBS ${BEARSSL_LIBRARY})
+  list(APPEND CURL_LIBS ${BEARSSL_LIBRARIES})
   include_directories(${BEARSSL_INCLUDE_DIRS})
 
   if(CURL_DEFAULT_SSL_BACKEND AND CURL_DEFAULT_SSL_BACKEND STREQUAL "bearssl")
@@ -600,6 +614,20 @@ if(CURL_USE_GNUTLS)
     check_symbol_exists("gnutls_srp_verifier" "gnutls/gnutls.h" HAVE_GNUTLS_SRP)
     cmake_pop_check_state()
   endif()
+endif()
+
+if(CURL_USE_RUSTLS)
+  find_package(rustls REQUIRED)
+  set(_ssl_enabled ON)
+  set(USE_RUSTLS ON)
+  list(APPEND CURL_LIBS ${RUSTLS_LIBRARIES})
+  list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "rustls")
+  include_directories(${RUSTLS_INCLUDE_DIRS})
+
+  if(CURL_DEFAULT_SSL_BACKEND AND CURL_DEFAULT_SSL_BACKEND STREQUAL "rustls")
+    set(valid_default_ssl_backend TRUE)
+  endif()
+  set(curl_ca_bundle_supported TRUE)
 endif()
 
 if(CURL_DEFAULT_SSL_BACKEND AND NOT _valid_default_ssl_backend)
@@ -959,7 +987,7 @@ if(USE_LIBIDN2)
     check_include_file_concat("idn2.h" HAVE_IDN2_H)
   endif()
   if(NOT HAVE_LIBIDN2 OR NOT HAVE_IDN2_H)
-    if(UNIX)
+    if(CURL_USE_PKGCONFIG)
       find_package(PkgConfig QUIET)
       pkg_search_module(LIBIDN2 "libidn2")
     endif()
@@ -1007,10 +1035,10 @@ set(USE_LIBPSL OFF)
 if(CURL_USE_LIBPSL)
   find_package(LibPSL)
   if(LIBPSL_FOUND)
-    list(APPEND CURL_LIBS ${LIBPSL_LIBRARY})
+    list(APPEND CURL_LIBS ${LIBPSL_LIBRARIES})
     list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libpsl")
-    list(APPEND CMAKE_REQUIRED_INCLUDES "${LIBPSL_INCLUDE_DIR}")
-    include_directories(${LIBPSL_INCLUDE_DIR})
+    list(APPEND CMAKE_REQUIRED_INCLUDES "${LIBPSL_INCLUDE_DIRS}")
+    include_directories(${LIBPSL_INCLUDE_DIRS})
     set(USE_LIBPSL ON)
   endif()
 endif()
@@ -1023,10 +1051,10 @@ set(USE_LIBSSH2 OFF)
 if(CURL_USE_LIBSSH2)
   find_package(LibSSH2)
   if(LIBSSH2_FOUND)
-    list(APPEND CURL_LIBS ${LIBSSH2_LIBRARY})
+    list(APPEND CURL_LIBS ${LIBSSH2_LIBRARIES})
     list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libssh2")
-    list(APPEND CMAKE_REQUIRED_INCLUDES "${LIBSSH2_INCLUDE_DIR}")
-    include_directories(${LIBSSH2_INCLUDE_DIR})
+    list(APPEND CMAKE_REQUIRED_INCLUDES "${LIBSSH2_INCLUDE_DIRS}")
+    include_directories(${LIBSSH2_INCLUDE_DIRS})
     set(USE_LIBSSH2 ON)
   endif()
 endif()
@@ -1038,7 +1066,7 @@ if(NOT USE_LIBSSH2 AND CURL_USE_LIBSSH)
   find_package(libssh CONFIG QUIET)
   if(libssh_FOUND)
     message(STATUS "Found libssh ${libssh_VERSION}")
-  else()
+  elseif(CURL_USE_PKGCONFIG)
     find_package(PkgConfig QUIET)
     pkg_search_module(LIBSSH "libssh")
     if(LIBSSH_FOUND)
@@ -1058,10 +1086,16 @@ endif()
 option(CURL_USE_GSASL "Use GSASL implementation" OFF)
 mark_as_advanced(CURL_USE_GSASL)
 if(CURL_USE_GSASL)
-  find_package(PkgConfig REQUIRED)
-  pkg_search_module(GSASL REQUIRED "libgsasl")
-  list(APPEND CURL_LIBS ${GSASL_LINK_LIBRARIES})
-  set(USE_GSASL ON)
+  if(CURL_USE_PKGCONFIG)
+    find_package(PkgConfig REQUIRED)
+    pkg_search_module(GSASL REQUIRED "libgsasl")
+  else()
+    message(WARNING "GSASL has been requested but requires a platform with pkg-config support. Skipping.")
+  endif()
+  if(GSASL_FOUND)
+    list(APPEND CURL_LIBS ${GSASL_LINK_LIBRARIES})
+    set(USE_GSASL ON)
+  endif()
 endif()
 
 option(CURL_USE_GSSAPI "Use GSSAPI implementation (right now only Heimdal is supported with CMake build)" OFF)
@@ -1075,7 +1109,7 @@ if(CURL_USE_GSSAPI)
 
     message(STATUS "Found ${GSS_FLAVOUR} GSSAPI version: \"${GSS_VERSION}\"")
 
-    list(APPEND CMAKE_REQUIRED_INCLUDES ${GSS_INCLUDE_DIR})
+    list(APPEND CMAKE_REQUIRED_INCLUDES ${GSS_INCLUDE_DIRS})
 
     string(REPLACE ";" " " GSS_COMPILER_FLAGS "${GSS_COMPILER_FLAGS}")
     string(REPLACE ";" " " GSS_LINKER_FLAGS "${GSS_LINKER_FLAGS}")
@@ -1111,7 +1145,7 @@ if(CURL_USE_GSSAPI)
       endif()
     endif()
 
-    include_directories(${GSS_INCLUDE_DIR})
+    include_directories(${GSS_INCLUDE_DIRS})
     link_directories(${GSS_LINK_DIRECTORIES})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GSS_COMPILER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${GSS_LINKER_FLAGS}")
@@ -1133,8 +1167,10 @@ if(CURL_USE_LIBUV)
   if(NOT ENABLE_DEBUG)
     message(FATAL_ERROR "Using libuv without debug support enabled is useless")
   endif()
-  find_package(PkgConfig QUIET)
-  pkg_check_modules(LIBUV "libuv")
+  if(CURL_USE_PKGCONFIG)
+    find_package(PkgConfig QUIET)
+    pkg_check_modules(LIBUV "libuv")
+  endif()
   if(LIBUV_FOUND)
     list(APPEND CURL_LIBS ${LIBUV_LINK_LIBRARIES})
     list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "libuv")
@@ -1204,6 +1240,7 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
   else()
     set(_curl_ca_bundle_set TRUE)
   endif()
+  mark_as_advanced(_curl_ca_bundle_set)
 
   if(CURL_CA_PATH STREQUAL "")
     message(FATAL_ERROR "Invalid value of CURL_CA_PATH. Use 'none', 'auto' or directory path.")
@@ -1217,6 +1254,7 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
   else()
     set(_curl_ca_path_set TRUE)
   endif()
+  mark_as_advanced(_curl_ca_path_set)
 
   if(_curl_ca_bundle_set AND _curl_ca_path_autodetect)
     # Skip auto-detection of unset CA path because CA bundle is set explicitly
@@ -1854,6 +1892,7 @@ if(NOT CURL_DISABLE_INSTALL)
   _add_if("BearSSL"          _ssl_enabled AND USE_BEARSSL)
   _add_if("wolfSSL"          _ssl_enabled AND USE_WOLFSSL)
   _add_if("GnuTLS"           _ssl_enabled AND USE_GNUTLS)
+  _add_if("rustls"           _ssl_enabled AND USE_RUSTLS)
 
   if(_items)
     if(NOT CMAKE_VERSION VERSION_LESS 3.13)
@@ -1876,7 +1915,7 @@ if(NOT CURL_DISABLE_INSTALL)
   set(exec_prefix             "\${prefix}")
   set(includedir              "\${prefix}/include")
   set(LDFLAGS                 "${CMAKE_SHARED_LINKER_FLAGS}")
-  set(LIBCURL_LIBS            "")
+  set(LIBCURL_PC_LIBS_PRIVATE "")
   set(libdir                  "${CMAKE_INSTALL_PREFIX}/lib")
 
   # For processing full path libraries into -L and -l ld options,
@@ -1918,7 +1957,7 @@ if(NOT CURL_DISABLE_INSTALL)
       endif()
     endif()
     if(_lib MATCHES "^-")
-      set(LIBCURL_LIBS "${LIBCURL_LIBS} ${_lib}")
+      set(LIBCURL_PC_LIBS_PRIVATE "${LIBCURL_PC_LIBS_PRIVATE} ${_lib}")
     elseif(_lib MATCHES ".*/.*")
       # This gets a bit more complex, because we want to specify the
       # directory separately, and only once per directory
@@ -1928,15 +1967,15 @@ if(NOT CURL_DISABLE_INSTALL)
         list(FIND _libcurl_libs_dirs "${_libdir}" _libdir_index)
         if(_libdir_index LESS 0)
           list(APPEND _libcurl_libs_dirs "${_libdir}")
-          set(LIBCURL_LIBS "${LIBCURL_LIBS} -L${_libdir}")
+          set(LIBCURL_PC_LIBS_PRIVATE "${LIBCURL_PC_LIBS_PRIVATE} -L${_libdir}")
         endif()
         string(REGEX REPLACE "^lib" "" _libname "${_libname}")
-        set(LIBCURL_LIBS "${LIBCURL_LIBS} -l${_libname}")
+        set(LIBCURL_PC_LIBS_PRIVATE "${LIBCURL_PC_LIBS_PRIVATE} -l${_libname}")
       else()
-        set(LIBCURL_LIBS "${LIBCURL_LIBS} ${_lib}")
+        set(LIBCURL_PC_LIBS_PRIVATE "${LIBCURL_PC_LIBS_PRIVATE} ${_lib}")
       endif()
     else()
-      set(LIBCURL_LIBS "${LIBCURL_LIBS} -l${_lib}")
+      set(LIBCURL_PC_LIBS_PRIVATE "${LIBCURL_PC_LIBS_PRIVATE} -l${_lib}")
     endif()
   endforeach()
 
@@ -1950,13 +1989,13 @@ if(NOT CURL_DISABLE_INSTALL)
   if(BUILD_SHARED_LIBS)
     set(ENABLE_SHARED          "yes")
     set(LIBCURL_PC_REQUIRES    "")
-    set(LIBCURL_NO_SHARED      "")
-    set(CPPFLAG_CURL_STATICLIB "")
+    set(LIBCURL_PC_LIBS        "")
+    set(LIBCURL_PC_CFLAGS      "")
   else()
     set(ENABLE_SHARED          "no")
     set(LIBCURL_PC_REQUIRES    "${LIBCURL_PC_REQUIRES_PRIVATE}")
-    set(LIBCURL_NO_SHARED      "${LIBCURL_LIBS}")
-    set(CPPFLAG_CURL_STATICLIB "${LIBCURL_PC_CFLAGS_PRIVATE}")
+    set(LIBCURL_PC_LIBS        "${LIBCURL_PC_LIBS_PRIVATE}")
+    set(LIBCURL_PC_CFLAGS      "${LIBCURL_PC_CFLAGS_PRIVATE}")
   endif()
   if(BUILD_STATIC_LIBS)
     set(ENABLE_STATIC "yes")
@@ -1974,7 +2013,6 @@ if(NOT CURL_DISABLE_INSTALL)
   # Consumed variables:
   #   CC
   #   CONFIGURE_OPTIONS
-  #   CPPFLAG_CURL_STATICLIB
   #   CURLVERSION
   #   CURL_CA_BUNDLE
   #   ENABLE_SHARED
@@ -1982,7 +2020,8 @@ if(NOT CURL_DISABLE_INSTALL)
   #   exec_prefix
   #   includedir
   #   LDFLAGS
-  #   LIBCURL_LIBS
+  #   LIBCURL_PC_CFLAGS
+  #   LIBCURL_PC_LIBS_PRIVATE
   #   libdir
   #   libext
   #   prefix
@@ -2001,13 +2040,13 @@ if(NOT CURL_DISABLE_INSTALL)
 
   # Finally generate a pkg-config file matching this config
   # Consumed variables:
-  #   CPPFLAG_CURL_STATICLIB
   #   CURLVERSION
   #   exec_prefix
   #   includedir
-  #   LIBCURL_LIBS
-  #   LIBCURL_NO_SHARED
+  #   LIBCURL_PC_CFLAGS
   #   LIBCURL_PC_CFLAGS_PRIVATE
+  #   LIBCURL_PC_LIBS
+  #   LIBCURL_PC_LIBS_PRIVATE
   #   LIBCURL_PC_REQUIRES
   #   LIBCURL_PC_REQUIRES_PRIVATE
   #   libdir
@@ -2038,9 +2077,11 @@ if(NOT CURL_DISABLE_INSTALL)
     endif()
     ${_generated_version_config}")
 
-  # Use:
-  # * TARGETS_EXPORT_NAME
-  # * PROJECT_NAME
+  # Consumed custom variables:
+  #   LIB_SELECTED
+  #   TARGETS_EXPORT_NAME
+  #   USE_OPENSSL
+  #   USE_ZLIB
   configure_package_config_file("CMake/curl-config.cmake.in"
     "${_project_config}"
     INSTALL_DESTINATION ${CURL_INSTALL_CMAKE_DIR}
