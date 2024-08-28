@@ -41,6 +41,11 @@
 #define main(void)      curl_example_multi_form_add_main(void)
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 int main(void)
 {
   CURL *curl;
@@ -117,3 +122,7 @@ int main(void)
   }
   return 0;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

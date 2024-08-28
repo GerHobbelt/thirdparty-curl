@@ -47,6 +47,11 @@
 
 #include <curl/curl.h>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 
 #if defined(BUILD_MONOLITHIC)
 #define main(cnt, arr)      curl_example_postit2_form_add_main(cnt, arr)
@@ -115,3 +120,7 @@ int main(int argc, const char** argv)
   }
   return 0;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
