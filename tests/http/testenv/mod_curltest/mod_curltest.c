@@ -45,7 +45,8 @@ static int curltest_tweak_handler(request_rec *r);
 static int curltest_1_1_required(request_rec *r);
 static int curltest_sslinfo_handler(request_rec *r);
 
-AP_DECLARE_MODULE(curltest) = {
+AP_DECLARE_MODULE(curltest) =
+{
   STANDARD20_MODULE_STUFF,
   NULL, /* func to create per dir config */
   NULL,  /* func to merge per dir config */
@@ -98,8 +99,8 @@ static void curltest_hooks(apr_pool_t *pool)
 #define SECS_PER_HOUR      (60*60)
 #define SECS_PER_DAY       (24*SECS_PER_HOUR)
 
-static apr_status_t duration_parse(apr_interval_time_t *ptimeout, const char *value,
-                                   const char *def_unit)
+static apr_status_t duration_parse(apr_interval_time_t *ptimeout,
+                                   const char *value, const char *def_unit)
 {
   char *endp;
   apr_int64_t n;
@@ -109,7 +110,8 @@ static apr_status_t duration_parse(apr_interval_time_t *ptimeout, const char *va
     return errno;
   }
   if(!endp || !*endp) {
-    if (!def_unit) def_unit = "s";
+    if(!def_unit)
+      def_unit = "s";
   }
   else if(endp == value) {
     return APR_EINVAL;
@@ -205,7 +207,7 @@ static int curltest_echo_handler(request_rec *r)
     int i;
     args = apr_cstr_split(r->args, "&", 1, r->pool);
     for(i = 0; i < args->nelts; ++i) {
-      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char*);
+      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char *);
       s = strchr(arg, '=');
       if(s) {
         *s = '\0';
@@ -257,7 +259,9 @@ static int curltest_echo_handler(request_rec *r)
 
   bb = apr_brigade_create(r->pool, c->bucket_alloc);
   /* copy any request body into the response */
-  if((rv = ap_setup_client_block(r, REQUEST_CHUNKED_DECHUNK))) goto cleanup;
+  rv = ap_setup_client_block(r, REQUEST_CHUNKED_DECHUNK);
+  if(rv)
+    goto cleanup;
   if(die_after_100) {
     ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, r,
                   "echo_handler: dying after 100-continue");
@@ -281,9 +285,11 @@ static int curltest_echo_handler(request_rec *r)
       ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
                     "echo_handler: copying %ld bytes from request body", l);
       rv = apr_brigade_write(bb, NULL, NULL, buffer, l);
-      if (APR_SUCCESS != rv) goto cleanup;
+      if(APR_SUCCESS != rv)
+        goto cleanup;
       rv = ap_pass_brigade(r->output_filters, bb);
-      if (APR_SUCCESS != rv) goto cleanup;
+      if(APR_SUCCESS != rv)
+        goto cleanup;
       ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
                     "echo_handler: passed %ld bytes from request body", l);
     }
@@ -347,7 +353,7 @@ static int curltest_tweak_handler(request_rec *r)
   if(r->args) {
     args = apr_cstr_split(r->args, "&", 1, r->pool);
     for(i = 0; i < args->nelts; ++i) {
-      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char*);
+      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char *);
       s = strchr(arg, '=');
       if(s) {
         *s = '\0';
@@ -437,7 +443,7 @@ static int curltest_tweak_handler(request_rec *r)
                 "request, %s", r->args? r->args : "(no args)");
   r->status = http_status;
   r->clength = with_cl? (chunks * chunk_size) : -1;
-  r->chunked = (r->proto_num >= HTTP_VERSION(1,1)) && !with_cl;
+  r->chunked = (r->proto_num >= HTTP_VERSION(1, 1)) && !with_cl;
   apr_table_setn(r->headers_out, "request-id", request_id);
   if(r->clength >= 0) {
     apr_table_set(r->headers_out, "Content-Length",
@@ -463,7 +469,8 @@ static int curltest_tweak_handler(request_rec *r)
   b = apr_bucket_flush_create(c->bucket_alloc);
   APR_BRIGADE_INSERT_TAIL(bb, b);
   rv = ap_pass_brigade(r->output_filters, bb);
-  if (APR_SUCCESS != rv) goto cleanup;
+  if(APR_SUCCESS != rv)
+    goto cleanup;
 
   memset(buffer, 'X', sizeof(buffer));
   for(i = 0; i < chunks; ++i) {
@@ -471,9 +478,11 @@ static int curltest_tweak_handler(request_rec *r)
       apr_sleep(chunk_delay);
     }
     rv = apr_brigade_write(bb, NULL, NULL, buffer, chunk_size);
-    if(APR_SUCCESS != rv) goto cleanup;
+    if(APR_SUCCESS != rv)
+      goto cleanup;
     rv = ap_pass_brigade(r->output_filters, bb);
-    if(APR_SUCCESS != rv) goto cleanup;
+    if(APR_SUCCESS != rv)
+      goto cleanup;
     ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
                   "error_handler: passed %lu bytes as response body",
                   (unsigned long)chunk_size);
@@ -545,7 +554,7 @@ static int curltest_put_handler(request_rec *r)
   if(r->args) {
     args = apr_cstr_split(r->args, "&", 1, r->pool);
     for(i = 0; i < args->nelts; ++i) {
-      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char*);
+      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char *);
       s = strchr(arg, '=');
       if(s) {
         *s = '\0';
@@ -594,7 +603,9 @@ static int curltest_put_handler(request_rec *r)
   }
   bb = apr_brigade_create(r->pool, c->bucket_alloc);
   /* copy any request body into the response */
-  if((rv = ap_setup_client_block(r, REQUEST_CHUNKED_DECHUNK))) goto cleanup;
+  rv = ap_setup_client_block(r, REQUEST_CHUNKED_DECHUNK);
+  if(rv)
+    goto cleanup;
   if(ap_should_client_block(r)) {
     while(0 < (l = ap_get_client_block(r, &buffer[0], sizeof(buffer)))) {
       ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
@@ -609,7 +620,8 @@ static int curltest_put_handler(request_rec *r)
   s_rbody_len = apr_psprintf(r->pool, "%"APR_OFF_T_FMT, rbody_len);
   apr_table_setn(r->headers_out, "Received-Length", s_rbody_len);
   rv = apr_brigade_puts(bb, NULL, NULL, s_rbody_len);
-  if(APR_SUCCESS != rv) goto cleanup;
+  if(APR_SUCCESS != rv)
+    goto cleanup;
   b = apr_bucket_eos_create(c->bucket_alloc);
   APR_BRIGADE_INSERT_TAIL(bb, b);
   ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r, "put_handler: request read");
@@ -649,7 +661,7 @@ static int curltest_1_1_required(request_rec *r)
     return DECLINED;
   }
 
-  if (HTTP_VERSION_MAJOR(r->proto_num) > 1) {
+  if(HTTP_VERSION_MAJOR(r->proto_num) > 1) {
     apr_table_setn(r->notes, "ssl-renegotiate-forbidden", "1");
     ap_die(HTTP_FORBIDDEN, r);
     return OK;
@@ -673,11 +685,13 @@ static int curltest_1_1_required(request_rec *r)
   b = apr_bucket_flush_create(c->bucket_alloc);
   APR_BRIGADE_INSERT_TAIL(bb, b);
   rv = ap_pass_brigade(r->output_filters, bb);
-  if (APR_SUCCESS != rv) goto cleanup;
+  if(APR_SUCCESS != rv)
+    goto cleanup;
 
   /* we are done */
   rv = apr_brigade_printf(bb, NULL, NULL, "well done!");
-  if(APR_SUCCESS != rv) goto cleanup;
+  if(APR_SUCCESS != rv)
+    goto cleanup;
   b = apr_bucket_eos_create(c->bucket_alloc);
   APR_BRIGADE_INSERT_TAIL(bb, b);
   ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r, "1_1_handler: request read");
@@ -731,7 +745,7 @@ static int curltest_sslinfo_handler(request_rec *r)
   if(r->args) {
     apr_array_header_t *args = apr_cstr_split(r->args, "&", 1, r->pool);
     for(i = 0; i < args->nelts; ++i) {
-      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char*);
+      char *s, *val, *arg = APR_ARRAY_IDX(args, i, char *);
       s = strchr(arg, '=');
       if(s) {
         *s = '\0';
@@ -784,7 +798,8 @@ static int curltest_sslinfo_handler(request_rec *r)
   b = apr_bucket_flush_create(c->bucket_alloc);
   APR_BRIGADE_INSERT_TAIL(bb, b);
   rv = ap_pass_brigade(r->output_filters, bb);
-  if (APR_SUCCESS != rv) goto cleanup;
+  if(APR_SUCCESS != rv)
+    goto cleanup;
 
   /* we are done */
   b = apr_bucket_eos_create(c->bucket_alloc);
