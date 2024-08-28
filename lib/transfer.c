@@ -290,13 +290,13 @@ static CURLcode readwrite_data(struct Curl_easy *data,
     buf = xfer_buf;
     bytestoread = xfer_blen;
 
-    if(bytestoread && data->set.max_recv_speed) {
+    if(bytestoread && data->set.max_recv_speed > 0) {
       /* In case of speed limit on receiving: if this loop already got
        * data, break out. If not, limit the amount of bytes to receive.
        * The overall, timed, speed limiting is done in multi.c */
       if(total_received)
         break;
-      if((size_t)data->set.max_recv_speed < bytestoread)
+      if(data->set.max_recv_speed < (curl_off_t)bytestoread)
         bytestoread = (size_t)data->set.max_recv_speed;
     }
 
@@ -744,22 +744,6 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
   data->req.headerbytecount = 0;
   Curl_headers_cleanup(data);
   return result;
-}
-
-/*
- * Curl_posttransfer() is called immediately after a transfer ends
- */
-CURLcode Curl_posttransfer(struct Curl_easy *data)
-{
-#if defined(HAVE_SIGNAL) && defined(SIGPIPE) && !defined(HAVE_MSG_NOSIGNAL)
-  /* restore the signal handler for SIGPIPE before we get back */
-  if(!data->set.no_signal)
-    signal(SIGPIPE, data->state.prev_signal);
-#else
-  (void)data; /* unused parameter */
-#endif
-
-  return CURLE_OK;
 }
 
 /*
