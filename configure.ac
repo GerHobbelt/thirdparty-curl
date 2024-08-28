@@ -501,14 +501,6 @@ fi
 AC_SUBST([LIBCURL_PC_CFLAGS])
 
 
-# Determine whether all dependent libraries must be specified when linking
-if test "X$enable_shared" = "Xyes" -a "X$link_all_deplibs" = "Xno"; then
-  require_lib_deps=no
-else
-  require_lib_deps=yes
-fi
-AM_CONDITIONAL(USE_EXPLICIT_LIB_DEPS, test x$require_lib_deps = xyes)
-
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
 dnl **********************************************************************
@@ -2617,7 +2609,6 @@ if test "$curl_cv_native_windows" = 'yes'; then
 
   if test "$want_winidn" = "yes"; then
     dnl WinIDN library support has been requested
-    clean_CFLAGS="$CFLAGS"
     clean_CPPFLAGS="$CPPFLAGS"
     clean_LDFLAGS="$LDFLAGS"
     clean_LIBS="$LIBS"
@@ -2629,26 +2620,7 @@ if test "$curl_cv_native_windows" = 'yes'; then
       dnl pkg-config not available or provides no info
       WINIDN_LDFLAGS="-L$want_winidn_path/lib$libsuff"
       WINIDN_CPPFLAGS="-I$want_winidn_path/include"
-      WINIDN_DIR="$want_winidn_path/lib$libsuff"
     fi
-    #
-    dnl WinIDN requires a minimum supported OS version of at least Vista (0x0600)
-    AC_COMPILE_IFELSE([
-      AC_LANG_PROGRAM([[
-        #include <windows.h>
-      ]],[[
-        #if (WINVER < 0x600) && (_WIN32_WINNT < 0x600)
-        #error
-        #endif
-      ]])
-    ],[
-    ],[
-      CFLAGS=`echo $CFLAGS | $SED -e 's/-DWINVER=[[^ ]]*//g'`
-      CFLAGS=`echo $CFLAGS | $SED -e 's/-D_WIN32_WINNT=[[^ ]]*//g'`
-      CPPFLAGS=`echo $CPPFLAGS | $SED -e 's/-DWINVER=[[^ ]]*//g'`
-      CPPFLAGS=`echo $CPPFLAGS | $SED -e 's/-D_WIN32_WINNT=[[^ ]]*//g'`
-      WINIDN_CPPFLAGS="$WINIDN_CPPFLAGS -DWINVER=0x0600"
-    ])
     #
     CPPFLAGS="$CPPFLAGS $WINIDN_CPPFLAGS"
     LDFLAGS="$LDFLAGS $WINIDN_LDFLAGS"
@@ -2659,6 +2631,14 @@ if test "$curl_cv_native_windows" = 'yes'; then
       AC_LANG_PROGRAM([[
         #include <windows.h>
       ]],[[
+        #if (!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x600) && \
+          (!defined(WINVER) || WINVER < 0x600)
+        WINBASEAPI int WINAPI IdnToUnicode(DWORD dwFlags,
+                                           const WCHAR *lpASCIICharStr,
+                                           int cchASCIIChar,
+                                           WCHAR *lpUnicodeCharStr,
+                                           int cchUnicodeChar);
+        #endif
         IdnToUnicode(0, NULL, 0, NULL, 0);
       ]])
     ],[
@@ -2675,7 +2655,6 @@ if test "$curl_cv_native_windows" = 'yes'; then
       curl_idn_msg="enabled (Windows-native)"
     else
       AC_MSG_WARN([Cannot find libraries for IDN support: IDN disabled])
-      CFLAGS="$clean_CFLAGS"
       CPPFLAGS="$clean_CPPFLAGS"
       LDFLAGS="$clean_LDFLAGS"
       LIBS="$clean_LIBS"
