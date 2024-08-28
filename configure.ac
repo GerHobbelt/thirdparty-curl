@@ -607,6 +607,16 @@ case $host_os in
     ;;
 esac
 
+have_mingw='no'
+case $host_os in
+  mingw*)
+    have_mingw='yes'
+    ;;
+esac
+
+AM_CONDITIONAL([HAVE_MINGW],
+  [test "$curl_cv_native_windows" = 'yes' -a "$have_mingw" = 'yes'])
+
 AM_CONDITIONAL([HAVE_WINDRES],
   [test "$curl_cv_native_windows" = "yes" && test -n "${RC}"])
 
@@ -2348,6 +2358,10 @@ elif test X"$OPT_LIBSSH" != Xno; then
   fi
 
   if test "$LIBSSH_ENABLED" = "1"; then
+    if test "$curl_cv_native_windows" = "yes"; then
+      dnl for if_nametoindex
+      LIBS="-liphlpapi $LIBS"
+    fi
     if test -n "$DIR_SSH"; then
        dnl when the libssh shared libs were found in a path that the run-time
        dnl linker doesn't search through, we need to add it to CURL_LIBRARY_PATH
