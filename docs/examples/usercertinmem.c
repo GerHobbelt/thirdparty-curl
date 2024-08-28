@@ -160,7 +160,7 @@ static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm)
     printf("Use Key failed\n");
   }
 
-  /* free resources that have been allocated by openssl functions */
+  /* free resources that have been allocated by OpenSSL functions */
   if(bio)
     BIO_free(bio);
 
