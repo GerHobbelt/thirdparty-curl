@@ -2718,13 +2718,18 @@ static void unlink_all_msgsent_handles(struct Curl_multi *multi)
 CURLMcode curl_multi_count_connections(struct Curl_multi *multi,
                                        int *connections)
 {
-  struct Curl_easy *data;
+	struct Curl_llist_node* e;
+	struct Curl_llist_node* n = NULL;
 
   if(!GOOD_MULTI_HANDLE(multi))
     return CURLM_BAD_HANDLE;
 
   *connections = multi->num_alive;
-  for(data = multi->easyp; data; data = data->next){
+
+	for (e = Curl_llist_head(&multi->process); e; e = n) {
+		struct Curl_easy* data = Curl_node_elem(e);
+		n = Curl_node_next(e);
+
     if((data->mstate == MSTATE_PENDING) ||
        (data->mstate == MSTATE_CONNECT)) {
       (*connections)--;

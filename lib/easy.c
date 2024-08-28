@@ -689,17 +689,20 @@ static CURLcode easy_events(struct Curl_multi *multi)
 
 static CURLcode easy_transfer(struct Curl_multi *multi)
 {
-  struct Curl_easy *data;
   bool done = FALSE;
   CURLMcode mcode = CURLM_OK;
   CURLcode result = CURLE_OK;
 
-  data = multi->easyp;
-
   {
-	char* cleaned_url = curl_clean_for_printing_to_console(data->state.url);
-	Curl_infof(data, "Processing URL: %s", cleaned_url);
-	free(cleaned_url);
+		struct Curl_llist_node* e = Curl_llist_head(&multi->process);
+		struct Curl_easy* data;
+		DEBUGASSERT(e);
+		data = Curl_node_elem(e);
+		DEBUGASSERT(data);
+
+		char* cleaned_url = curl_clean_for_printing_to_console(data->state.url);
+  	Curl_infof(data, "Processing URL: %s", cleaned_url);
+	  free(cleaned_url);
   }
 
   while(!done && !mcode) {

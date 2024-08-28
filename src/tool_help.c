@@ -295,11 +295,13 @@ void tool_help(const char * const category)
         msnprintf(cmdbuf, sizeof(cmdbuf), "\n    --no-%s", a->lname);
       else
         msnprintf(cmdbuf, sizeof(cmdbuf), "\n    %s", category);
+#if 0
       if(a->cmd == C_XATTR)
         /* this is the last option, which then ends when FILES starts */
         showhelp("\nALL OPTIONS\n", cmdbuf, "\nFILES");
       else
         showhelp("\nALL OPTIONS\n", cmdbuf, "\n    -");
+#endif
     }
 #else
     fprintf(tool_stderr, "Cannot comply. "
