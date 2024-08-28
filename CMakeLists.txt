@@ -1133,6 +1133,8 @@ if(curl_ca_bundle_supported)
       "Set ON to use built-in CA store of TLS backend. Defaults to OFF")
   set(CURL_CA_PATH "auto" CACHE STRING
       "Location of default CA path. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
+  set(CURL_CA_EMBED "" CACHE STRING
+      "Path to the CA bundle to embed into the curl tool.")
 set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
     "Set ON to use built-in CACERT_PEM from generated cacert.h. Defaults to OFF")
 
@@ -1196,6 +1198,15 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
             "Location of default CA path. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
         set(CURL_CA_PATH_SET TRUE CACHE BOOL "Path to the CA bundle has been set")
       endif()
+    endif()
+  endif()
+
+  set(CURL_CA_EMBED_SET FALSE)
+  if(BUILD_CURL_EXE AND NOT CURL_CA_EMBED STREQUAL "")
+    if(EXISTS "${CURL_CA_EMBED}")
+      set(CURL_CA_EMBED_SET TRUE)
+    else()
+      message(FATAL_ERROR "CA bundle to embed is missing: '${CURL_CA_EMBED}'")
     endif()
   endif()
 endif()
@@ -1814,6 +1825,7 @@ if(NOT CURL_DISABLE_INSTALL)
   _add_if("TrackMemory"   ENABLE_CURLDEBUG)
   _add_if("ECH"           SSL_ENABLED AND HAVE_ECH)
   _add_if("PSL"           USE_LIBPSL)
+  _add_if("CAcert"        CURL_CA_EMBED_SET)
   if(_items)
     if(NOT CMAKE_VERSION VERSION_LESS 3.13)
       list(SORT _items CASE INSENSITIVE)
