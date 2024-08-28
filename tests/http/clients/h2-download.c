@@ -36,7 +36,7 @@
 #include <getopt.h>
 
 #if !defined(_WIN32)
-/* somewhat unix-specific */
+/* somewhat Unix-specific */
 #include <sys/time.h>
 #include <unistd.h>
 #endif

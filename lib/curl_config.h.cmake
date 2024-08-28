@@ -716,7 +716,7 @@ ${SIZEOF___INT64_CODE}
 /* Define if you want to enable POSIX threaded DNS lookup */
 #cmakedefine USE_THREADS_POSIX 1
 
-/* Define if you want to enable WIN32 threaded DNS lookup */
+/* Define if you want to enable Win32 threaded DNS lookup */
 #cmakedefine USE_THREADS_WIN32 1
 
 /* Define if you have process.h */

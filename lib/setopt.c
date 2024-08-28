@@ -2201,7 +2201,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
 #ifdef USE_SSL
     if(Curl_ssl_supports(data, SSLSUPP_CA_PATH))
-      /* This does not work on windows. */
+      /* This does not work on Windows. */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CAPATH],
                               va_arg(param, char *));
     else
@@ -2216,7 +2216,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
 #ifdef USE_SSL
     if(Curl_ssl_supports(data, SSLSUPP_CA_PATH))
-      /* This does not work on windows. */
+      /* This does not work on Windows. */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CAPATH_PROXY],
                               va_arg(param, char *));
     else

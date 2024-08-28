@@ -331,7 +331,7 @@
 
 /* curl uses its own printf() function internally. It understands the GNU
  * format. Use this format, so that is matches the GNU format attribute we
- * use with the mingw compiler, allowing it to verify them at compile-time.
+ * use with the MinGW compiler, allowing it to verify them at compile-time.
  */
 #ifdef  __MINGW32__
 #  undef CURL_FORMAT_CURL_OFF_T
@@ -460,7 +460,7 @@
 #  include <sys/stat.h>
 
 /*
- * Large file (>2Gb) support using WIN32 functions.
+ * Large file (>2Gb) support using Win32 functions.
  */
 
 #ifdef USE_WIN32_LARGE_FILES
@@ -476,7 +476,7 @@
 #else
 
 /*
- * Small file (<2Gb) support using WIN32 functions.
+ * Small file (<2Gb) support using Win32 functions.
  */
 
 //#ifdef USE_WIN32_SMALL_FILES
@@ -848,7 +848,7 @@ extern "C" {
 
 #if defined(__LWIP_OPT_H__) || defined(LWIP_HDR_OPT_H)
 #  if defined(SOCKET) || defined(USE_WINSOCK)
-#    error "WinSock and lwIP TCP/IP stack definitions shall not coexist!"
+#    error "Winsock and lwIP TCP/IP stack definitions shall not coexist!"
 #  endif
 #endif
 
@@ -886,7 +886,7 @@ Therefore we specify it explicitly. https://github.com/curl/curl/pull/258
 #define FOPEN_WRITETEXT "wt"
 #define FOPEN_APPENDTEXT "at"
 #elif defined(__CYGWIN__)
-/* Cygwin has specific behavior we need to address when WIN32 is not defined.
+/* Cygwin has specific behavior we need to address when _WIN32 is not defined.
 https://cygwin.com/cygwin-ug-net/using-textbinary.html
 For write we want our output to have line endings of LF and be compatible with
 other Cygwin utilities. For read we want to handle input that may have line

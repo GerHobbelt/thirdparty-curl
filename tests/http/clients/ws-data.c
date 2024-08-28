@@ -35,7 +35,7 @@
 #include <string.h>
 
 #if !defined(_MSC_VER)
-/* somewhat unix-specific */
+/* somewhat Unix-specific */
 #include <sys/time.h>
 #include <unistd.h>
 #endif

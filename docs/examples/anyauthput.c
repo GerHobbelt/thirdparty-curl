@@ -115,7 +115,7 @@ int main(int argc, const char** argv)
   fp = fopen(file, "rb");
   fstat(FILENO(fp), &file_info);
 
-  /* In windows, this inits the winsock stuff */
+  /* In Windows, this inits the Winsock stuff */
   curl_global_init(CURL_GLOBAL_ALL);
 
   /* get a curl handle */

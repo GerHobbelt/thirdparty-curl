@@ -468,6 +468,9 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
   if(per->infdopen)
     close(per->infd);
 
+  if(per->skip)
+    goto skip;
+
 #ifdef __VMS
   if(is_vms_shell()) {
     /* VMS DCL shell behavior */
@@ -739,7 +742,7 @@ noretry:
     curl_easy_getinfo(curl, CURLINFO_FILETIME_T, &filetime);
     setfiletime(filetime, outs->filename, global);
   }
-
+skip:
   /* Write the --write-out data before cleanup but after result is final */
   if(config->writeout)
     ourWriteOut(config, per, result);
@@ -1076,7 +1079,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         /* Single header file for all URLs */
         if(config->headerfile) {
           /* open file for output: */
-          if(strcmp(config->headerfile, "-")) {
+          if(!strcmp(config->headerfile, "%")) {
+            heads->stream = stderr;
+            /* use binary mode for protocol header output */
+            set_binmode(heads->stream);
+          }
+          else if(strcmp(config->headerfile, "-")) {
             FILE *newfile;
 
             /*
@@ -1182,9 +1190,13 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
             }
             if(!*per->outfile && !config->content_disposition) {
-              errorf(global, "Remote filename has no length");
-              result = CURLE_WRITE_ERROR;
-              break;
+              free(per->outfile);
+              per->outfile = strdup("curl_response");
+              if(!per->outfile) {
+                result = CURLE_OUT_OF_MEMORY;
+                break;
+              }
+              warnf(global, "No remote file name, uses \"%s\"", per->outfile);
             }
           }
           else if(state->urls) {
@@ -1230,6 +1242,15 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
           }
 
+          if(per->outfile && config->skip_existing) {
+            struct_stat fileinfo;
+            if(!stat(per->outfile, &fileinfo)) {
+              /* file is present */
+              notef(global, "skips transfer, \"%s\" exists locally",
+                    per->outfile);
+              per->skip = TRUE;
+            }
+          }
           if((urlnode->flags & GETOUT_USEREMOTE)
              && config->content_disposition) {
             /* Our header callback MIGHT set the filename */
@@ -2668,25 +2689,29 @@ static CURLcode serial_transfers(struct GlobalConfig *global,
     long delay_ms;
     bool bailout = FALSE;
     struct timeval start;
-    result = pre_transfer(global, per);
-    if(result)
-      break;
 
-    if(global->libcurl) {
-      result = easysrc_perform();
+    start = tvnow();
+    if(!per->skip) {
+      result = pre_transfer(global, per);
       if(result)
         break;
-    }
-    start = tvnow();
-#ifdef DEBUGBUILD
-    if(getenv("CURL_FORBID_REUSE"))
-      (void)curl_easy_setopt(per->curl, CURLOPT_FORBID_REUSE, 1L);
 
-    if(global->test_event_based)
-      result = curl_easy_perform_ev(per->curl);
-    else
+      if(global->libcurl) {
+        result = easysrc_perform();
+        if(result)
+          break;
+      }
+
+#ifdef DEBUGBUILD
+      if(getenv("CURL_FORBID_REUSE"))
+        (void)curl_easy_setopt(per->curl, CURLOPT_FORBID_REUSE, 1L);
+
+      if(global->test_event_based)
+        result = curl_easy_perform_ev(per->curl);
+      else
 #endif
-      result = curl_easy_perform(per->curl);
+        result = curl_easy_perform(per->curl);
+    }
 
     returncode = post_per_transfer(global, per, result, &retry, &delay_ms);
     if(retry) {
@@ -2749,10 +2774,10 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
     return CURLE_FAILED_INIT;
   }
 
-  /* On WIN32 we cannot set the path to curl-ca-bundle.crt at compile time. We
-   * look for the file in two ways:
+  /* On Windows we cannot set the path to curl-ca-bundle.crt at compile time.
+   * We look for the file in two ways:
    * 1: look at the environment variable CURL_CA_BUNDLE for a path
-   * 2: if #1 is not found, use the windows API function SearchPath()
+   * 2: if #1 is not found, use the Windows API function SearchPath()
    *    to find it along the app's path (includes app's dir and CWD)
    *
    * We support the environment variable thing for non-Windows platforms

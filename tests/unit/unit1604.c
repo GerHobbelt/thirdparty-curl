@@ -205,8 +205,8 @@ UNITTEST_START
        of 259 (unless the path starts with \\) and an expected maximum filename
        length of 255.
 	   
-	   I assume MSDOS has variable max path lengths depending on compiler that are shorter
-       so currently these "good" truncate tests won't run on MSDOS */
+	   I assume MS-DOS has variable max path lengths depending on compiler that are shorter
+       so currently these "good" truncate tests will not run on MS-DOS */
 #ifndef MSDOS
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"

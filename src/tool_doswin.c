@@ -457,11 +457,11 @@ CurlSanitizeCode truncate_dryrun(const char *path, const size_t truncate_pos)
  */
 
 /*
-Extra sanitization MSDOS for file_name.
+Extra sanitization MS-DOS for file_name.
 
 This is a supporting function for curl_sanitize_file_name.
 
-Warning: This is an MSDOS legacy function and was purposely written in a way
+Warning: This is an MS-DOS legacy function and was purposely written in a way
 that some path information may pass through. For example drive letter names
 (C:, D:, etc) are allowed to pass through. For sanitizing a filename use
 curl_sanitize_file_name.
@@ -609,7 +609,7 @@ Rename file_name if it is a reserved dos device name.
 
 This is a supporting function for curl_sanitize_file_name.
 
-Warning: This is an MSDOS legacy function and was purposely written in a way
+Warning: This is an MS-DOS legacy function and was purposely written in a way
 that some path information may pass through. For example drive letter names
 (C:, D:, etc) are allowed to pass through. For sanitizing a filename use
 curl_sanitize_file_name.
@@ -744,7 +744,7 @@ CurlSanitizeCode rename_if_reserved_dos_device_name(char **const sanitized,
   }
 
   /* This is the legacy portion from rename_if_dos_device_name that checks for
-     reserved device names. It only works on MSDOS. On Windows XP the stat
+     reserved device names. It only works on MS-DOS. On Windows XP the stat
      check errors with EINVAL if the device name is reserved. On Windows
      Vista/7/8 it sets mode S_IFREG (regular file or device). According to
      MSDN stat doc the latter behavior is correct, but that does not help us
