@@ -431,14 +431,6 @@ CURLcode Curl_readwrite(struct Curl_easy *data,
   struct curltime now;
   int didwhat = 0;
 
-  /* Check if client writes had been paused and can resume now. */
-  if(!(k->keepon & KEEP_RECV_PAUSE) && Curl_cwriter_is_paused(data)) {
-    Curl_conn_ev_data_pause(data, FALSE);
-    result = Curl_cwriter_unpause(data);
-    if(result)
-      goto out;
-  }
-
   curl_socket_t fd_read;
   curl_socket_t fd_write;
   int select_res = data->state.select_bits;
