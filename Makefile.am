@@ -75,7 +75,7 @@ PLAN9_DIST = plan9/include/mkfile \
  plan9/src/mkfile.inc             \
  plan9/src/mkfile
 
-EXTRA_DIST = CHANGES COPYING maketgz Makefile.dist curl-config.in       \
+EXTRA_DIST = CHANGES.md COPYING maketgz Makefile.dist curl-config.in       \
  RELEASE-NOTES buildconf libcurl.pc.in $(CMAKE_DIST) $(VC_DIST)         \
  $(WINBUILD_DIST) $(PLAN9_DIST) lib/libcurl.vers.in buildconf.bat       \
  libcurl.def Dockerfile
@@ -101,8 +101,8 @@ include src/Makefile.inc
 
 dist-hook:
 	rm -rf $(top_builddir)/tests/log
-	find $(distdir) -name "*.dist" -exec rm {} \;
-	(distit=`find $(srcdir) -name "*.dist" | grep -v ./ares/`; \
+	find $(distdir) -name "*.dist" -a \! -name Makefile.dist -exec rm {} \;
+	(distit=`find $(srcdir) -name "*.dist"`; \
 	for file in $$distit; do \
 	  strip=`echo $$file | sed -e s/^$(srcdir)// -e s/\.dist//`; \
 	  cp -p $$file $(distdir)$$strip; \
