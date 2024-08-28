@@ -322,10 +322,9 @@ static CURLcode readwrite_data(struct Curl_easy *data,
         DEBUGF(infof(data, "nread == 0, stream closed, bailing"));
       else
         DEBUGF(infof(data, "nread <= 0, server closed connection, bailing"));
-      /* stop receiving and ALL sending as well, including PAUSE and HOLD.
-       * We might still be paused on receive client writes though, so
-       * keep those bits around. */
-      k->keepon &= ~(KEEP_RECV|KEEP_SENDBITS);
+      result = Curl_req_stop_send_recv(data);
+      if(result)
+        goto out;
       if(k->eos_written) /* already did write this to client, leave */
         break;
     }
@@ -367,8 +366,7 @@ static CURLcode readwrite_data(struct Curl_easy *data,
        may now close the connection. If there is now any kind of sending going
        on from our side, we need to stop that immediately. */
     infof(data, "we are done reading and this is set to close, stop send");
-    k->keepon &= ~KEEP_SEND; /* no writing anymore either */
-    k->keepon &= ~KEEP_SEND_PAUSE; /* no pausing anymore either */
+    Curl_req_abort_sending(data);
   }
 
 out:
@@ -383,9 +381,6 @@ out:
  */
 static CURLcode readwrite_upload(struct Curl_easy *data, int *didwhat)
 {
-  if((data->req.keepon & KEEP_SEND_PAUSE))
-    return CURLE_OK;
-
   /* We should not get here when the sending is already done. It
    * probably means that someone set `data-req.keepon |= KEEP_SEND`
    * when it should not. */
@@ -443,7 +438,7 @@ CURLcode Curl_readwrite(struct Curl_easy *data,
   else
     fd_read = CURL_SOCKET_BAD;
 
-  if((k->keepon & KEEP_SENDBITS) == KEEP_SEND)
+  if(Curl_req_want_send(data))
     fd_write = conn->writesockfd;
   else
     fd_write = CURL_SOCKET_BAD;
@@ -485,7 +480,7 @@ CURLcode Curl_readwrite(struct Curl_easy *data,
   }
 
   /* If we still have writing to do, we check if we have a writable socket. */
-  if(((k->keepon & KEEP_SEND) && (select_res & CURL_CSELECT_OUT)) ||
+  if((Curl_req_want_send(data) && (select_res & CURL_CSELECT_OUT)) ||
      (k->keepon & KEEP_SEND_TIMED)) {
     /* write */
 
@@ -1254,8 +1249,24 @@ CURLcode Curl_xfer_write_done(struct Curl_easy *data, bool premature)
   return Curl_cw_out_done(data);
 }
 
+bool Curl_xfer_needs_flush(struct Curl_easy *data)
+{
+  int sockindex;
+  sockindex = ((data->conn->writesockfd != CURL_SOCKET_BAD) &&
+               (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]));
+  return Curl_conn_needs_flush(data, sockindex);
+}
+
+CURLcode Curl_xfer_flush(struct Curl_easy *data)
+{
+  int sockindex;
+  sockindex = ((data->conn->writesockfd != CURL_SOCKET_BAD) &&
+               (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]));
+  return Curl_conn_flush(data, sockindex);
+}
+
 CURLcode Curl_xfer_send(struct Curl_easy *data,
-                        const void *buf, size_t blen,
+                        const void *buf, size_t blen, bool eos,
                         size_t *pnwritten)
 {
   CURLcode result;
@@ -1272,7 +1283,7 @@ CURLcode Curl_xfer_send(struct Curl_easy *data,
   } */
   sockindex = ((data->conn->writesockfd != CURL_SOCKET_BAD) &&
                (data->conn->writesockfd == data->conn->sock[SECONDARYSOCKET]));
-  result = Curl_conn_send(data, sockindex, buf, blen, pnwritten);
+  result = Curl_conn_send(data, sockindex, buf, blen, eos, pnwritten);
   if(result == CURLE_AGAIN) {
     result = CURLE_OK;
     *pnwritten = 0;
@@ -1280,6 +1291,8 @@ CURLcode Curl_xfer_send(struct Curl_easy *data,
   else if(!result && *pnwritten)
     data->info.request_size += *pnwritten;
 
+  DEBUGF(infof(data, "Curl_xfer_send(len=%zu) -> %d, %zu",
+               blen, result, *pnwritten));
   return result;
 }
 
