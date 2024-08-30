@@ -78,7 +78,7 @@ CURLcode Curl_extract_certinfo(struct Curl_easy *data, int certnum,
 CURLcode Curl_verifyhost(struct Curl_cfilter *cf, struct Curl_easy *data,
                          const char *beg, const char *end);
 
-#ifdef UNITTESTS
+#if defined(UNITTESTS) || defined(BUILD_MONOLITHIC)
 #if defined(USE_GNUTLS) || defined(USE_SCHANNEL) || defined(USE_SECTRANSP) || \
   defined(USE_MBEDTLS)
 

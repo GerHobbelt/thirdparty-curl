@@ -142,7 +142,7 @@ CURLcode Curl_conn_setup(struct Curl_easy *data,
 extern struct Curl_cftype Curl_cft_happy_eyeballs;
 extern struct Curl_cftype Curl_cft_setup;
 
-#ifdef UNITTESTS
+#if defined(UNITTESTS) || defined(BUILD_MONOLITHIC)
 void Curl_debug_set_transport_provider(int transport,
                                        cf_ip_connect_create *cf_create);
 #endif
