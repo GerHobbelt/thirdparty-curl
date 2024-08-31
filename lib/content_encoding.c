@@ -141,8 +141,17 @@ static CURLcode
 exit_zlib(struct Curl_easy *data,
 	zng_stream *z, zlibInitState *zlib_init, CURLcode result)
 {
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4090) // warning C4090: different 'const' qualifiers
+#endif
+
   if(*zlib_init == ZLIB_GZIP_HEADER)
     Curl_safefree(z->next_in);
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#endif
 
   if(*zlib_init != ZLIB_UNINIT) {
     if(zng_inflateEnd(z) != Z_OK && result == CURLE_OK)
