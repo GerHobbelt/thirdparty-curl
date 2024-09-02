@@ -300,14 +300,14 @@ struct OperationConfig {
                                      files */
   bool skip_existing;
   bool sanitize_with_extreme_prejudice; /* Sanitize URLs with extreme prejudice, i.e.
-                                      accept some pretty shoddy input and make
-									  the best of it.
-									  Output filenames are also sanitized with extreme
-									  prejudice: on all platform we will ensure
-									  that the generated filenames are 'sane',
-									  i.e. non-hidden (UNIX dotfiles) and without
-									  any crufty chracters that may thwart your
-									  fileesystem. */
+                                           accept some pretty shoddy input and make
+                                           the best of it.
+                                           Output filenames are also sanitized with extreme
+                                           prejudice: on all platform we will ensure
+                                           that the generated filenames are 'sane',
+                                           i.e. non-hidden (UNIX dotfiles) and without
+                                           any crufty chracters that may thwart your
+                                           fileesystem. */
 #ifdef USE_ECH
   char *ech;                      /* Config set by --ech keywords */
   char *ech_config;               /* Config set by "--ech esl:" option */
