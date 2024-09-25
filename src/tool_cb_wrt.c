@@ -433,7 +433,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   FILE *file = NULL;
   file_clobber_mode_t clobber_mode;
   int duplicate = 1;
-  char* fname = outs->filename;
+  const char *fname = outs->filename;
 
   if (!fname || !*fname) {
       fname = per->outfile;
@@ -456,10 +456,7 @@ bool tool_create_output_file(struct OutStruct *outs,
       clobber_mode = CLOBBER_NEVER;
   }
 
-  if(!fname || !*fname) {
-    warnf(global, "Remote filename has no length");
-    return FALSE;
-  }
+  DEBUGASSERT(fname && *fname);
 
   // NOW is the time to check server response headers for MIME info, etc.
   // to help affix a most proper filename extension:

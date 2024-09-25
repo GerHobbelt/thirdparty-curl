@@ -1193,20 +1193,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             if(config->output_path_mimics_url)
               result = convert_url_to_file_path(&per->outfile, per->this_url);
             else
-              result = get_url_file_name(&per->outfile, per->this_url);
+              result = get_url_file_name(global, &per->outfile, per->this_url);
             if(result) {
-              errorf(global, "Failed to extract a sensible filename"
+              errorf(global, "Failed to extract a filename"
                      " from the URL to use for storage");
               break;
-            }
-            if(!*per->outfile && !config->content_disposition) {
-              free(per->outfile);
-              per->outfile = strdup("curl_response");
-              if(!per->outfile) {
-                result = CURLE_OUT_OF_MEMORY;
-                break;
-              }
-              warnf(global, "No remote file name, uses \"%s\"", per->outfile);
             }
           }
           else if(state->urls) {
@@ -1225,6 +1216,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
             }
           }
+          DEBUGASSERT(per->outfile);
 
           if(config->output_dir && *config->output_dir) {
             char *d = aprintf("%s/%s", config->output_dir, per->outfile);
@@ -1252,7 +1244,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               break;
           }
 
-          if(per->outfile && config->skip_existing) {
+          if(config->skip_existing) {
             struct_stat fileinfo;
             if(!stat(per->outfile, &fileinfo)) {
               /* file is present */
