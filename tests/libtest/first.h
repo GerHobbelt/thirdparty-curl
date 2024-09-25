@@ -1,5 +1,5 @@
-#ifndef HEADER_CURL_TOOL_UTIL_H
-#define HEADER_CURL_TOOL_UTIL_H
+#ifndef HEADER_LIBTEST_FIRST_H
+#define HEADER_LIBTEST_FIRST_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -23,24 +23,16 @@
  * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
-#include "tool_setup.h"
+#include "curl_setup.h"
+#include <curl/curl.h>
 
-struct timeval tvnow(void);
+typedef CURLcode (*test_func_t)(char *);
 
-/*
- * Make sure that the first argument (t1) is the more recent time and t2 is
- * the older time, as otherwise you get a weird negative time-diff back...
- *
- * Returns: the time difference in number of milliseconds.
- */
-long tvdiff(struct timeval t1, struct timeval t2);
-
-/* Case insensitive comparison support. */
-int struplocompare(const char *p1, const char *p2);
-int struplocompare4sort(const void *p1, const void *p2);
-
-#ifdef _WIN32
-FILE *Curl_execpath(const char *filename, char **pathp);
+#ifdef CURLTESTS_BUNDLED
+struct onetest {
+  const char *name;
+  test_func_t ptr;
+};
 #endif
 
-#endif /* HEADER_CURL_TOOL_UTIL_H */
+#endif /* HEADER_LIBTEST_FIRST_H */

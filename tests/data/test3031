@@ -1,68 +1,67 @@
 <testcase>
 <info>
 <keywords>
-HTTP
-HTTP GET
-Resume
-Largefile
-Not found
-SUCCESS
+--dump-header
 </keywords>
 </info>
 #
 # Server-side
 <reply>
-<data>
-HTTP/1.1 404 Nah
+<data nocheck="yes" crlf="yes">
+HTTP/1.1 200 OK
 Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+ETag: "21025-dc7-39462498"
+Accept-Ranges: bytes
+Content-Length: 6
 Connection: close
-Content-Length: 13
+Content-Type: text/html
 Funny-head: yesyes
 
-012345678912
+-foo-
 </data>
-
-<datacheck>
-HTTP/1.1 404 Nah
-Date: Tue, 09 Nov 2010 14:49:00 GMT
-Connection: close
-Content-Length: 13
-Funny-head: yesyes
-
-012345678912
-</datacheck>
 </reply>
 
 #
 # Client-side
 <client>
-<features>
-large_file
-</features>
 <server>
 http
 </server>
- <name>
-HTTP GET with large-file resume point and not found is not a failure
- </name>
- <command>
-http://%HOSTIP:%HTTPPORT/%TESTNUMBER -C 9999999999
+<features>
+http
+</features>
+<name>
+--output-dir with --create-dirs
+</name>
+<command>
+http://%HOSTIP:%HTTPPORT/this/is/the/%TESTNUMBER --dump-header %PWD/%LOGDIR/tmp/out.txt --create-dirs
 </command>
 </client>
 
 #
 # Verify data after the test has been "shot"
 <verify>
-<errorcode>
-0
-</errorcode>
 <protocol>
-GET /%TESTNUMBER HTTP/1.1
+GET /this/is/the/%TESTNUMBER HTTP/1.1
 Host: %HOSTIP:%HTTPPORT
-Range: bytes=9999999999-
 User-Agent: curl/%VERSION
 Accept: */*
 
 </protocol>
+<file name="%LOGDIR/tmp/out.txt" crlf="yes">
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+ETag: "21025-dc7-39462498"
+Accept-Ranges: bytes
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+Funny-head: yesyes
+
+</file>
 </verify>
 </testcase>
