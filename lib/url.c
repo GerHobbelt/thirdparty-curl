@@ -1526,7 +1526,7 @@ const struct Curl_handler *Curl_getn_scheme_handler(const char *scheme,
 #else
     NULL,
 #endif
-#if defined(USE_WEBSOCKETS) && \
+#if !defined(CURL_DISABLE_WEBSOCKETS) &&                \
   defined(USE_SSL) && !defined(CURL_DISABLE_HTTP)
     &Curl_handler_wss,
 #else
@@ -1595,7 +1595,7 @@ const struct Curl_handler *Curl_getn_scheme_handler(const char *scheme,
     NULL,
 #endif
     NULL,
-#if defined(USE_WEBSOCKETS) && !defined(CURL_DISABLE_HTTP)
+#if !defined(CURL_DISABLE_WEBSOCKETS) && !defined(CURL_DISABLE_HTTP)
     &Curl_handler_ws,
 #else
     NULL,
@@ -2120,7 +2120,7 @@ static char *detect_proxy(struct Curl_easy *data,
   }
 
   if(!proxy) {
-#ifdef USE_WEBSOCKETS
+#ifndef CURL_DISABLE_WEBSOCKETS
     /* websocket proxy fallbacks */
     if(strcasecompare("ws_proxy", proxy_env)) {
       proxy = curl_getenv("http_proxy");
@@ -2138,7 +2138,7 @@ static char *detect_proxy(struct Curl_easy *data,
         envp = (char *)"ALL_PROXY";
         proxy = curl_getenv(envp);
       }
-#ifdef USE_WEBSOCKETS
+#ifndef CURL_DISABLE_WEBSOCKETS
     }
 #endif
   }

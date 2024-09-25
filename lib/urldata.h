@@ -65,7 +65,7 @@ struct curl_trc_featt;
 # define CURLECH_CLA_CFG    (1<<4)
 #endif
 
-#ifdef USE_WEBSOCKETS
+#ifndef CURL_DISABLE_WEBSOCKETS
 /* CURLPROTO_GOPHERS (29) is the highest publicly used protocol bit number,
  * the rest are internal information. If we use higher bits we only do this on
  * platforms that have a >= 64-bit type and then we use such a type for the
@@ -953,8 +953,8 @@ struct connectdata {
 #ifndef CURL_DISABLE_MQTT
     struct mqtt_conn mqtt;
 #endif
-#ifdef USE_WEBSOCKETS
-    struct ws_conn ws;
+#ifndef CURL_DISABLE_WEBSOCKETS
+    struct websocket *ws;
 #endif
     unsigned int unused:1; /* avoids empty union */
   } proto;
@@ -1860,7 +1860,7 @@ struct UserDefined {
   BIT(doh_verifystatus);   /* DoH certificate status verification */
 #endif
   BIT(http09_allowed); /* allow HTTP/0.9 responses */
-#ifdef USE_WEBSOCKETS
+#ifndef CURL_DISABLE_WEBSOCKETS
   BIT(ws_raw_mode);
 #endif
   BIT(sanitize_with_extreme_prejudice);       /* sanitize URLs and output filenames
