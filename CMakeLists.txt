@@ -1347,6 +1347,7 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
   if(BUILD_CURL_EXE AND NOT CURL_CA_EMBED STREQUAL "")
     if(EXISTS "${CURL_CA_EMBED}")
       set(CURL_CA_EMBED_SET TRUE)
+      message(STATUS "Found CA bundle to embed: ${CURL_CA_EMBED}")
     else()
       message(FATAL_ERROR "CA bundle to embed is missing: '${CURL_CA_EMBED}'")
     endif()

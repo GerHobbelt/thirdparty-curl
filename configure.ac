@@ -5412,6 +5412,7 @@ AC_MSG_NOTICE([Configured to build curl/libcurl:
   SSPI:             ${curl_sspi_msg}
   ca cert bundle:   ${ca}${ca_warning}
   ca cert path:     ${capath}${capath_warning}
+  ca cert embed:    ${CURL_CA_EMBED}
   ca fallback:      ${with_ca_fallback}
   ca built in:      ${with_ca_built_in}
   LDAP:             ${curl_ldap_msg}
