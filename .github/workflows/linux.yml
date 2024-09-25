@@ -170,7 +170,7 @@ jobs:
           - name: scanbuild
             install_packages: clang-tools clang libssl-dev libssh2-1-dev
             install_steps: skipall
-            configure: --with-openssl --enable-debug --with-libssh2
+            configure: --with-openssl --enable-debug --with-libssh2 --disable-unity
             configure-prefix: CC=clang scan-build
             make-prefix: scan-build --status-bugs
             singleuse: --unit
@@ -496,7 +496,10 @@ jobs:
         if: ${{ matrix.build.configure }}
         name: 'autoreconf'
 
-      - run: ${{ matrix.build.configure-prefix }} ./configure --disable-dependency-tracking --enable-warnings --enable-werror ${{ matrix.build.configure }}
+      - run: |
+          ${{ matrix.build.configure-prefix }} \
+          ./configure --disable-dependency-tracking --enable-unity --enable-warnings --enable-werror \
+            ${{ matrix.build.configure }}
         if: ${{ matrix.build.configure }}
         name: 'configure (autotools)'
 
@@ -504,7 +507,6 @@ jobs:
           cmake . \
             -DCMAKE_C_COMPILER_TARGET=$(uname -m)-pc-linux-gnu -DBUILD_STATIC_LIBS=ON \
             -DCMAKE_UNITY_BUILD=ON -DCURL_WERROR=ON \
-            -DBUILD_EXAMPLES=ON \
             -DCURL_BROTLI=ON -DCURL_ZSTD=ON \
             ${{ matrix.build.generate }}
         if: ${{ matrix.build.generate }}
@@ -535,10 +537,6 @@ jobs:
       - run: ./src/curl -V
         name: 'check curl -V output'
 
-      - run: ${{ matrix.build.make-prefix }} make V=1 examples
-        if: ${{ matrix.build.configure }}
-        name: 'make examples'
-
       - run: make V=1 -C tests
         if: ${{ matrix.build.configure && matrix.build.install_steps != 'skipall' }}
         name: 'make tests (autotools)'
@@ -560,9 +558,16 @@ jobs:
       - if: contains(matrix.build.install_steps, 'pytest')
         # run for `tests/http` directory, so pytest does not pick up any other
         # packages we might have built here
-        run:
-          pytest -v tests/http
+        run: pytest -v tests/http
         name: 'run pytest'
         env:
           TFLAGS: "${{ matrix.build.tflags }}"
           CURL_CI: github
+
+      - run: ${{ matrix.build.make-prefix }} make V=1 examples
+        if: ${{ matrix.build.configure }}
+        name: 'make examples (autotools)'
+
+      - run: ${{ matrix.build.make-prefix }} make VERBOSE=1 curl-examples
+        if: ${{ matrix.build.generate }}
+        name: 'make examples (cmake)'
