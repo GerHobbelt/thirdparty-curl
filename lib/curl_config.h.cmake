@@ -359,9 +359,6 @@
 /* Define to 1 if you have the lber.h header file. */
 #cmakedefine HAVE_LBER_H 1
 
-/* Define to 1 if you have the ldap.h header file. */
-#cmakedefine HAVE_LDAP_H 1
-
 /* Use LDAPS implementation */
 #cmakedefine HAVE_LDAP_SSL 1
 
@@ -637,9 +634,6 @@
 
 /* if you have the zlib-ng.h header file */
 #cmakedefine HAVE_ZLIB_NG_H 1
-
-/* Define to 1 if you need the lber.h header file even with ldap.h */
-#cmakedefine NEED_LBER_H 1
 
 /* Define to 1 if you need the malloc.h header file even with stdlib.h */
 #cmakedefine NEED_MALLOC_H 1

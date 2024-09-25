@@ -39,7 +39,7 @@ int main(int argc, const char** argv)
   char  *part;
   size_t partlen;
 
-  if(argc< 3) {
+  if(argc < 3) {
     printf("./testpart main sub\n");
   }
   else {

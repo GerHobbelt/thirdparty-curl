@@ -57,10 +57,10 @@
 #define OPENMODE S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 #endif
 
-static char* find_beyond_all(char* s, const char* set)
+static const char* find_beyond_all(const char* s, const char* set)
 {
     while (*set) {
-        char* p = strrchr(s, *set);
+        const char* p = strrchr(s, *set);
         if (p)
             s = p + 1;
         set++;
@@ -71,7 +71,7 @@ static char* find_beyond_all(char* s, const char* set)
 // Produce a filename extension based on the mimetype
 // reported by the server response. As this bit can be adversarial as well, we keep our
 // sanity about it by restricting the length of the extension.
-static char *get_file_extension_for_response_content_type(char* fname, struct per_transfer *per) {
+static char *get_file_extension_for_response_content_type(const char* fname, struct per_transfer *per) {
     struct OperationConfig *config;
 
     DEBUGASSERT(per);
@@ -239,7 +239,7 @@ bool tool_sanitize_output_file_path(struct per_transfer *per)
       //   sanity about it by restricting the length of the extension.
   }
 
-  char* fn = find_beyond_all(fname, "\\/:");
+  const char* fn = find_beyond_all(fname, "\\/:");
   int fn_offset = (int)(fn - fname);
 
   bool empty = !*fn;
@@ -287,7 +287,7 @@ bool tool_sanitize_output_file_path(struct per_transfer *per)
  *
  * Do note that the file path given has already been sanitized, so no need for that again!
  */
-static char *tool_affix_most_suitable_filename_extension(char *fname, struct per_transfer *per)
+static char *tool_affix_most_suitable_filename_extension(const char *fname, struct per_transfer *per)
 {
   struct GlobalConfig *global;
   struct OperationConfig *config;
@@ -310,7 +310,7 @@ static char *tool_affix_most_suitable_filename_extension(char *fname, struct per
       __unknown__ext = "unknown";
   }
 
-  char* fn = find_beyond_all(fname, "\\/:");
+  const char* fn = find_beyond_all(fname, "\\/:");
 
   bool hidden = (*fn == '.');
   const char* ext = strrchr(fn + hidden, '.');
@@ -347,10 +347,10 @@ static char *tool_affix_most_suitable_filename_extension(char *fname, struct per
       ext = NULL;
   }
 
-  const char *new_ext = get_file_extension_for_response_content_type(fn, per);
+  char *new_ext = get_file_extension_for_response_content_type(fn, per);
 
   // when the server gave us a sensible extension through MIME-type info or otherwise, that one prevails over
-  // the current ëxtension"the filename may or may not have:
+  // the current Ã«xtension"the filename may or may not have:
   if (!ext || !new_ext) {
     // when we could not determine a proper & *sane* filename extension from the mimetype, we simply resolve to '.unknown' / *empty*, depending on configuration.
     if (!new_ext) {
@@ -395,7 +395,7 @@ static char *tool_affix_most_suitable_filename_extension(char *fname, struct per
         )) {
             // 2. no-op, ergo: keep extension as-is
 
-			free((void*)new_ext);
+			free(new_ext);
 			ext = new_ext = strdup(ext);
 			if (!new_ext) {
 				errorf(global, "out of memory\n");
@@ -415,10 +415,10 @@ static char *tool_affix_most_suitable_filename_extension(char *fname, struct per
   aname = aprintf("%.*s%s%s", fn_length, fname, (*ext ? "." : ""), ext);
   if (!aname) {
       errorf(global, "out of memory\n");
-      free((void*)new_ext);
+      free(new_ext);
       return NULL;
   }
-  free((void *)new_ext);
+  free(new_ext);
       
   return aname;
 }
@@ -479,7 +479,7 @@ bool tool_create_output_file(struct OutStruct *outs,
       if (result) {
           warnf(global, "Failed to create the path directories to file %s: %s", fname,
               strerror(errno));
-          free(fname);
+          free((void *)fname);
           return FALSE;
       }
   }
@@ -491,7 +491,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   else {
     int fd;
     int fn_ext_pos = 0;
-    char* fn = find_beyond_all(fname, "\\/:");
+    const char* fn = find_beyond_all(fname, "\\/:");
     bool hidden = (*fn == '.');
     char* fn_ext = strrchr(fn + hidden, '.');
 
@@ -506,7 +506,7 @@ bool tool_create_output_file(struct OutStruct *outs,
     fn_ext = strdup(fname + fn_ext_pos);
     if (!fn_ext) {
         errorf(global, "out of memory");
-        free(fname);
+        free((void*)fname);
         return FALSE;
     }
 
@@ -524,7 +524,7 @@ bool tool_create_output_file(struct OutStruct *outs,
       if(newlen < len) {
         errorf(global, "overflow in filename generation");
         free(fn_ext);
-        free(fname);
+        free((void*)fname);
         return FALSE;
       }
 
@@ -539,7 +539,7 @@ bool tool_create_output_file(struct OutStruct *outs,
         if (!newname) {
             errorf(global, "out of memory");
             free(fn_ext);
-            free(fname);
+            free((void*)fname);
             return FALSE;
         }
         next_num++;
@@ -549,7 +549,7 @@ bool tool_create_output_file(struct OutStruct *outs,
         } while(fd == -1 && errno == EINTR);
       }
 
-      free(fname);
+      free((void*)fname);
       fname = newname;
     }
 
@@ -570,7 +570,7 @@ bool tool_create_output_file(struct OutStruct *outs,
   if(!file) {
     warnf(global, "Failed to open the file %s: %s", outs->filename,
           strerror(errno));
-    free(fname);
+    free((void*)fname);
     return FALSE;
   }
 
@@ -578,7 +578,7 @@ bool tool_create_output_file(struct OutStruct *outs,
     free(outs->filename);
   if (fname == per->outfile) 
     per->outfile = NULL;
-  outs->filename = fname;
+  outs->filename = (char *)fname;
   outs->alloc_filename = TRUE;
 
   if (fname != per->outfile) {

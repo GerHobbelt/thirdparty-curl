@@ -824,7 +824,7 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
 {
   CURLcode result = CURLE_OK;
 
-#ifdef CURL_WINDOWS_APP
+#ifdef CURL_WINDOWS_UWP
   (void)config;
   (void)backend;
   (void)bundle_file;
@@ -928,7 +928,7 @@ cleanup:
 
 bool tool_term_has_bold;
 
-#ifndef CURL_WINDOWS_APP
+#ifndef CURL_WINDOWS_UWP
 /* The terminal settings to restore on exit */
 static struct TerminalSettings {
   HANDLE hStdOut;
@@ -1011,7 +1011,7 @@ CURLcode win32_init(void)
 
   QueryPerformanceFrequency(&tool_freq);
 
-#ifndef CURL_WINDOWS_APP
+#ifndef CURL_WINDOWS_UWP
   init_terminal();
 #endif
 
