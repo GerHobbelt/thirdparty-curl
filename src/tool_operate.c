@@ -801,6 +801,9 @@ static CURLcode url_proto(char **url,
                        CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME | CURLU_ALLOW_SPACE) &&
          !curl_url_get(uh, CURLUPART_SCHEME, &schemep,
                        CURLU_DEFAULT_SCHEME)) {
+#ifdef CURL_DISABLE_IPFS
+        (void)config;
+#else
         if(curl_strequal(schemep, proto_ipfs) ||
            curl_strequal(schemep, proto_ipns)) {
           result = ipfs_url_rewrite(uh, schemep, url, config);
@@ -813,6 +816,7 @@ static CURLcode url_proto(char **url,
             config->synthetic_error = TRUE;
         }
         else
+#endif /* !CURL_DISABLE_IPFS */
           proto = proto_token(schemep);
 
         curl_free(schemep);
@@ -3080,7 +3084,8 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
    * too. Just for the sake of it.
    */
   capath_from_env = false;
-  if(!config->cacert &&
+  if(feature_ssl &&
+     !config->cacert &&
      !config->capath &&
      (!config->insecure_ok || (config->doh_url && !config->doh_insecure_ok))) {
     CURL *curltls = curl_easy_init();
@@ -3145,8 +3150,7 @@ static CURLcode transfer_per_config(struct GlobalConfig *global,
 
 #ifdef _WIN32
       if(!env)
-        result = FindWin32CACert(config, tls_backend_info->backend,
-                                 TEXT("curl-ca-bundle.crt"));
+        result = FindWin32CACert(config, TEXT("curl-ca-bundle.crt"));
 #endif
     }
     curl_easy_cleanup(curltls);
