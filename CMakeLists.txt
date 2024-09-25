@@ -291,7 +291,7 @@ option(CURL_DISABLE_IMAP "Disable IMAP" OFF)
 mark_as_advanced(CURL_DISABLE_IMAP)
 option(CURL_DISABLE_LDAP "Disable LDAP" OFF)
 mark_as_advanced(CURL_DISABLE_LDAP)
-option(CURL_DISABLE_LDAPS "Disable LDAPS" OFF)
+option(CURL_DISABLE_LDAPS "Disable LDAPS" ${CURL_DISABLE_LDAP})
 mark_as_advanced(CURL_DISABLE_LDAPS)
 option(CURL_DISABLE_LIBCURL_OPTION "Disable --libcurl option from the curl tool" OFF)
 mark_as_advanced(CURL_DISABLE_LIBCURL_OPTION)
@@ -1284,9 +1284,9 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
       set(_curl_ca_bundle_autodetect TRUE)
     endif()
   else()
-    set(_curl_ca_bundle_set TRUE)
+    set(CURL_CA_BUNDLE_SET TRUE)
   endif()
-  mark_as_advanced(_curl_ca_bundle_set)
+  mark_as_advanced(CURL_CA_BUNDLE_SET)
 
   if(CURL_CA_PATH STREQUAL "")
     message(FATAL_ERROR "Invalid value of CURL_CA_PATH. Use 'none', 'auto' or directory path.")
@@ -1298,13 +1298,13 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
       set(_curl_ca_path_autodetect TRUE)
     endif()
   else()
-    set(_curl_ca_path_set TRUE)
+    set(CURL_CA_PATH_SET TRUE)
   endif()
-  mark_as_advanced(_curl_ca_path_set)
+  mark_as_advanced(CURL_CA_PATH_SET)
 
-  if(_curl_ca_bundle_set AND _curl_ca_path_autodetect)
+  if(CURL_CA_BUNDLE_SET AND _curl_ca_path_autodetect)
     # Skip auto-detection of unset CA path because CA bundle is set explicitly
-  elseif(_curl_ca_path_set AND _curl_ca_bundle_autodetect)
+  elseif(CURL_CA_PATH_SET AND _curl_ca_bundle_autodetect)
     # Skip auto-detection of unset CA bundle because CA path is set explicitly
   elseif(_curl_ca_bundle_autodetect OR _curl_ca_path_autodetect)
     # First try auto-detecting a CA bundle, then a CA path
@@ -1320,13 +1320,13 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
           message(STATUS "Found CA bundle: ${_search_ca_bundle_path}")
           set(CURL_CA_BUNDLE "${_search_ca_bundle_path}" CACHE
             STRING "Path to the CA bundle. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
-          set(_curl_ca_bundle_set TRUE CACHE BOOL "Path to the CA bundle has been set")
+          set(CURL_CA_BUNDLE_SET TRUE CACHE BOOL "Path to the CA bundle has been set")
           break()
         endif()
       endforeach()
     endif()
 
-    if(_curl_ca_path_autodetect AND NOT _curl_ca_path_set)
+    if(_curl_ca_path_autodetect AND NOT CURL_CA_PATH_SET)
       set(_search_ca_path "/etc/ssl/certs")
       file(GLOB _curl_ca_files_found "${_search_ca_path}/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].0")
       if(_curl_ca_files_found)
@@ -1334,7 +1334,7 @@ set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
         message(STATUS "Found CA path: ${_search_ca_path}")
         set(CURL_CA_PATH "${_search_ca_path}" CACHE
           STRING "Location of default CA path. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
-        set(_curl_ca_path_set TRUE CACHE BOOL "Path to the CA bundle has been set")
+        set(CURL_CA_PATH_SET TRUE CACHE BOOL "Path to the CA bundle has been set")
       endif()
     endif()
   endif()

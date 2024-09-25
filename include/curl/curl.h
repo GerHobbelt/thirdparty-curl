@@ -3336,7 +3336,9 @@ CurlSanitizeCode curl_sanitize_file_name(char **const sanitized, const char *fil
 #include "options.h"
 #include "header.h"
 #include "websockets.h"
+#ifndef CURL_SKIP_INCLUDE_MPRINTF
 #include "mprintf.h"
+#endif
 
 /* the typechecker does not work in C++ (yet) */
 #if defined(__GNUC__) && defined(__GNUC_MINOR__) && \

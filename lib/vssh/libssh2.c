@@ -2100,7 +2100,7 @@ static CURLcode ssh_statemach_act(struct Curl_easy *data, bool *block)
           else {
             curl_off_t size = attrs.filesize;
             if(size < 0) {
-              failf(data, "Bad file size (%" CURL_FORMAT_CURL_OFF_T ")", size);
+              failf(data, "Bad file size (%" FMT_OFF_T ")", size);
               return CURLE_BAD_DOWNLOAD_RESUME;
             }
             data->state.resume_from = attrs.filesize;
@@ -2541,7 +2541,7 @@ static CURLcode ssh_statemach_act(struct Curl_easy *data, bool *block)
         curl_off_t size = attrs.filesize;
 
         if(size < 0) {
-          failf(data, "Bad file size (%" CURL_FORMAT_CURL_OFF_T ")", size);
+          failf(data, "Bad file size (%" FMT_OFF_T ")", size);
           return CURLE_BAD_DOWNLOAD_RESUME;
         }
         if(data->state.use_range) {
@@ -2569,10 +2569,8 @@ static CURLcode ssh_statemach_act(struct Curl_easy *data, bool *block)
             to = size - 1;
           }
           if(from > size) {
-            failf(data, "Offset (%"
-                  CURL_FORMAT_CURL_OFF_T ") was beyond file size (%"
-                  CURL_FORMAT_CURL_OFF_T ")", from,
-                  (curl_off_t)attrs.filesize);
+            failf(data, "Offset (%" FMT_OFF_T ") was beyond file size (%"
+                  FMT_OFF_T ")", from, (curl_off_t)attrs.filesize);
             return CURLE_BAD_DOWNLOAD_RESUME;
           }
           if(from > to) {
@@ -2597,9 +2595,8 @@ static CURLcode ssh_statemach_act(struct Curl_easy *data, bool *block)
         if(data->state.resume_from < 0) {
           /* We are supposed to download the last abs(from) bytes */
           if((curl_off_t)attrs.filesize < -data->state.resume_from) {
-            failf(data, "Offset (%"
-                  CURL_FORMAT_CURL_OFF_T ") was beyond file size (%"
-                  CURL_FORMAT_CURL_OFF_T ")",
+            failf(data, "Offset (%" FMT_OFF_T ") was beyond file size (%"
+                  FMT_OFF_T ")",
                   data->state.resume_from, (curl_off_t)attrs.filesize);
             return CURLE_BAD_DOWNLOAD_RESUME;
           }
@@ -2608,8 +2605,8 @@ static CURLcode ssh_statemach_act(struct Curl_easy *data, bool *block)
         }
         else {
           if((curl_off_t)attrs.filesize < data->state.resume_from) {
-            failf(data, "Offset (%" CURL_FORMAT_CURL_OFF_T
-                  ") was beyond file size (%" CURL_FORMAT_CURL_OFF_T ")",
+            failf(data, "Offset (%" FMT_OFF_T
+                  ") was beyond file size (%" FMT_OFF_T ")",
                   data->state.resume_from, (curl_off_t)attrs.filesize);
             return CURLE_BAD_DOWNLOAD_RESUME;
           }

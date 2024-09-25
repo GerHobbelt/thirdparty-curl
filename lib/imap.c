@@ -863,8 +863,7 @@ static CURLcode imap_perform_append(struct Curl_easy *data)
     return CURLE_OUT_OF_MEMORY;
 
   /* Send the APPEND command */
-  result = imap_sendf(data,
-                      "APPEND %s (\\Seen) {%" CURL_FORMAT_CURL_OFF_T "}",
+  result = imap_sendf(data, "APPEND %s (\\Seen) {%" FMT_OFF_T "}",
                       mailbox, data->state.infilesize);
 
   free(mailbox);
@@ -1217,8 +1216,7 @@ static CURLcode imap_state_fetch_resp(struct Curl_easy *data,
   }
 
   if(parsed) {
-    infof(data, "Found %" CURL_FORMAT_CURL_OFF_T " bytes to download",
-          size);
+    infof(data, "Found %" FMT_OFF_T " bytes to download", size);
     Curl_pgrsSetDownloadSize(data, size);
 
     if(pp->overflow) {
@@ -1245,7 +1243,7 @@ static CURLcode imap_state_fetch_resp(struct Curl_easy *data,
       if(result)
         return result;
 
-      infof(data, "Written %zu bytes, %" CURL_FORMAT_CURL_OFF_TU
+      infof(data, "Written %zu bytes, %" FMT_OFF_TU
             " bytes are left for transfer", chunk, size - chunk);
 
       /* Have we used the entire overflow or just part of it?*/
