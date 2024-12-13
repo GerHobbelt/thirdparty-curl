@@ -284,6 +284,7 @@ DPAGES = \
   tftp-blksize.md \
   tftp-no-options.md \
   time-cond.md \
+  tls-earlydata.md \
   tls-max.md \
   tls13-ciphers.md \
   tlsauthtype.md \

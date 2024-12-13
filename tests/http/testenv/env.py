@@ -49,10 +49,9 @@ def init_config_from(conf_path):
 
 
 TESTS_HTTPD_PATH = os.path.dirname(os.path.dirname(__file__))
-DEF_CONFIG = init_config_from(os.path.join(TESTS_HTTPD_PATH, 'config.ini'))
-
-TOP_PATH = os.path.dirname(os.path.dirname(TESTS_HTTPD_PATH))
-CURL = os.path.join(TOP_PATH, 'src/curl')
+TOP_PATH = os.path.join(os.getcwd(), os.path.pardir)
+DEF_CONFIG = init_config_from(os.path.join(TOP_PATH, 'tests', 'http', 'config.ini'))
+CURL = os.path.join(TOP_PATH, 'src', 'curl')
 
 
 class EnvConfig:
@@ -61,6 +60,7 @@ class EnvConfig:
         self.tests_dir = TESTS_HTTPD_PATH
         self.gen_dir = os.path.join(self.tests_dir, 'gen')
         self.project_dir = os.path.dirname(os.path.dirname(self.tests_dir))
+        self.build_dir = TOP_PATH
         self.config = DEF_CONFIG
         # check cur and its features
         self.curl = CURL
@@ -110,6 +110,7 @@ class EnvConfig:
             'ftps': socket.SOCK_STREAM,
             'http': socket.SOCK_STREAM,
             'https': socket.SOCK_STREAM,
+            'nghttpx_https': socket.SOCK_STREAM,
             'proxy': socket.SOCK_STREAM,
             'proxys': socket.SOCK_STREAM,
             'h2proxys': socket.SOCK_STREAM,
@@ -437,6 +438,10 @@ class Env:
         return self.CONFIG.project_dir
 
     @property
+    def build_dir(self) -> str:
+        return self.CONFIG.build_dir
+
+    @property
     def ca(self):
         return self._ca
 
@@ -471,6 +476,10 @@ class Env:
     @property
     def https_port(self) -> int:
         return self.CONFIG.ports['https']
+
+    @property
+    def nghttpx_https_port(self) -> int:
+        return self.CONFIG.ports['nghttpx_https']
 
     @property
     def h3_port(self) -> int:

@@ -342,6 +342,7 @@ CURLcode Curl_close(struct Curl_easy **datap)
   Curl_wildcard_dtor(&data->wildcard);
   Curl_freeset(data);
   Curl_headers_cleanup(data);
+  Curl_netrc_cleanup(&data->state.netrc);
   free(data);
   return CURLE_OK;
 }
@@ -562,6 +563,7 @@ CURLcode Curl_open(struct Curl_easy **curl)
 #ifndef CURL_DISABLE_HTTP
     Curl_llist_init(&data->state.httphdrs, NULL);
 #endif
+    Curl_netrc_init(&data->state.netrc);
   }
 
   if(result) {
@@ -1876,10 +1878,10 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
     return result;
 
   /*
-   * username and password set with their own options override the
-   * credentials possibly set in the URL.
+   * username and password set with their own options override the credentials
+   * possibly set in the URL, but netrc does not.
    */
-  if(!data->set.str[STRING_PASSWORD]) {
+  if(!data->state.aptr.passwd || (data->state.creds_from != CREDS_OPTION)) {
     uc = curl_url_get(uh, CURLUPART_PASSWORD, &data->state.up.password, 0);
     if(!uc) {
       char *decoded;
@@ -1892,12 +1894,13 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
       result = Curl_setstropt(&data->state.aptr.passwd, decoded);
       if(result)
         return result;
+      data->state.creds_from = CREDS_URL;
     }
     else if(uc != CURLUE_NO_PASSWORD)
       return Curl_uc_to_curlcode(uc);
   }
 
-  if(!data->set.str[STRING_USERNAME]) {
+  if(!data->state.aptr.user || (data->state.creds_from != CREDS_OPTION)) {
     /* we do not use the URL API's URL decoder option here since it rejects
        control codes and we want to allow them for some schemes in the user
        and password fields */
@@ -1911,13 +1914,10 @@ static CURLcode parseurlandfillconn(struct Curl_easy *data,
         return result;
       conn->user = decoded;
       result = Curl_setstropt(&data->state.aptr.user, decoded);
+      data->state.creds_from = CREDS_URL;
     }
     else if(uc != CURLUE_NO_USER)
       return Curl_uc_to_curlcode(uc);
-    else if(data->state.aptr.passwd) {
-      /* no user was set but a password, set a blank user */
-      result = Curl_setstropt(&data->state.aptr.user, "");
-    }
     if(result)
       return result;
   }
@@ -2701,13 +2701,14 @@ static CURLcode override_login(struct Curl_easy *data,
     int ret;
     bool url_provided = FALSE;
 
-    if(data->state.aptr.user) {
+    if(data->state.aptr.user &&
+       (data->state.creds_from != CREDS_NETRC)) {
       /* there was a username in the URL. Use the URL decoded version */
       userp = &data->state.aptr.user;
       url_provided = TRUE;
     }
 
-    ret = Curl_parsenetrc(conn->host.name,
+    ret = Curl_parsenetrc(&data->state.netrc, conn->host.name,
                           userp, passwdp,
                           data->set.str[STRING_NETRC_FILE]);
     if(ret > 0) {
@@ -2749,6 +2750,7 @@ static CURLcode override_login(struct Curl_easy *data,
       result = Curl_setstropt(&data->state.aptr.user, *userp);
       if(result)
         return result;
+      data->state.creds_from = CREDS_NETRC;
     }
   }
   if(data->state.aptr.user) {
@@ -2766,6 +2768,7 @@ static CURLcode override_login(struct Curl_easy *data,
     CURLcode result = Curl_setstropt(&data->state.aptr.passwd, *passwdp);
     if(result)
       return result;
+    data->state.creds_from = CREDS_NETRC;
   }
   if(data->state.aptr.passwd) {
     uc = curl_url_set(data->state.uh, CURLUPART_PASSWORD,
