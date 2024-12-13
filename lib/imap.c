@@ -524,8 +524,8 @@ static CURLcode imap_perform_login(struct Curl_easy *data,
     return CURLE_LOGIN_DENIED;
 
   /* Make sure the username and password are in the correct atom format */
-  user = imap_atom(conn->user, false);
-  passwd = imap_atom(conn->passwd, false);
+  user = imap_atom(conn->user, FALSE);
+  passwd = imap_atom(conn->passwd, FALSE);
 
   /* Send the LOGIN command */
   result = imap_sendf(data, "LOGIN %s %s", user ? user : "",
@@ -659,7 +659,7 @@ static CURLcode imap_perform_list(struct Curl_easy *data)
                         imap->custom_params ? imap->custom_params : "");
   else {
     /* Make sure the mailbox is in the correct atom format if necessary */
-    char *mailbox = imap->mailbox ? imap_atom(imap->mailbox, true)
+    char *mailbox = imap->mailbox ? imap_atom(imap->mailbox, TRUE)
                                   : strdup("");
     if(!mailbox)
       return CURLE_OUT_OF_MEMORY;
@@ -746,7 +746,7 @@ static CURLcode imap_perform_select(struct Curl_easy *data)
   }
 
   /* Make sure the mailbox is in the correct atom format */
-  mailbox = imap_atom(imap->mailbox, false);
+  mailbox = imap_atom(imap->mailbox, FALSE);
   if(!mailbox)
     return CURLE_OUT_OF_MEMORY;
 
@@ -858,7 +858,7 @@ static CURLcode imap_perform_append(struct Curl_easy *data)
   }
 
   /* Make sure the mailbox is in the correct atom format */
-  mailbox = imap_atom(imap->mailbox, false);
+  mailbox = imap_atom(imap->mailbox, FALSE);
   if(!mailbox)
     return CURLE_OUT_OF_MEMORY;
 
@@ -1908,7 +1908,7 @@ static bool imap_is_bchar(char ch)
   /* Performing the alnum check with this macro is faster because of ASCII
      arithmetic */
   if(ISALNUM(ch))
-    return true;
+    return TRUE;
 
   switch(ch) {
     /* bchar */
@@ -1922,10 +1922,10 @@ static bool imap_is_bchar(char ch)
     case '+': case ',':
     /* bchar -> achar -> uchar -> pct-encoded */
     case '%': /* HEXDIG chars are already included above */
-      return true;
+      return TRUE;
 
     default:
-      return false;
+      return FALSE;
   }
 }
 
@@ -1940,7 +1940,7 @@ static CURLcode imap_parse_url_options(struct connectdata *conn)
   CURLcode result = CURLE_OK;
   struct imap_conn *imapc = &conn->proto.imapc;
   const char *ptr = conn->options;
-  bool prefer_login = false;
+  bool prefer_login = FALSE;
 
   while(!result && ptr && *ptr) {
     const char *key = ptr;
@@ -1956,16 +1956,16 @@ static CURLcode imap_parse_url_options(struct connectdata *conn)
 
     if(strncasecompare(key, "AUTH=+LOGIN", 11)) {
       /* User prefers plaintext LOGIN over any SASL, including SASL LOGIN */
-      prefer_login = true;
+      prefer_login = TRUE;
       imapc->sasl.prefmech = SASL_AUTH_NONE;
     }
     else if(strncasecompare(key, "AUTH=", 5)) {
-      prefer_login = false;
+      prefer_login = FALSE;
       result = Curl_sasl_parse_url_auth_option(&imapc->sasl,
                                                value, ptr - value);
     }
     else {
-      prefer_login = false;
+      prefer_login = FALSE;
       result = CURLE_URL_MALFORMAT;
     }
 
