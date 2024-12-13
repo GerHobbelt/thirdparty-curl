@@ -159,8 +159,7 @@ jobs:
       - name: 'toolchain versions'
         run: |
           [[ '${{ matrix.compiler }}' = 'llvm'* ]] && CC="$(brew --prefix ${{ matrix.compiler }})/bin/clang"
-          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && \
-            grep -h -r -E -o '.+[0-9.]+\.sdk/' "$(dirname "$("${CC}" -print-libgcc-file-name)")/include-fixed" | sed -E 's/^\t+//g' | tr -d '"' | sort -u || true
+          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && "${CC}" --print-sysroot
           which "${CC}"; "${CC}" --version || true
           xcodebuild -version || true
           xcrun --sdk macosx --show-sdk-path 2>/dev/null || true
@@ -287,6 +286,10 @@ jobs:
             install: brotli wolfssl zstd
             generate: -DCURL_USE_WOLFSSL=ON -DCURL_BROTLI=ON -DCURL_ZSTD=ON -DCURL_DISABLE_LDAP=ON
             macos-version-min: '10.15'
+          - name: 'mbedTLS !ldap brotli zstd'
+            install: brotli mbedtls zstd
+            generate: -DCURL_USE_MBEDTLS=ON -DCURL_BROTLI=ON -DCURL_ZSTD=ON -DCURL_DISABLE_LDAP=ON
+            macos-version-min: '10.15'
           - name: 'GnuTLS !ldap krb5'
             install: gnutls nettle krb5
             generate: -DCURL_USE_GNUTLS=ON -DCURL_USE_OPENSSL=OFF -DCURL_USE_GSSAPI=ON -DGSS_ROOT_DIR=$(brew --prefix krb5) -DCURL_DISABLE_LDAP=ON
@@ -322,8 +325,7 @@ jobs:
       - name: 'toolchain versions'
         run: |
           [[ '${{ matrix.compiler }}' = 'llvm'* ]] && CC="$(brew --prefix ${{ matrix.compiler }})/bin/clang"
-          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && \
-            grep -h -r -E -o '.+[0-9.]+\.sdk/' "$(dirname "$("${CC}" -print-libgcc-file-name)")/include-fixed" | sed -E 's/^\t+//g' | tr -d '"' | sort -u || true
+          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && "${CC}" --print-sysroot
           which "${CC}"; "${CC}" --version || true
           xcodebuild -version || true
           xcrun --sdk macosx --show-sdk-path 2>/dev/null || true
@@ -484,8 +486,7 @@ jobs:
       - name: 'toolchain versions'
         run: |
           [[ '${{ matrix.compiler }}' = 'llvm'* ]] && CC="$(brew --prefix ${{ matrix.compiler }})/bin/clang"
-          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && \
-            grep -h -r -E -o '.+[0-9.]+\.sdk/' "$(dirname "$("${CC}" -print-libgcc-file-name)")/include-fixed" | sed -E 's/^\t+//g' | tr -d '"' | sort -u || true
+          [[ '${{ matrix.compiler }}' = 'gcc'* ]] && "${CC}" --print-sysroot
           which "${CC}"; "${CC}" --version || true
           xcodebuild -version || true
           xcrun --sdk macosx --show-sdk-path 2>/dev/null || true
