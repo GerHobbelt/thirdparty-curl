@@ -1617,8 +1617,6 @@ endif()
 
 unset(CMAKE_REQUIRED_FLAGS)
 
-option(ENABLE_WEBSOCKETS "Enable WebSockets (experimental)" OFF)
-
 foreach(_curl_test IN ITEMS
     HAVE_GLIBC_STRERROR_R
     HAVE_POSIX_STRERROR_R

@@ -395,12 +395,14 @@ static const char * const supported_protocols[] = {
 #ifndef CURL_DISABLE_TFTP
   "tftp",
 #endif
-
+#ifndef CURL_DISABLE_HTTP
+  /* WebSocket support relies on HTTP */
 #ifndef CURL_DISABLE_WEBSOCKETS
   "ws",
 #endif
 #if defined(USE_SSL) && !defined(CURL_DISABLE_WEBSOCKETS)
   "wss",
+#endif
 #endif
 
 #if defined(USE_LIBSSH)
