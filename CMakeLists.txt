@@ -1276,7 +1276,7 @@ if(_curl_ca_bundle_supported)
   set(CURL_CA_PATH "auto" CACHE
     STRING "Location of default CA path. Set 'none' to disable or 'auto' for auto-detection. Defaults to 'auto'.")
   set(CURL_CA_EMBED "" CACHE
-    STRING "Path to the CA bundle to embed into the curl tool.")
+    STRING "Path to the CA bundle to embed in the curl tool.")
 set(CURL_CA_BUNDLE_PEM OFF CACHE BOOL
     "Set ON to use built-in CACERT_PEM from generated cacert.h. Defaults to OFF")
 
