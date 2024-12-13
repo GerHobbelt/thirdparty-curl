@@ -390,7 +390,7 @@ static void state(struct Curl_easy *data, sshstate nowstate)
 
 
 #ifdef HAVE_LIBSSH2_KNOWNHOST_API
-static int sshkeycallback(struct Curl_easy *easy,
+static int sshkeycallback(CURL *easy,
                           const struct curl_khkey *knownkey, /* known */
                           const struct curl_khkey *foundkey, /* found */
                           enum curl_khmatch match,
@@ -1662,10 +1662,8 @@ static CURLcode sftp_readdir(struct Curl_easy *data,
 {
   CURLcode result = CURLE_OK;
   int rc = libssh2_sftp_readdir_ex(sshc->sftp_handle,
-                                   sshp->readdir_filename,
-                                   PATH_MAX,
-                                   sshp->readdir_longentry,
-                                   PATH_MAX,
+                                   sshp->readdir_filename, CURL_PATH_MAX,
+                                   sshp->readdir_longentry, CURL_PATH_MAX,
                                    &sshp->readdir_attrs);
   if(rc == LIBSSH2_ERROR_EAGAIN) {
     *blockp = TRUE;
@@ -1692,7 +1690,7 @@ static CURLcode sftp_readdir(struct Curl_easy *data,
         if((sshp->readdir_attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) &&
            ((sshp->readdir_attrs.permissions & LIBSSH2_SFTP_S_IFMT) ==
             LIBSSH2_SFTP_S_IFLNK)) {
-          Curl_dyn_init(&sshp->readdir_link, PATH_MAX);
+          Curl_dyn_init(&sshp->readdir_link, CURL_PATH_MAX);
           result = Curl_dyn_addf(&sshp->readdir_link, "%s%s", sshp->path,
                                  sshp->readdir_filename);
           state(data, SSH_SFTP_READDIR_LINK);
@@ -1705,8 +1703,6 @@ static CURLcode sftp_readdir(struct Curl_easy *data,
     }
   }
   else if(rc == 0) {
-    Curl_safefree(sshp->readdir_filename);
-    Curl_safefree(sshp->readdir_longentry);
     state(data, SSH_SFTP_READDIR_DONE);
   }
   else if(rc < 0) {
@@ -1716,8 +1712,6 @@ static CURLcode sftp_readdir(struct Curl_easy *data,
     failf(data, "Could not open remote file for reading: %s :: %d",
           sftp_libssh2_strerror(sftperr),
           libssh2_session_last_errno(sshc->ssh_session));
-    Curl_safefree(sshp->readdir_filename);
-    Curl_safefree(sshp->readdir_longentry);
     state(data, SSH_SFTP_CLOSE);
   }
   return result;
@@ -2086,21 +2080,18 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
       break;
 
     case SSH_SFTP_REALPATH:
-    {
-      char tempHome[PATH_MAX];
-
       /*
        * Get the "home" directory
        */
       rc = sftp_libssh2_realpath(sshc->sftp_session, ".",
-                                 tempHome, PATH_MAX-1);
+                                 sshp->readdir_filename, CURL_PATH_MAX);
       if(rc == LIBSSH2_ERROR_EAGAIN) {
         break;
       }
       if(rc > 0) {
         /* It seems that this string is not always NULL terminated */
-        tempHome[rc] = '\0';
-        sshc->homedir = strdup(tempHome);
+        sshp->readdir_filename[rc] = '\0';
+        sshc->homedir = strdup(sshp->readdir_filename);
         if(!sshc->homedir) {
           state(data, SSH_SFTP_CLOSE);
           sshc->actualcode = CURLE_OUT_OF_MEMORY;
@@ -2123,7 +2114,7 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         state(data, SSH_STOP);
         break;
       }
-    }
+
     /* This is the last step in the SFTP connect phase. Do note that while
        we get the homedir here, we get the "workingpath" in the DO action
        since the homedir will remain the same between request but the
@@ -2524,20 +2515,7 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         sshc->actualcode = result ? result : CURLE_SSH;
         break;
       }
-      sshp->readdir_filename = malloc(PATH_MAX + 1);
-      if(!sshp->readdir_filename) {
-        state(data, SSH_SFTP_CLOSE);
-        sshc->actualcode = CURLE_OUT_OF_MEMORY;
-        break;
-      }
-      sshp->readdir_longentry = malloc(PATH_MAX + 1);
-      if(!sshp->readdir_longentry) {
-        Curl_safefree(sshp->readdir_filename);
-        state(data, SSH_SFTP_CLOSE);
-        sshc->actualcode = CURLE_OUT_OF_MEMORY;
-        break;
-      }
-      Curl_dyn_init(&sshp->readdir, PATH_MAX * 2);
+      Curl_dyn_init(&sshp->readdir, CURL_PATH_MAX * 2);
       state(data, SSH_SFTP_READDIR);
       break;
 
@@ -2557,7 +2535,7 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
                                 (unsigned int)
                                   Curl_dyn_len(&sshp->readdir_link),
                                 sshp->readdir_filename,
-                                PATH_MAX, LIBSSH2_SFTP_READLINK);
+                                CURL_PATH_MAX, LIBSSH2_SFTP_READLINK);
       if(rc == LIBSSH2_ERROR_EAGAIN) {
         break;
       }
@@ -2567,8 +2545,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
       result = Curl_dyn_addf(&sshp->readdir, " -> %s", sshp->readdir_filename);
 
       if(result) {
-        Curl_safefree(sshp->readdir_filename);
-        Curl_safefree(sshp->readdir_longentry);
         state(data, SSH_SFTP_CLOSE);
         sshc->actualcode = result;
         break;
@@ -2601,8 +2577,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         break;
       }
       sshc->sftp_handle = NULL;
-      Curl_safefree(sshp->readdir_filename);
-      Curl_safefree(sshp->readdir_longentry);
 
       /* no data to transfer */
       Curl_xfer_setup_nop(data);
@@ -3557,8 +3531,6 @@ static CURLcode ssh_done(struct Curl_easy *data, CURLcode status)
     result = status;
 
   Curl_safefree(sshp->path);
-  Curl_safefree(sshp->readdir_filename);
-  Curl_safefree(sshp->readdir_longentry);
   Curl_dyn_free(&sshp->readdir);
 
   if(Curl_pgrsDone(data))
