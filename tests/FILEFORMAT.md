@@ -675,7 +675,7 @@ test.
 
 `loadfile="filename"` makes loading the data from an external file.
 
-### `<filename="%LOGDIR/filename" [mode="text"]>`
+### `<file name="%LOGDIR/filename" [mode="text"]>`
 The file's contents must be identical to this after the test is complete. Use
 the mode="text" attribute if the output is in text mode on platforms that have
 a text/binary difference.
