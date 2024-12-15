@@ -150,7 +150,7 @@ exit_zlib(struct Curl_easy *data,
     Curl_safefree(z->next_in);
 
 #if defined(_MSC_VER)
-#pragma warning(push)
+#pragma warning(pop)
 #endif
 
   if(*zlib_init != ZLIB_UNINIT) {
