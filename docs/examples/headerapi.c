@@ -37,10 +37,10 @@ static size_t write_cb(char *data, size_t n, size_t l, void *userp)
 }
 
 #if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      curl_example_headerapi_main(cnt, arr)
+#define main      curl_example_headerapi_main
 #endif
 
-int main(int argc, const char** argv)
+int main(void)
 {
   CURL *curl;
 

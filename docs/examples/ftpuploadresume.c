@@ -154,7 +154,6 @@ static int upload(CURL *curlhandle, const char *remotepath,
 #endif
 
 int main(void)
-
 {
   CURL *curlhandle = NULL;
 

@@ -910,7 +910,7 @@ parse_netscape(struct Cookie *co,
       if(!co->value)
         return CERR_OUT_OF_MEMORY;
       break;
-      case 7: { /* extensions */
+    case 7: { /* extensions */
         char *p = ptr;
         do {
           if(strncasecompare("enc", p, 3)) {

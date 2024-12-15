@@ -927,7 +927,6 @@ typedef int
                           /* return CURLE_OK to accept */
                           /* or something else to refuse */
 
-
 /* this is the set of return values expected from the curl_sshhostkeycallback
    callback */
 enum curl_khcheck {

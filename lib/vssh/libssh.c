@@ -1970,7 +1970,7 @@ static CURLcode myssh_statemach_act(struct Curl_easy *data, bool *block)
       /* we want to use the _sending_ function even when the socket turns
          out readable as the underlying libssh scp send function will deal
          with both accordingly */
-	  data->state.select_bits = CURL_CSELECT_OUT;
+      data->state.select_bits = CURL_CSELECT_OUT;
 
       state(data, SSH_STOP);
 
@@ -2447,7 +2447,7 @@ static CURLcode ssh_doing(struct connectdata *conn, bool *dophase_done)
   result = myssh_multi_statemach(conn, dophase_done);
 
   if(*dophase_done) {
-    DEBUGF(infof(conn->data, "DO phase is complete\n"));
+    DEBUGF(infof(conn->data, "DO phase is complete"));
   }
   return result;
 }
@@ -2479,7 +2479,7 @@ CURLcode scp_perform(struct Curl_easy *data,
   *connected = conn->bits.tcpconnect[FIRSTSOCKET];
 
   if(*dophase_done) {
-    DEBUGF(infof(conn->data, "DO phase is complete\n"));
+    DEBUGF(infof(conn->data, "DO phase is complete"));
   }
 
   return result;
@@ -2492,7 +2492,7 @@ CURLcode ssh_perform(struct Curl_easy *data,
   CURLcode result = CURLE_OK;
   struct connectdata *conn = data->conn;
 
-  DEBUGF(infof(conn->data, "DO phase starts\n"));
+  DEBUGF(infof(conn->data, "DO phase starts"));
 
   *dophase_done = FALSE;        /* not done yet */
 

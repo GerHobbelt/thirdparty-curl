@@ -280,7 +280,7 @@ do not consider it a security problem.
 
 A user of curl or libcurl on multi-user systems **should not** keep critical
 files in directories in which you allow curl or libcurl to save or update
-files - if other users also have access to the same directory. curl cannot
+files - if other users also have access to the same directory, curl cannot
 completely protect such files against attacks.
 
 Ergo: curl cannot protect against attacks where an attacker has write access to the

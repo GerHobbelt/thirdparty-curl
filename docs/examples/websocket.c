@@ -29,16 +29,12 @@
 #include <string.h>
 #ifdef _WIN32
 #include <windows.h>
-#define sleep(s) Sleep((DWORD)(s))
+#define sleep(s) Sleep((DWORD)(s) * 1000)
 #else
 #include <unistd.h>
 #endif
 
 #include <curl/curl.h>
-
-#if defined(_WIN32) && !defined(sleep)
-#define sleep(sec) Sleep ((sec)*1000)
-#endif
 
 static int ping(CURL *curl, const char *send_payload)
 {

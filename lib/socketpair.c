@@ -200,16 +200,13 @@ int Curl_socketpair(int domain, int type, int protocol,
     char *p = (char *)&check;
     size_t s = sizeof(check);
 
-#if 0
-    rnd = start;
-#else
     if(Curl_rand(NULL, (unsigned char *)&rnd, sizeof(rnd)))
       goto error;
-#endif
+
     /* write data to the socket */
 	if(swrite(socks[0], &rnd, sizeof(rnd)) != sizeof(rnd))
 	  goto error;
-	/* verify that we read the correct data */
+    /* verify that we read the correct data */
     do {
       ssize_t nread;
 
