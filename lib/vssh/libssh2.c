@@ -2526,7 +2526,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         state(data, SSH_SFTP_CLOSE);
       }
       break;
-      break;
 
     case SSH_SFTP_READDIR_LINK:
       rc =
