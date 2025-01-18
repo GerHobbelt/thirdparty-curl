@@ -430,7 +430,7 @@ bool Curl_cw_out_is_paused(struct Curl_easy *data)
     return FALSE;
 
   ctx = (struct cw_out_ctx *)cw_out;
-  CURL_TRC_WRITE(data, "cw-out is%spaused", ctx->paused ? "" : " not");
+  CURL_TRC_WRITE(data, "cw-out is%s paused", ctx->paused ? "" : " not");
   return ctx->paused;
 }
 
