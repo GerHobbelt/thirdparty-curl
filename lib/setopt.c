@@ -1418,6 +1418,42 @@ static CURLcode setopt_long(struct Curl_easy *data, CURLoption option,
     Curl_safefree(data->set.str[STRING_SSL_ENGINE]);
     return Curl_ssl_set_engine_default(data);
 
+	case CURLOPT_TIMEOUT_PER_ADDR:
+		if (arg < 0)
+			return CURLE_BAD_FUNCTION_ARGUMENT;
+		data->set.timeout_per_addr = arg;
+		break;
+
+	case CURLOPT_SAFE_AUTH:
+		/*
+		 * Disable unsafe authentication mechanisms (those that transfer clear
+		 * credentials.
+		 */
+		data->set.safe_auth = (unsigned short)arg;
+		break;
+
+	case CURLOPT_TCP_MAXSEG:
+		if (arg < 0)
+			return CURLE_BAD_FUNCTION_ARGUMENT;
+		data->set.tcp_maxseg = arg;
+		break;
+
+	case CURLOPT_NOCLOBBER_OUTPUT_FILE:
+		data->set.file_clobber_mode = arg < 0 ? CLOBBER_DEFAULT : arg == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
+		break;
+
+	case CURLOPT_CREATE_DIRS_FOR_OUTPUT:
+		data->set.create_dirs = enabled;
+		break;
+
+	case CURLOPT_OUTPUT_PATH_MIMICS_URL:
+		data->set.output_path_mimics_url = enabled;
+		break;
+
+	case CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE:
+		data->set.sanitize_with_extreme_prejudice = (enabled) ? 1L : 0L;
+		break;
+
   default:
     /* unknown option */
     return CURLE_UNKNOWN_OPTION;
@@ -2873,43 +2909,6 @@ static CURLcode setopt_func(struct Curl_easy *data, CURLoption option,
   case CURLOPT_PREREQFUNCTION:
     data->set.fprereq = va_arg(param, curl_prereq_callback);
     break;
-
-
-  case CURLOPT_TIMEOUT_PER_ADDR:
-    if(arg < 0)
-      return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.timeout_per_addr = arg;
-    break;
-
-  case CURLOPT_SAFE_AUTH:
-    /*
-     * Disable unsafe authentication mechanisms (those that transfer clear
-     * credentials.
-     */
-    data->set.safe_auth = (unsigned short) arg;
-    break;
-	
-  case CURLOPT_TCP_MAXSEG:
-    if(arg < 0)
-      return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.tcp_maxseg = arg;
-    break;
-	
-  case CURLOPT_NOCLOBBER_OUTPUT_FILE:
-	  data->set.file_clobber_mode = arg < 0 ? CLOBBER_DEFAULT : arg == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
-	break;
-
-  case CURLOPT_CREATE_DIRS_FOR_OUTPUT:
-    data->set.create_dirs = enabled;
-    break;
-
-  case CURLOPT_OUTPUT_PATH_MIMICS_URL:
-    data->set.output_path_mimics_url = enabled;
-    break;
-
-  case CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE:
-    data->set.sanitize_with_extreme_prejudice = (enabled) ? 1L : 0L;
-	break;
 
   default:
     return CURLE_UNKNOWN_OPTION;
