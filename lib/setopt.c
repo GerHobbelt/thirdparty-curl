@@ -414,8 +414,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * We want to sent data to the remote host. If this is HTTP, that equals
      * using the PUT request.
      */
-    data->set.upload = (0 != va_arg(param, long)) ? TRUE : FALSE;
-    if(data->set.upload) {
+    arg = va_arg(param, long);
+    data->set.upload = arg;
+    if(arg) {
       /* If this is HTTP, PUT is what's needed to "upload" */
       data->set.method = HTTPREQ_PUT;
       data->set.opt_no_body = FALSE; /* this is implied */
@@ -694,12 +695,10 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     /*
      * Follow Location: header hints on an HTTP-server.
      */
-  {
     uarg = va_arg(param, unsigned long);
     data->set.http_follow_location = !!(uarg & (CURLFOLLOW_ENABLE|CURLFOLLOW_NO_CUSTOMMETHOD));
     data->set.redirect_clears_method = !!(uarg & CURLFOLLOW_NO_CUSTOMMETHOD);
-  }
-  break;
+    break;
 
   case CURLOPT_UNRESTRICTED_AUTH:
     /*
@@ -746,8 +745,9 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       data->set.method = HTTPREQ_POST;
       data->set.opt_no_body = FALSE; /* this is implied */
     }
-    else
+    else {
       data->set.method = HTTPREQ_GET;
+	}
     data->set.upload = FALSE;
     break;
 
@@ -1284,7 +1284,8 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     /*
      * Set up how to handle the IP address that is returned by the server for PASV responses.
      */
-    data->set.ftp_pasvp_ip_rule = va_arg(param, long);
+    arg = va_arg(param, long);
+    data->set.ftp_pasvp_ip_rule = arg;
     break;
 
   case CURLOPT_FTP_ACCOUNT:
@@ -1483,13 +1484,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.connecttimeout = (unsigned int)uarg;
     break;
 
-  case CURLOPT_TIMEOUT_PER_ADDR:
-    arg = va_arg(param, long);
-    if(arg < 0)
-      return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.timeout_per_addr = arg;
-    break;
-
 #ifndef CURL_DISABLE_FTP
   case CURLOPT_ACCEPTTIMEOUT_MS:
     /*
@@ -1540,14 +1534,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     result = Curl_setstropt(&data->set.str[STRING_BEARER],
                             va_arg(param, char *));
-    break;
-
-  case CURLOPT_SAFE_AUTH:
-    /*
-     * Disable unsafe authentication mechanisms (those that transfer clear
-     * credentials.
-     */
-    data->set.safe_auth = (unsigned short) va_arg(param, long);
     break;
 
   case CURLOPT_RESOLVE:
@@ -2327,7 +2313,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
         data->cookies = data->share->cookies;
 		/* ... and announce the cookie engine is activated */
 		data->state.cookie_engine = TRUE;
-	  }
+      }
 #endif   /* CURL_DISABLE_HTTP */
 #ifndef CURL_DISABLE_HSTS
       if(data->share->hsts) {
@@ -2963,12 +2949,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
       arg = INT_MAX;
     data->set.tcp_keepcnt = (int)arg;
     break;
-  case CURLOPT_TCP_MAXSEG:
-    arg = va_arg(param, long);
-    if(arg < 0)
-      return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.tcp_maxseg = arg;
-    break;
   case CURLOPT_TCP_FASTOPEN:
 #if defined(CONNECT_DATA_IDEMPOTENT) || defined(MSG_FASTOPEN) || \
    defined(TCP_FASTOPEN_CONNECT)
@@ -2997,18 +2977,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_PATH_AS_IS:
     data->set.path_as_is = (0 != va_arg(param, long));
-    break;
-  case CURLOPT_NOCLOBBER_OUTPUT_FILE:
-  {
-	  long state = va_arg(param, long);
-	  data->set.file_clobber_mode = state < 0 ? CLOBBER_DEFAULT : state == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
-  }
-	break;
-  case CURLOPT_CREATE_DIRS_FOR_OUTPUT:
-    data->set.create_dirs = (0 != va_arg(param, long));
-    break;
-  case CURLOPT_OUTPUT_PATH_MIMICS_URL:
-    data->set.output_path_mimics_url = (0 != va_arg(param, long));
     break;
   case CURLOPT_PIPEWAIT:
     data->set.pipewait = (0 != va_arg(param, long));
@@ -3235,6 +3203,42 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
   case CURLOPT_QUICK_EXIT:
     data->set.quick_exit = (0 != va_arg(param, long)) ? 1L : 0L;
     break;
+
+  case CURLOPT_TIMEOUT_PER_ADDR:
+    arg = va_arg(param, long);
+    if(arg < 0)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+    data->set.timeout_per_addr = arg;
+    break;
+
+  case CURLOPT_SAFE_AUTH:
+    /*
+     * Disable unsafe authentication mechanisms (those that transfer clear
+     * credentials.
+     */
+    data->set.safe_auth = (unsigned short) va_arg(param, long);
+    break;
+	
+  case CURLOPT_TCP_MAXSEG:
+    arg = va_arg(param, long);
+    if(arg < 0)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+    data->set.tcp_maxseg = arg;
+    break;
+	
+  case CURLOPT_NOCLOBBER_OUTPUT_FILE:
+	  arg = va_arg(param, long);
+	  data->set.file_clobber_mode = arg < 0 ? CLOBBER_DEFAULT : arg == 0 ? CLOBBER_ALWAYS : CLOBBER_NEVER;
+	break;
+
+  case CURLOPT_CREATE_DIRS_FOR_OUTPUT:
+    data->set.create_dirs = (0 != va_arg(param, long));
+    break;
+
+  case CURLOPT_OUTPUT_PATH_MIMICS_URL:
+    data->set.output_path_mimics_url = (0 != va_arg(param, long));
+    break;
+
   case CURLOPT_SANITIZE_WITH_EXTREME_PREJUDICE:
     data->set.sanitize_with_extreme_prejudice = (0 != va_arg(param, long)) ? 1L : 0L;
 	break;
