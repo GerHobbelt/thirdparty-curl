@@ -420,7 +420,7 @@ SANITIZE_ERR_OK: Good -- 'path' can be truncated
 SANITIZE_ERR_INVALID_PATH: Bad -- 'path' cannot be truncated
 != CURL_SANITIZE_ERR_OK && != CURL_SANITIZE_ERR_INVALID_PATH: Error
 */
-CurlSanitizeCode truncate_dryrun(const char *path, const size_t truncate_pos)
+static CurlSanitizeCode truncate_dryrun(const char *path, const size_t truncate_pos)
 {
   size_t len;
 
@@ -470,7 +470,7 @@ Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
 Failure: (!= CURL_SANITIZE_ERR_OK) *sanitized is NULL.
 */
 #if defined(MSDOS) || defined(UNITTESTS)
-CurlSanitizeCode msdosify(char **const sanitized, const char *file_name,
+static CurlSanitizeCode msdosify(char **const sanitized, const char *file_name,
                       int flags)
 {
   char dos_name[PATH_MAX];

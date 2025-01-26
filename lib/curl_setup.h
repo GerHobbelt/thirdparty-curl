@@ -161,20 +161,12 @@
 #  include "config-riscos.h"
 #endif
 
-#ifdef __AMIGA__
-#  include "config-amigaos.h"
-#endif
-
 #ifdef __OS400__
 #  include "config-os400.h"
 #endif
 
 #ifdef __PLAN9__
 #  include "config-plan9.h"
-#endif
-
-#ifdef MSDOS
-#  include "config-dos.h"
 #endif
 
 #endif /* HAVE_CONFIG_H */
@@ -411,11 +403,8 @@
 #  include <lwip/netdb.h>
 #endif
 
-#ifdef HAVE_EXTRA_STRICMP_H
+#ifdef macintosh
 #  include <extra/stricmp.h>
-#endif
-
-#ifdef HAVE_EXTRA_STRDUP_H
 #  include <extra/strdup.h>
 #endif
 
@@ -502,6 +491,14 @@
 #  define LSEEK_ERROR                (__int64)-1
 
 #else
+
+#ifdef __DJGPP__
+/* Requires DJGPP 2.04 */
+#  include <unistd.h>
+#  undef  lseek
+#  define lseek(fdes,offset,whence)  llseek(fdes, offset, whence)
+#  define LSEEK_ERROR                (offset_t)-1
+#endif
 
 /*
  * Small file (<2Gb) support using Win32 functions.
@@ -943,6 +940,8 @@ endings either CRLF or LF so 't' is appropriate.
 #    define CURL_SA_FAMILY_T sa_family_t
 #  elif defined(HAVE_ADDRESS_FAMILY)
 #    define CURL_SA_FAMILY_T ADDRESS_FAMILY
+#  elif defined(__AMIGA__)
+#    define CURL_SA_FAMILY_T unsigned char
 #  else
 /* use a sensible default */
 #    define CURL_SA_FAMILY_T unsigned short
@@ -1019,26 +1018,27 @@ int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf,
 #define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
-#if defined(inline)
-  /* 'inline' is defined as macro and assumed to be correct */
-  /* No need for 'inline' replacement */
+#if defined(CURL_INLINE)
+/* 'CURL_INLINE' defined, use as-is */
+#elif defined(inline)
+#  define CURL_INLINE inline /* 'inline' defined, assumed correct */
 #elif defined(__cplusplus)
-  /* The code is compiled with C++ compiler.
-     C++ always supports 'inline'. */
-  /* No need for 'inline' replacement */
+/* The code is compiled with C++ compiler.
+   C++ always supports 'inline'. */
+#  define CURL_INLINE inline /* 'inline' keyword supported */
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
-  /* C99 (and later) supports 'inline' keyword */
-  /* No need for 'inline' replacement */
+/* C99 (and later) supports 'inline' keyword */
+#  define CURL_INLINE inline /* 'inline' keyword supported */
 #elif defined(__GNUC__) && __GNUC__ >= 3
-  /* GCC supports '__inline__' as an extension */
-#  define inline __inline__
+/* GCC supports '__inline__' as an extension */
+#  define CURL_INLINE __inline__
 #elif defined(_MSC_VER) && _MSC_VER >= 1400
-  /* MSC supports '__inline' from VS 2005 (or even earlier) */
-#  define inline __inline
+/* MSC supports '__inline' from VS 2005 (or even earlier) */
+#  define CURL_INLINE __inline
 #else
-  /* Probably 'inline' is not supported by compiler.
-     Define to the empty string to be on the safe side. */
-#  define inline /* empty */
+/* Probably 'inline' is not supported by compiler.
+   Define to the empty string to be on the safe side. */
+#  define CURL_INLINE /* empty */
 #endif
 
 #endif /* HEADER_CURL_SETUP_H */
