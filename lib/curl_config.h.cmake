@@ -662,7 +662,7 @@
 #cmakedefine NEED_REENTRANT 1
 
 /* cpu-machine-OS */
-#cmakedefine OS ${OS}
+#cmakedefine CURL_OS ${CURL_OS}
 
 /* Name of package */
 #cmakedefine PACKAGE ${PACKAGE}
