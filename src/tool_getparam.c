@@ -1026,73 +1026,157 @@ const struct LongShort *findlongopt(const char *opt)
                  sizeof(aliases[0]), findarg);
 }
 
-static ParameterError parse_url(struct OperationConfig *config,
+static ParameterError parse_url(struct GlobalConfig* global,
+	                              struct OperationConfig *config,
                                 const char *nextarg)
 {
   ParameterError err = PARAM_OK;
   struct getout *url;
 
-  if(!config->url_get)
-    config->url_get = config->url_list;
+    if (nextarg[0] == '@') {
+        /* read many URLs from a file or stdin */
+        char* string;
+        size_t len;
+        bool use_stdin = !strcmp(&nextarg[1], "-");
+        FILE* file = use_stdin ? stdin : fopen(&nextarg[1], FOPEN_READTEXT);
+				if (!file) {
+					warnf(global, "Failed to open %s!\n", &nextarg[1]);
+					err = PARAM_READ_ERROR;
+				}
+        else {
+            err = file2memory(&string, &len, file);
+						if (err) {
+							errorf(global, "out of memory while parsing URL list file '%s'\n", &nextarg[1]);
+						}
+						if (!err && string) {
+                /* Allow strtok() here since this isn't used threaded */
+                /* !checksrc! disable BANNEDFUNC 2 */
+                char* h = strtok(string, "\r\n");
+                while (h && !err) {
+                    // trim leading & trailing whitespace
+                    while (*h && isspace(*h))
+                        h++;
+                    char* e = h + strlen(h);
+                    while (e > h && isspace(e[-1]))
+                        e--;
+                    *e = 0;
+                    // only add non-empty lines as URLs
+                    if (*h) {
+                        struct getout* url;
 
-  if(config->url_get) {
-    /* there is a node here, if it already is filled-in continue to find
-       an "empty" node */
-    while(config->url_get && (config->url_get->flags & GETOUT_URL))
-      config->url_get = config->url_get->next;
+                        if (!config->url_get)
+                            config->url_get = config->url_list;
+
+                        if (config->url_get) {
+                            /* there's a node here, if it already is filled-in continue to find
+                               an "empty" node */
+                            while (config->url_get && (config->url_get->flags & GETOUT_URL))
+                                config->url_get = config->url_get->next;
+                        }
+
+                        /* now there might or might not be an available node to fill in! */
+
+                        if (config->url_get)
+                            /* existing node */
+                            url = config->url_get;
+                        else
+                            /* there was no free node, create one! */
+                            config->url_get = url = new_getout(config);
+
+                        if (!url)
+                            return PARAM_NO_MEM;
+
+                        /* fill in the URL */
+                        if (global->tracetype) {
+                            notef(global, "+ Adding URL to the queue:  %s\n", h);
+                        }
+						            err = getstr(&url->url, h, DENY_BLANK);
+                        url->flags |= GETOUT_URL;
+                    }
+                    if (err)
+                        break;
+                    h = strtok(NULL, "\r\n");
+                }
+                free(string);
+            }
+            if (!use_stdin)
+                fclose(file);
+        }
+		}
+    else {
+      if(!config->url_get)
+        config->url_get = config->url_list;
+
+      if(config->url_get) {
+        /* there is a node here, if it already is filled-in continue to find
+           an "empty" node */
+        while(config->url_get && (config->url_get->flags & GETOUT_URL))
+          config->url_get = config->url_get->next;
+      }
+
+      /* now there might or might not be an available node to fill in! */
+
+      if(config->url_get)
+        /* existing node */
+        url = config->url_get;
+      else
+        /* there was no free node, create one! */
+        config->url_get = url = new_getout(config);
+
+      if(!url)
+        return PARAM_NO_MEM;
+      else {
+        /* fill in the URL */
+        err = getstr(&url->url, nextarg, DENY_BLANK);
+        url->flags |= GETOUT_URL;
+      }
   }
 
-  /* now there might or might not be an available node to fill in! */
-
-  if(config->url_get)
-    /* existing node */
-    url = config->url_get;
-  else
-    /* there was no free node, create one! */
-    config->url_get = url = new_getout(config);
-
-  if(!url)
-    return PARAM_NO_MEM;
-  else {
-    /* fill in the URL */
-    err = getstr(&url->url, nextarg, DENY_BLANK);
-    url->flags |= GETOUT_URL;
-  }
   return err;
 }
 
 static ParameterError parse_localport(struct OperationConfig *config,
-                                      char *nextarg)
+                                      const char *nextarg)
 {
   char *pp = NULL;
-  char *p = nextarg;
+  char *p = strdup(nextarg);
+	if (!p)
+	  return PARAM_NO_MEM;
+	nextarg = p;
   while(ISDIGIT(*p))
     p++;
   if(*p) {
     pp = p;
     /* check for ' - [end]' */
-    if(*pp && ISSPACE(*pp))
+    while(*pp && ISSPACE(*pp))
       pp++;
     if(*pp != '-')
       return PARAM_BAD_USE;
     pp++;
-    if(*pp && ISSPACE(*pp))
+    while(*pp && ISSPACE(*pp))
       pp++;
     *p = 0; /* null-terminate to make str2unum() work below */
   }
 
-  if(str2unummax(&config->localport, nextarg, 65535))
-    return PARAM_BAD_USE;
+	if (str2unummax(&config->localport, nextarg, 65535)) {
+		free((void *)nextarg);
+		return PARAM_BAD_USE;
+	}
   if(!pp)
     config->localportrange = 1; /* default number of ports to try */
   else {
-    if(str2unummax(&config->localportrange, pp, 65535))
-      return PARAM_BAD_USE;
+		if (str2unummax(&config->localportrange, pp, 65535)) {
+			free((void*)nextarg);
+			return PARAM_BAD_USE;
+		}
     config->localportrange -= (config->localport-1);
-    if(config->localportrange < 1)
-      return PARAM_BAD_USE;
+		if (config->localportrange < 1) {
+			free((void*)nextarg);
+			return PARAM_BAD_USE;
+		}
   }
-  return PARAM_OK;
+	free((void*)nextarg);
+	return PARAM_OK;
 }
 
 static ParameterError parse_continue_at(struct GlobalConfig *global,
@@ -1229,10 +1313,14 @@ static ParameterError parse_header(struct GlobalConfig *global,
 }
 
 static ParameterError parse_output(struct OperationConfig *config,
+	                                 bool toggle,
                                    const char *nextarg)
 {
   ParameterError err = PARAM_OK;
   struct getout *url;
+
+	if (!toggle && !config->default_node_flags)
+		return err; /* nothing to do */
 
   /* output file */
   if(!config->url_out)
@@ -1951,7 +2039,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         break;
 
     case C_URL: /* --url */
-      err = parse_url(config, nextarg);
+      err = parse_url(global, config, nextarg);
       break;
     case C_FTP_SSL: /* --ftp-ssl */
     case C_SSL: /* --ssl */
@@ -2756,7 +2844,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       config->file_clobber_mode = toggle ? CLOBBER_ALWAYS : CLOBBER_NEVER;
       break;
     case C_OUTPUT: /* --output */
-      err = parse_output(config, nextarg);
+      err = parse_output(config, toggle, nextarg);
       break;
     case C_REMOTE_NAME: /* --remote-name */
       err = parse_remote_name(config, toggle);
