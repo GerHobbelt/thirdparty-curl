@@ -335,6 +335,7 @@ struct GlobalConfig {
   long ms_per_transfer;           /* start next transfer after (at least) this
                                      many milliseconds */
 #ifdef DEBUGBUILD
+  bool test_duphandle;
   bool test_event_based;
 #endif
   bool parallel;
