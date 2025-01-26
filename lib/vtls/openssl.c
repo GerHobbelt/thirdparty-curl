@@ -4224,14 +4224,11 @@ static CURLcode ossl_connect_step2(struct Curl_cfilter *cf,
         lerr = SSL_get_verify_result(octx->ssl);
         if(lerr != X509_V_OK) {
           ssl_config->certverifyresult = lerr;
-          msnprintf(error_buffer, sizeof(error_buffer),
-                    "SSL certificate problem: %s",
-                    X509_verify_cert_error_string(lerr));
+          failf(data, "SSL certificate problem: %s",
+                X509_verify_cert_error_string(lerr));
         }
-        else {
+        else
           failf(data, "%s", "SSL certificate verification failed");
-          return result;
-        }
       }
 #if defined(SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED)
       /* SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED is only available on
@@ -4282,7 +4279,6 @@ static CURLcode ossl_connect_step2(struct Curl_cfilter *cf,
         failf(data, OSSL_PACKAGE " SSL_connect: %s in connection to %s:%d ",
               extramsg[0] ? extramsg : SSL_ERROR_to_str(detail),
               connssl->peer.hostname, connssl->peer.port);
-        return result;
       }
 
       return result;

@@ -230,7 +230,7 @@ static int my_progress_cb(void *userdata,
 
 static int setup(CURL *hnd, const char *url, struct transfer *t,
                  int http_version, struct curl_slist *host,
-                 CURLSH *share, int use_earlydata)
+                 CURLSH *share, int use_earlydata, int fresh_connect)
 {
   curl_easy_setopt(hnd, CURLOPT_SHARE, share);
   curl_easy_setopt(hnd, CURLOPT_URL, url);
@@ -249,6 +249,8 @@ static int setup(CURL *hnd, const char *url, struct transfer *t,
     curl_easy_setopt(hnd, CURLOPT_FORBID_REUSE, 1L);
   if(host)
     curl_easy_setopt(hnd, CURLOPT_RESOLVE, host);
+  if(fresh_connect)
+    curl_easy_setopt(hnd, CURLOPT_FRESH_CONNECT, 1L);
 
   /* please be verbose */
   if(verbose) {
@@ -309,9 +311,11 @@ int main(int argc, const char **argv)
   int http_version = CURL_HTTP_VERSION_2_0;
   int ch;
   struct curl_slist *host = NULL;
-  const char *resolve = NULL;
+  char *resolve = NULL;
+  size_t max_host_conns = 0;
+  int fresh_connect = 0;
 
-  while((ch = getopt(argc, argv, "aefhm:n:A:F:P:r:V:")) != -1) {
+  while((ch = getopt(argc, argv, "aefhm:n:xA:F:M:P:r:V:")) != -1) {
     switch(ch) {
     case 'h':
       usage(NULL);
@@ -331,17 +335,23 @@ int main(int argc, const char **argv)
     case 'n':
       transfer_count = (size_t)strtol(optarg, NULL, 10);
       break;
+    case 'x':
+      fresh_connect = 1;
+      break;
     case 'A':
       abort_offset = (size_t)strtol(optarg, NULL, 10);
       break;
     case 'F':
       fail_offset = (size_t)strtol(optarg, NULL, 10);
       break;
+    case 'M':
+      max_host_conns = (size_t)strtol(optarg, NULL, 10);
+      break;
     case 'P':
       pause_offset = (size_t)strtol(optarg, NULL, 10);
       break;
     case 'r':
-      resolve = optarg;
+      resolve = strdup(optarg);
       break;
     case 'V': {
       if(!strcmp("http/1.1", optarg))
@@ -384,7 +394,7 @@ int main(int argc, const char **argv)
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
-  curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
+  /* curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT); */
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_PSL);
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
 
@@ -396,6 +406,8 @@ int main(int argc, const char **argv)
 
   multi_handle = curl_multi_init();
   curl_multi_setopt(multi_handle, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+  curl_multi_setopt(multi_handle, CURLMOPT_MAX_HOST_CONNECTIONS,
+                    (long)max_host_conns);
 
   active_transfers = 0;
   for(i = 0; i < transfer_count; ++i) {
@@ -411,7 +423,8 @@ int main(int argc, const char **argv)
     t = &transfers[i];
     t->easy = curl_easy_init();
     if(!t->easy ||
-       setup(t->easy, url, t, http_version, host, share, use_earlydata)) {
+       setup(t->easy, url, t, http_version, host, share, use_earlydata,
+             fresh_connect)) {
       fprintf(stderr, "[t-%d] FAILED setup\n", (int)i);
       return 1;
     }
@@ -491,7 +504,7 @@ int main(int argc, const char **argv)
             t->easy = curl_easy_init();
             if(!t->easy ||
                setup(t->easy, url, t, http_version, host, share,
-                     use_earlydata)) {
+                     use_earlydata, fresh_connect)) {
               fprintf(stderr, "[t-%d] FAILED setup\n", (int)i);
               return 1;
             }
@@ -526,6 +539,8 @@ int main(int argc, const char **argv)
   free(transfers);
 
   curl_share_cleanup(share);
+  curl_slist_free_all(host);
+  free(resolve);
 
   return 0;
 #else
