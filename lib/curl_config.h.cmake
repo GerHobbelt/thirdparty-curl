@@ -760,6 +760,9 @@ ${SIZEOF___INT64_CODE}
 /* if wolfSSL has the wolfSSL_DES_ecb_encrypt function. */
 #cmakedefine HAVE_WOLFSSL_DES_ECB_ENCRYPT 1
 
+/* if wolfSSL has the wolfSSL_BIO_new function. */
+#cmakedefine HAVE_WOLFSSL_BIO 1
+
 /* if wolfSSL has the wolfSSL_BIO_set_shutdown function. */
 #cmakedefine HAVE_WOLFSSL_FULL_BIO 1
 
