@@ -477,6 +477,12 @@
 #include <curl/stdcheaders.h>
 #endif
 
+#ifdef _WIN32
+#define Curl_getpid() GetCurrentProcessId()
+#else
+#define Curl_getpid() getpid()
+#endif
+
 #  include <io.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
