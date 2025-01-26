@@ -42,6 +42,11 @@
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+#undef stat
+#define stat _stat
+#endif
+
 /* curl stuff */
 #include <curl/mprintf.h>
 

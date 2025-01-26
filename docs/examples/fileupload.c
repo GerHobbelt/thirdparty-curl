@@ -30,6 +30,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef _WIN32
+#undef stat
+#define stat _stat
+#undef fstat
+#define fstat _fstat
+#define fileno _fileno
+#endif
+
 
 #if defined(BUILD_MONOLITHIC)
 #define main(void)      curl_example_file_upload_main(void)

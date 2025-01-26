@@ -43,7 +43,7 @@
 //  Case-insensitive string comparison
 //
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #define COMPARE(a, b) (!_stricmp((a), (b)))
 #else
 #define COMPARE(a, b) (!strcasecmp((a), (b)))
@@ -71,8 +71,8 @@ static std::string buffer;
 //  libcurl write callback function
 //
 
-static int writer(char *data, size_t size, size_t nmemb,
-                  std::string *writerData)
+static size_t writer(char *data, size_t size, size_t nmemb,
+                     std::string *writerData)
 {
   if(writerData == NULL)
     return 0;
@@ -169,7 +169,8 @@ static void handleCharacters(Context *context,
                              int length)
 {
   if(context->addTitle)
-    context->title.append(reinterpret_cast<const char *>(chars), length);
+    context->title.append(reinterpret_cast<const char *>(chars),
+                          (unsigned long)length);
 }
 
 //
@@ -230,6 +231,11 @@ static htmlSAXHandler saxHandler =
   NULL,
   NULL,
   cdata,
+  NULL,
+  0,
+  0,
+  0,
+  0,
   NULL
 };
 
@@ -246,7 +252,7 @@ static void parseHtml(const std::string &html,
   ctxt = htmlCreatePushParserCtxt(&saxHandler, &context, "", 0, "",
                                   XML_CHAR_ENCODING_NONE);
 
-  htmlParseChunk(ctxt, html.c_str(), html.size(), 0);
+  htmlParseChunk(ctxt, html.c_str(), (int)html.size(), 0);
   htmlParseChunk(ctxt, "", 0, 1);
 
   htmlFreeParserCtxt(ctxt);

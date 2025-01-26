@@ -34,9 +34,11 @@
 #include <curl/curl.h>
 
 #if defined(_WIN32) || defined(WIN32)
-#  define FILENO(fp) _fileno(fp)
-#else
-#  define FILENO(fp) fileno(fp)
+#undef stat
+#define stat _stat
+#undef fstat
+#define fstat _fstat
+#define fileno _fileno
 #endif
 
 #ifndef _SSIZE_T_DEFINED
@@ -113,7 +115,7 @@ int main(int argc, const char** argv)
 
   /* get the file size of the local file */
   fp = fopen(file, "rb");
-  fstat(FILENO(fp), &file_info);
+  fstat(fileno(fp), &file_info);
 
   /* In Windows, this inits the Winsock stuff */
   curl_global_init(CURL_GLOBAL_ALL);

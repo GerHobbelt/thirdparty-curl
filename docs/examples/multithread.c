@@ -41,7 +41,7 @@
   https://curl.se/libcurl/c/threadsafe.html
 
 */
-const char * const urls[NUMT]= {
+static const char * const urls[NUMT]= {
   "https://curl.se/",
   "ftp://example.com/",
   "https://example.net/",
@@ -69,10 +69,10 @@ static void *pull_one_url(void *url)
 
 
 #if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      curl_example_multi_thread_main(cnt, arr)
+#define main      curl_example_multi_thread_main
 #endif
 
-int main(int argc, const char** argv)
+int main(void)
 {
   pthread_t tid[NUMT];
   int i;
