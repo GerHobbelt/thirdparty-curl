@@ -1092,6 +1092,11 @@ static ParameterError parse_url(struct GlobalConfig* global,
                         }
 						            err = getstr(&url->url, h, DENY_BLANK);
                         url->flags |= GETOUT_URL;
+					    if((++config->num_urls > 1) && (config->etag_save_file ||
+					                                    config->etag_compare_file)) {
+					      errorf(global, "The etag options only work on a single URL");
+					      return PARAM_BAD_USE;
+					    }
                     }
                     if (err)
                         break;
@@ -1129,7 +1134,12 @@ static ParameterError parse_url(struct GlobalConfig* global,
         /* fill in the URL */
         err = getstr(&url->url, nextarg, DENY_BLANK);
         url->flags |= GETOUT_URL;
+    if((++config->num_urls > 1) && (config->etag_save_file ||
+                                    config->etag_compare_file)) {
+      errorf(global, "The etag options only work on a single URL");
+      return PARAM_BAD_USE;
       }
+	}
   }
 
   return err;
@@ -2679,10 +2689,20 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         config->socks5_auth &= ~CURLAUTH_GSSAPI;
       break;
     case C_ETAG_SAVE: /* --etag-save */
-      err = getstr(&config->etag_save_file, nextarg, DENY_BLANK);
+      if(config->num_urls > 1) {
+        errorf(global, "The etag options only work on a single URL");
+        err = PARAM_BAD_USE;
+      }
+      else
+        err = getstr(&config->etag_save_file, nextarg, DENY_BLANK);
       break;
     case C_ETAG_COMPARE: /* --etag-compare */
-      err = getstr(&config->etag_compare_file, nextarg, DENY_BLANK);
+      if(config->num_urls > 1) {
+        errorf(global, "The etag options only work on a single URL");
+        err = PARAM_BAD_USE;
+      }
+      else
+        err = getstr(&config->etag_compare_file, nextarg, DENY_BLANK);
       break;
     case C_CURVES: /* --curves */
       err = getstr(&config->ssl_ec_curves, nextarg, DENY_BLANK);

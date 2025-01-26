@@ -158,7 +158,7 @@ UNITTEST_START
     }
 
     chost = headers[i].chost ? headers[i].chost : headers[i].host;
-    e = Curl_hsts(h, chost, TRUE);
+    e = Curl_hsts(h, chost, strlen(chost), TRUE);
     showsts(e, i, chost);
   }
 
@@ -167,7 +167,7 @@ UNITTEST_START
   /* verify that it is exists for 7 seconds */
   chost = "expire.example";
   for(i = 100; i < 110; i++) {
-    e = Curl_hsts(h, chost, TRUE);
+    e = Curl_hsts(h, chost, strlen(chost), TRUE);
     showsts(e, i, chost);
     deltatime++; /* another second passed */
   }
