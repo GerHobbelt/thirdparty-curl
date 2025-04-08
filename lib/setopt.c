@@ -3114,6 +3114,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
        way than being listed explicitly */
     switch(option) {
     case CURLOPT_HTTPHEADER:
+    case CURLOPT_HTTPBASEHEADER:
     case CURLOPT_QUOTE:
     case CURLOPT_POSTQUOTE:
     case CURLOPT_TELNETOPTIONS:
