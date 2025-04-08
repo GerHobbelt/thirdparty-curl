@@ -48,13 +48,19 @@ LIBS = $(BLANK_AT_MAKETIME)
 
 LDADD = $(top_builddir)/src/libcurltool.la   \
         $(top_builddir)/lib/libcurlu.la      \
-        @LDFLAGS@ @LIBCURL_PC_LIBS_PRIVATE@
+        @LIBCURL_PC_LDFLAGS_PRIVATE@ @LIBCURL_PC_LIBS_PRIVATE@
 
 AM_CPPFLAGS += -DCURL_STATICLIB -DUNITTESTS
+if DEBUGBUILD
+AM_CPPFLAGS += -DDEBUGBUILD
+endif
+if CURLDEBUG
+AM_CPPFLAGS += -DCURLDEBUG
+endif
 
 if BUILD_UNITTESTS
 if USE_TEST_BUNDLES
-unit_bundle.c: $(top_srcdir)/tests/mk-bundle.pl
+unit_bundle.c: $(top_srcdir)/tests/mk-bundle.pl Makefile.inc
 	@PERL@ $(top_srcdir)/tests/mk-bundle.pl $(srcdir) > unit_bundle.c
 
 noinst_PROGRAMS = units
@@ -74,5 +80,8 @@ CS_0 = @echo "  RUN     " $@;
 CS_1 =
 CS_ = $(CS_0)
 
+# ignore generated C files since they play by slightly different rules!
 checksrc:
-	$(CHECKSRC)@PERL@ $(top_srcdir)/scripts/checksrc.pl $(srcdir)/*.[ch]
+	$(CHECKSRC)(@PERL@ $(top_srcdir)/scripts/checksrc.pl -D$(srcdir) \
+	  -W$(srcdir)/unit_bundle.c \
+	  $(srcdir)/*.[ch])

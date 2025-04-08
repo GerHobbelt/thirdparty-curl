@@ -24,7 +24,7 @@
 
 AUTOMAKE_OPTIONS = foreign nostdinc
 
-EXTRA_DIST = README.md Makefile.example Makefile.mk CMakeLists.txt \
+EXTRA_DIST = README.md Makefile.example CMakeLists.txt \
   $(COMPLICATED_EXAMPLES) .checksrc
 
 # Specify our include paths here, and do it relative to $(top_srcdir) and
@@ -43,6 +43,9 @@ AM_CPPFLAGS += -DCURL_NO_OLDIES
 
 if USE_CPPFLAG_CURL_STATICLIB
 AM_CPPFLAGS += -DCURL_STATICLIB
+endif
+if DOING_NATIVE_WINDOWS
+AM_CPPFLAGS += -DWIN32_LEAN_AND_MEAN
 endif
 
 # Prevent LIBS from being used for all link targets

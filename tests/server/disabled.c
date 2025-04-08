@@ -101,6 +101,9 @@ static const char *disabled[]={
 #if (SIZEOF_TIME_T < 5)
   "large-time",
 #endif
+#if (SIZEOF_SIZE_T < 5)
+  "large-size",
+#endif
 #ifndef CURL_HAVE_SHA512_256
   "sha512-256",
 #endif
@@ -112,6 +115,9 @@ static const char *disabled[]={
 #ifndef CURL_CA_SEARCH_SAFE
   "win32-ca-search-safe",
 #endif
+#endif
+#ifdef CURL_DISABLE_LIBCURL_OPTION
+  "--libcurl",
 #endif
   NULL
 };

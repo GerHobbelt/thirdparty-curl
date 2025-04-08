@@ -10,6 +10,7 @@ Multi: boolean
 See-also:
   - tlsv1.3
   - tls-max
+  - ssl-sessions
 Example:
   - --tls-earlydata $URL
 ---
@@ -36,6 +37,9 @@ may be no harm in that. If the first request orders a refrigerator
 for you, it is probably not a good idea to use early data for it. curl
 cannot deduce what the security implications of your requests actually
 are and make this decision for you.
+
+The amount of early data sent can be inspected by using the `--write-out`
+variable `tls_earlydata`.
 
 **WARNING**: this option has security implications. See above for more
 details.

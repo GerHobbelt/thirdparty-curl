@@ -46,7 +46,7 @@ struct set {
 UNITTEST_START
 #ifdef USE_SSH
 {
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(CURL_GNUC_DIAG) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverlength-strings"
 #endif
@@ -78,13 +78,13 @@ UNITTEST_START
     { NULL, NULL, NULL, NULL, CURLE_OK }
   };
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(CURL_GNUC_DIAG) || defined(__clang__)
 #pragma GCC diagnostic warning "-Woverlength-strings"
 #endif
 
   list[0].cp = calloc(1, too_long + 1);
   fail_unless(list[0].cp, "could not alloc too long value");
-  memset((void *)list[0].cp, 'a', too_long);
+  memset(CURL_UNCONST(list[0].cp), 'a', too_long);
 
   for(i = 0; list[i].home; i++) {
     char *path;
@@ -112,9 +112,9 @@ UNITTEST_START
     }
   }
 
-  free((void *)list[0].cp);
+  free(CURL_UNCONST(list[0].cp));
 }
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(CURL_GNUC_DIAG) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 

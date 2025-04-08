@@ -71,7 +71,7 @@ class TestVsFTPD:
         env.make_data_file(indir=env.gen_dir, fname="upload-100k", fsize=100*1024)
         env.make_data_file(indir=env.gen_dir, fname="upload-1m", fsize=1024*1024)
 
-    def test_30_01_list_dir(self, env: Env, vsftpd: VsFTPD, repeat):
+    def test_30_01_list_dir(self, env: Env, vsftpd: VsFTPD):
         curl = CurlClient(env=env)
         url = f'ftp://{env.ftp_domain}:{vsftpd.port}/'
         r = curl.ftp_get(urls=[url], with_stats=True)
@@ -83,7 +83,7 @@ class TestVsFTPD:
     @pytest.mark.parametrize("docname", [
         'data-1k', 'data-1m', 'data-10m'
     ])
-    def test_30_02_download_1(self, env: Env, vsftpd: VsFTPD, docname, repeat):
+    def test_30_02_download_1(self, env: Env, vsftpd: VsFTPD, docname):
         curl = CurlClient(env=env)
         srcfile = os.path.join(vsftpd.docs_dir, f'{docname}')
         count = 1
@@ -95,7 +95,7 @@ class TestVsFTPD:
     @pytest.mark.parametrize("docname", [
         'data-1k', 'data-1m', 'data-10m'
     ])
-    def test_30_03_download_10_serial(self, env: Env, vsftpd: VsFTPD, docname, repeat):
+    def test_30_03_download_10_serial(self, env: Env, vsftpd: VsFTPD, docname):
         curl = CurlClient(env=env)
         srcfile = os.path.join(vsftpd.docs_dir, f'{docname}')
         count = 10
@@ -103,11 +103,12 @@ class TestVsFTPD:
         r = curl.ftp_get(urls=[url], with_stats=True)
         r.check_stats(count=count, http_status=226)
         self.check_downloads(curl, srcfile, count)
+        assert r.total_connects == count + 1, 'should reuse the control conn'
 
     @pytest.mark.parametrize("docname", [
         'data-1k', 'data-1m', 'data-10m'
     ])
-    def test_30_04_download_10_parallel(self, env: Env, vsftpd: VsFTPD, docname, repeat):
+    def test_30_04_download_10_parallel(self, env: Env, vsftpd: VsFTPD, docname):
         curl = CurlClient(env=env)
         srcfile = os.path.join(vsftpd.docs_dir, f'{docname}')
         count = 10
@@ -117,11 +118,12 @@ class TestVsFTPD:
         ])
         r.check_stats(count=count, http_status=226)
         self.check_downloads(curl, srcfile, count)
+        assert r.total_connects > count + 1, 'should have used several control conns'
 
     @pytest.mark.parametrize("docname", [
         'upload-1k', 'upload-100k', 'upload-1m'
     ])
-    def test_30_05_upload_1(self, env: Env, vsftpd: VsFTPD, docname, repeat):
+    def test_30_05_upload_1(self, env: Env, vsftpd: VsFTPD, docname):
         curl = CurlClient(env=env)
         srcfile = os.path.join(env.gen_dir, docname)
         dstfile = os.path.join(vsftpd.docs_dir, docname)
@@ -138,7 +140,7 @@ class TestVsFTPD:
 
     # check with `tcpdump` if curl causes any TCP RST packets
     @pytest.mark.skipif(condition=not Env.tcpdump(), reason="tcpdump not available")
-    def test_30_06_shutdownh_download(self, env: Env, vsftpd: VsFTPD, repeat):
+    def test_30_06_shutdownh_download(self, env: Env, vsftpd: VsFTPD):
         docname = 'data-1k'
         curl = CurlClient(env=env)
         count = 1
@@ -150,7 +152,7 @@ class TestVsFTPD:
 
     # check with `tcpdump` if curl causes any TCP RST packets
     @pytest.mark.skipif(condition=not Env.tcpdump(), reason="tcpdump not available")
-    def test_30_07_shutdownh_upload(self, env: Env, vsftpd: VsFTPD, repeat):
+    def test_30_07_shutdownh_upload(self, env: Env, vsftpd: VsFTPD):
         docname = 'upload-1k'
         curl = CurlClient(env=env)
         srcfile = os.path.join(env.gen_dir, docname)

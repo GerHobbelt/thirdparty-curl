@@ -1,2 +1,5 @@
 enable STDERR
-enable STRNCPY
+banfunc strncpy
+banfunc sscanf
+banfunc strtol
+banfunc strtoul

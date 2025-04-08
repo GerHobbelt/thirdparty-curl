@@ -81,12 +81,14 @@ int main(void)
 
 # HISTORY
 
-This option was known as CURLOPT_FTP_SSL up to 7.16.4, and the constants were
-known as CURLFTPSSL_* Handled by LDAP since 7.81.0. Fully supported by the
-OpenLDAP backend only.
+This option was known as CURLOPT_FTP_SSL up to 7.16.4. Supported by LDAP since
+7.81.0. Fully supported by the OpenLDAP backend only.
 
 # %AVAILABILITY%
 
 # RETURN VALUE
 
-Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+curl_easy_setopt(3) returns a CURLcode indicating success or error.
+
+CURLE_OK (0) means everything was OK, non-zero means an error occurred, see
+libcurl-errors(3).

@@ -50,6 +50,7 @@ man_MANS =                                      \
   CURLINFO_HTTP_CONNECTCODE.3                   \
   CURLINFO_HTTP_VERSION.3                       \
   CURLINFO_HTTPAUTH_AVAIL.3                     \
+  CURLINFO_HTTPAUTH_USED.3                      \
   CURLINFO_LASTSOCKET.3                         \
   CURLINFO_LOCAL_IP.3                           \
   CURLINFO_LOCAL_PORT.3                         \
@@ -67,6 +68,7 @@ man_MANS =                                      \
   CURLINFO_PROXY_ERROR.3                        \
   CURLINFO_PROXY_SSL_VERIFYRESULT.3             \
   CURLINFO_PROXYAUTH_AVAIL.3                    \
+  CURLINFO_PROXYAUTH_USED.3                     \
   CURLINFO_QUEUE_TIME_T.3                       \
   CURLINFO_REDIRECT_COUNT.3                     \
   CURLINFO_REDIRECT_TIME.3                      \
@@ -409,6 +411,7 @@ man_MANS =                                      \
   CURLOPT_UPKEEP_INTERVAL_MS.3                  \
   CURLOPT_UPLOAD.3                              \
   CURLOPT_UPLOAD_BUFFERSIZE.3                   \
+  CURLOPT_UPLOAD_FLAGS.3                        \
   CURLOPT_URL.3                                 \
   CURLOPT_USE_SSL.3                             \
   CURLOPT_USERAGENT.3                           \

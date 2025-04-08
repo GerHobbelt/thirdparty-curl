@@ -121,10 +121,9 @@ CMakeLists
 CNA
 CNAME
 CNAMEs
-CodeQL
-codeql
 CODESET
 codeset
+CodeSonar
 Comcast
 commit's
 Config
@@ -186,6 +185,7 @@ devcpp
 DevOps
 devtools
 DHCP
+DHE
 dir
 distro
 distro's
@@ -252,8 +252,10 @@ Feltzing
 ffi
 filesize
 filesystem
+FindCURL
 FLOSS
 fnmatch
+footguns
 formpost
 formposts
 Fortnite
@@ -347,6 +349,7 @@ httpget
 HttpGet
 HTTPS
 https
+HTTPSRR
 hyper's
 Högskolan
 IANA
@@ -444,6 +447,8 @@ librtmp
 libs
 libssh
 libssh2
+libtest
+libtests
 Libtool
 libtool
 libuv
@@ -598,6 +603,7 @@ Orbis
 ORing
 Osipov
 OSS
+PaaS
 pac
 pacman
 parser's
@@ -718,6 +724,7 @@ Ruslan
 rustc
 Rustls
 rustls
+rustup
 Sagula
 SanDisk
 SAS
@@ -768,8 +775,8 @@ SOCKOPT
 SOCKSv
 Solaris
 SONAME
-SOVERSION
 Soref
+SOVERSION
 SPARC
 SPDX
 SPNEGO
@@ -782,6 +789,7 @@ SSL
 ssl
 SSLeay
 SSLKEYLOGFILE
+SSLS
 sslv
 SSLv
 SSLVERSION
@@ -864,6 +872,7 @@ typedef
 typedefed
 Ubuntu
 ucLinux
+UCRT
 UDP
 UI
 UID
@@ -913,6 +922,7 @@ VC
 vcpkg
 vexxhost
 Viktor
+Virtuozzo
 VLAN
 VM
 VMS
@@ -946,7 +956,6 @@ winbuild
 WinIDN
 WinLDAP
 winsock
-winssl
 Wireshark
 wolfSSH
 wolfSSL

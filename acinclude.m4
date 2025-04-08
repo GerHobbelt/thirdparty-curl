@@ -48,7 +48,7 @@ AC_DEFUN([CURL_CHECK_DEF], [
   tmp_exp=""
   AC_PREPROC_IFELSE([
     AC_LANG_SOURCE(
-ifelse($2,,,[$2])[[
+    ifelse($2,,,[$2])[[
       #ifdef $1
       CURL_DEF_TOKEN $1
       #endif
@@ -88,14 +88,13 @@ AC_DEFUN([CURL_CHECK_DEF_CC], [
   ifelse($3,,[AC_MSG_CHECKING([for compiler definition of $1])])
   AC_COMPILE_IFELSE([
     AC_LANG_SOURCE(
-ifelse($2,,,[$2])[[
+    ifelse($2,,,[$2])[[
       int main(void)
       {
-      #ifdef $1
-        return 0;
-      #else
+      #ifndef $1
         #error force compilation error
       #endif
+        return 0;
       }
     ]])
   ],[
@@ -126,12 +125,11 @@ AC_DEFUN([CURL_CHECK_LIB_XNET], [
       int main(void)
       {
       #if defined(__hpux) && defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600)
-        return 0;
       #elif defined(__hpux) && defined(_XOPEN_SOURCE_EXTENDED)
-        return 0;
       #else
         #error force compilation error
       #endif
+        return 0;
       }
     ]])
   ],[
@@ -180,7 +178,8 @@ AC_DEFUN([CURL_CHECK_NATIVE_WINDOWS], [
       AC_LANG_PROGRAM([[
       ]],[[
         #ifdef _WIN32
-          int dummy=1;
+          int dummy = 1;
+          (void)dummy;
         #else
           #error Not a native Windows build target.
         #endif
@@ -306,6 +305,7 @@ AC_DEFUN([CURL_CHECK_HEADER_LDAP], [
       ]],[[
         LDAP *ldp = ldap_init("0.0.0.0", LDAP_PORT);
         int res = ldap_unbind(ldp);
+        (void)res;
       ]])
     ],[
       curl_cv_header_ldap_h="yes"
@@ -354,6 +354,7 @@ AC_DEFUN([CURL_CHECK_HEADER_LDAP_SSL], [
         #include <ldap_ssl.h>
       ]],[[
         LDAP *ldp = ldapssl_init("0.0.0.0", LDAPS_PORT, 1);
+        (void)ldp;
       ]])
     ],[
       curl_cv_header_ldap_ssl_h="yes"
@@ -433,6 +434,7 @@ AC_DEFUN([CURL_CHECK_LIBS_WINLDAP], [
           LDAP *ldp = ldap_init("0.0.0.0", LDAP_PORT);
           ULONG res = ldap_unbind(ldp);
           ber_free(bep, 1);
+          (void)res;
         ]])
       ],[
         curl_cv_ldap_LIBS="$x_nlibs"
@@ -543,6 +545,7 @@ AC_DEFUN([CURL_CHECK_LIBS_LDAP], [
           LDAP *ldp = ldap_init("0.0.0.0", LDAP_PORT);
           int res = ldap_unbind(ldp);
           ber_free(bep, 1);
+          (void)res;
         ]])
       ],[
         curl_cv_ldap_LIBS="$x_nlibs"
@@ -565,7 +568,10 @@ AC_DEFUN([CURL_CHECK_LIBS_LDAP], [
       else
         LIBS="$curl_cv_ldap_LIBS $curl_cv_save_LIBS"
       fi
-      LIBCURL_PC_REQUIRES_PRIVATE="ldap $LIBCURL_PC_REQUIRES_PRIVATE"
+      # FIXME: Enable when ldap was detected via pkg-config
+      if false; then
+        LIBCURL_PC_REQUIRES_PRIVATE="ldap $LIBCURL_PC_REQUIRES_PRIVATE"
+      fi
       AC_MSG_RESULT([$curl_cv_ldap_LIBS])
       ;;
   esac
@@ -683,7 +689,8 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
       #endif
       #endif
     ]],[[
-      send(0, 0, 0, 0);
+      char s[] = "";
+      send(0, (void *)s, 0, 0);
     ]])
   ],[
     AC_MSG_RESULT([yes])
@@ -726,7 +733,8 @@ AC_DEFUN([CURL_CHECK_MSG_NOSIGNAL], [
         #endif
         #endif
       ]],[[
-        int flag=MSG_NOSIGNAL;
+        int flag = MSG_NOSIGNAL;
+        (void)flag;
       ]])
     ],[
       curl_cv_msg_nosignal="yes"
@@ -774,6 +782,7 @@ AC_DEFUN([CURL_CHECK_STRUCT_TIMEVAL], [
         struct timeval ts;
         ts.tv_sec  = 0;
         ts.tv_usec = 0;
+        (void)ts;
       ]])
     ],[
       curl_cv_struct_timeval="yes"
@@ -787,84 +796,6 @@ AC_DEFUN([CURL_CHECK_STRUCT_TIMEVAL], [
         [Define to 1 if you have the timeval struct.])
       ;;
   esac
-])
-
-
-dnl TYPE_IN_ADDR_T
-dnl -------------------------------------------------
-dnl Check for in_addr_t: it is used to receive the return code of inet_addr()
-dnl and a few other things.
-
-AC_DEFUN([TYPE_IN_ADDR_T], [
-  AC_CHECK_TYPE([in_addr_t], ,[
-    dnl in_addr_t not available
-    AC_CACHE_CHECK([for in_addr_t equivalent],
-      [curl_cv_in_addr_t_equiv], [
-      curl_cv_in_addr_t_equiv="unknown"
-      for t in "unsigned long" int size_t unsigned long; do
-        if test "$curl_cv_in_addr_t_equiv" = "unknown"; then
-          AC_LINK_IFELSE([
-            AC_LANG_PROGRAM([[
-              #undef inline
-              #ifdef _WIN32
-              #ifndef WIN32_LEAN_AND_MEAN
-              #define WIN32_LEAN_AND_MEAN
-              #endif
-              #include <winsock2.h>
-              #else
-              #ifdef HAVE_SYS_TYPES_H
-              #include <sys/types.h>
-              #endif
-              #ifdef HAVE_SYS_SOCKET_H
-              #include <sys/socket.h>
-              #endif
-              #ifdef HAVE_NETINET_IN_H
-              #include <netinet/in.h>
-              #endif
-              #ifdef HAVE_ARPA_INET_H
-              #include <arpa/inet.h>
-              #endif
-              #endif
-            ]],[[
-              $t data = inet_addr ("1.2.3.4");
-            ]])
-          ],[
-            curl_cv_in_addr_t_equiv="$t"
-          ])
-        fi
-      done
-    ])
-    case "$curl_cv_in_addr_t_equiv" in
-      unknown)
-        AC_MSG_ERROR([Cannot find a type to use in place of in_addr_t])
-        ;;
-      *)
-        AC_DEFINE_UNQUOTED(in_addr_t, $curl_cv_in_addr_t_equiv,
-          [Type to use in place of in_addr_t when system does not provide it.])
-        ;;
-    esac
-  ],[
-    #undef inline
-    #ifdef _WIN32
-    #ifndef WIN32_LEAN_AND_MEAN
-    #define WIN32_LEAN_AND_MEAN
-    #endif
-    #include <winsock2.h>
-    #else
-    #ifdef HAVE_SYS_TYPES_H
-    #include <sys/types.h>
-    #endif
-    #ifdef HAVE_SYS_SOCKET_H
-    #include <sys/socket.h>
-    #endif
-    #ifdef HAVE_NETINET_IN_H
-    #include <netinet/in.h>
-    #endif
-    #ifdef HAVE_ARPA_INET_H
-    #include <arpa/inet.h>
-    #endif
-    #endif
-  ])
 ])
 
 
@@ -889,6 +820,7 @@ AC_DEFUN([CURL_CHECK_FUNC_CLOCK_GETTIME_MONOTONIC], [
       ]],[[
         struct timespec ts;
         (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+        (void)ts;
       ]])
     ],[
       AC_MSG_RESULT([yes])
@@ -923,6 +855,7 @@ AC_DEFUN([CURL_CHECK_FUNC_CLOCK_GETTIME_MONOTONIC_RAW], [
       ]],[[
         struct timespec ts;
         (void)clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+        (void)ts;
       ]])
     ],[
       AC_MSG_RESULT([yes])
@@ -969,6 +902,7 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
           ]],[[
             struct timespec ts;
             (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+            (void)ts;
           ]])
         ],[
           curl_cv_gclk_LIBS="$x_xlibs"
@@ -1015,10 +949,10 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
           #include <time.h>
         ]],[[
           struct timespec ts;
-          if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))
-            exit(0);
-          else
-            exit(1);
+          if(0 == clock_gettime(CLOCK_MONOTONIC, &ts))
+            return 0;
+          (void)ts;
+          return 1;
         ]])
       ],[
         AC_MSG_RESULT([yes])
@@ -1165,7 +1099,7 @@ AC_DEFUN([CURL_VERIFY_RUNTIMELIBS], [
     dnl point also is available run-time!
     AC_MSG_CHECKING([run-time libs availability])
     CURL_RUN_IFELSE([
-      int main()
+      int main(void)
       {
         return 0;
       }
@@ -1375,55 +1309,30 @@ dnl Check if curl's Win32 large file will be used
 
 AC_DEFUN([CURL_CHECK_WIN32_LARGEFILE], [
   AC_REQUIRE([CURL_CHECK_NATIVE_WINDOWS])dnl
-  AC_MSG_CHECKING([whether build target supports Win32 file API])
-  curl_win32_file_api="no"
-  if test "$curl_cv_native_windows" = "yes"; then
-    if test x"$enable_largefile" != "xno"; then
-      AC_COMPILE_IFELSE([
-        AC_LANG_PROGRAM([[
-        ]],[[
-          #if !defined(_WIN32_WCE) && (defined(__MINGW32__) || defined(_MSC_VER))
-            int dummy=1;
-          #else
-            #error Win32 large file API not supported.
-          #endif
-        ]])
-      ],[
-        curl_win32_file_api="win32_large_files"
-      ])
+  if test "$curl_cv_native_windows" = 'yes'; then
+    AC_MSG_CHECKING([whether build target supports Win32 large files])
+    if test "$curl_cv_wince" = 'yes'; then
+      dnl Windows CE does not support large files
+      curl_win32_has_largefile='no'
+    else
+      dnl All mingw-w64 versions support large files
+      curl_win32_has_largefile='yes'
     fi
-    if test "$curl_win32_file_api" = "no"; then
-      AC_COMPILE_IFELSE([
-        AC_LANG_PROGRAM([[
-        ]],[[
-          #if defined(_WIN32_WCE) || defined(__MINGW32__) || defined(_MSC_VER)
-            int dummy=1;
-          #else
-            #error Win32 small file API not supported.
-          #endif
-        ]])
-      ],[
-        curl_win32_file_api="win32_small_files"
-      ])
-    fi
+    case "$curl_win32_has_largefile" in
+      yes)
+        if test x"$enable_largefile" = 'xno'; then
+          AC_MSG_RESULT([yes (large file disabled)])
+        else
+          AC_MSG_RESULT([yes (large file enabled)])
+          AC_DEFINE_UNQUOTED(USE_WIN32_LARGE_FILES, 1,
+            [Define to 1 if you are building a Windows target with large file support.])
+        fi
+        ;;
+      *)
+        AC_MSG_RESULT([no])
+        ;;
+    esac
   fi
-  case "$curl_win32_file_api" in
-    win32_large_files)
-      AC_MSG_RESULT([yes (large file enabled)])
-      AC_DEFINE_UNQUOTED(USE_WIN32_LARGE_FILES, 1,
-        [Define to 1 if you are building a Windows target with large file support.])
-      AC_SUBST(USE_WIN32_LARGE_FILES, [1])
-      ;;
-    win32_small_files)
-      AC_MSG_RESULT([yes (large file disabled)])
-      AC_DEFINE_UNQUOTED(USE_WIN32_SMALL_FILES, 1,
-        [Define to 1 if you are building a Windows target without large file support.])
-      AC_SUBST(USE_WIN32_SMALL_FILES, [1])
-      ;;
-    *)
-      AC_MSG_RESULT([no])
-      ;;
-  esac
 ])
 
 dnl CURL_CHECK_WIN32_CRYPTO
@@ -1434,7 +1343,7 @@ AC_DEFUN([CURL_CHECK_WIN32_CRYPTO], [
   AC_REQUIRE([CURL_CHECK_NATIVE_WINDOWS])dnl
   AC_MSG_CHECKING([whether build target supports Win32 crypto API])
   curl_win32_crypto_api="no"
-  if test "$curl_cv_native_windows" = "yes"; then
+  if test "$curl_cv_native_windows" = "yes" -a "$curl_cv_winuwp" != "yes"; then
     AC_COMPILE_IFELSE([
       AC_LANG_PROGRAM([[
         #undef inline
@@ -1459,7 +1368,7 @@ AC_DEFUN([CURL_CHECK_WIN32_CRYPTO], [
       AC_MSG_RESULT([yes])
       AC_DEFINE_UNQUOTED(USE_WIN32_CRYPTO, 1,
         [Define to 1 if you are building a Windows target with crypto API support.])
-      AC_SUBST(USE_WIN32_CRYPTO, [1])
+      USE_WIN32_CRYPTO=1
       ;;
     *)
       AC_MSG_RESULT([no])
@@ -1542,26 +1451,49 @@ dnl Save build info for test runner to pick up and log
 
 AC_DEFUN([CURL_PREPARE_BUILDINFO], [
   curl_pflags=""
+  if test "$curl_cv_apple" = 'yes'; then
+    curl_pflags="${curl_pflags} APPLE"
+  fi
   case $host in
-    *-apple-*) curl_pflags="${curl_pflags} APPLE";;
+    *-*-*bsd*|*-*-aix*|*-*-hpux*|*-*-interix*|*-*-irix*|*-*-linux*|*-*-solaris*|*-*-sunos*|*-apple-*|*-*-cygwin*|*-*-msys*)
+      curl_pflags="${curl_pflags} UNIX";;
+  esac
+  case $host in
+    *-*-*bsd*)
+      curl_pflags="${curl_pflags} BSD";;
+  esac
+  case $host in
+    *-*-android*)
+      curl_pflags="${curl_pflags} ANDROID"
+      ANDROID_PLATFORM_LEVEL=`echo "$host_os" | $SED -ne 's/.*android\(@<:@0-9@:>@*\).*/\1/p'`
+      if test -n "${ANDROID_PLATFORM_LEVEL}"; then
+        curl_pflags="${curl_pflags}-${ANDROID_PLATFORM_LEVEL}"
+      fi
+      ;;
   esac
   if test "$curl_cv_native_windows" = 'yes'; then
     curl_pflags="${curl_pflags} WIN32"
-  else
-    case $host in
-      *-*-*bsd*|*-*-aix*|*-*-hpux*|*-*-interix*|*-*-irix*|*-*-linux*|*-*-solaris*|*-*-sunos*|*-apple-*|*-*-cygwin*|*-*-msys*)
-        curl_pflags="${curl_pflags} UNIX";;
-    esac
-    case $host in
-      *-*-*bsd*)
-        curl_pflags="${curl_pflags} BSD";;
-    esac
   fi
+  if test "$curl_cv_wince" = 'yes'; then
+    curl_pflags="${curl_pflags} WINCE"
+  fi
+  if test "$curl_cv_winuwp" = 'yes'; then
+    curl_pflags="${curl_pflags} UWP"
+  fi
+  case $host in
+    *-*-*bsd*|*-*-aix*|*-*-hpux*|*-*-interix*|*-*-irix*|*-*-linux*|*-*-solaris*|*-*-sunos*|*-apple-*|*-*-cygwin*|*-*-msys*)
+      curl_pflags="${curl_pflags} UNIX";;
+  esac
+  case $host in
+    *-*-*bsd*)
+      curl_pflags="${curl_pflags} BSD";;
+  esac
   if test "$curl_cv_cygwin" = 'yes'; then
     curl_pflags="${curl_pflags} CYGWIN"
   fi
   case $host_os in
-    msys*) curl_pflags="${curl_pflags} MSYS";;
+    msdos*) curl_pflags="${curl_pflags} DOS";;
+    amiga*) curl_pflags="${curl_pflags} AMIGA";;
   esac
   if test "x$compiler_id" = 'xGNU_C'; then
     curl_pflags="${curl_pflags} GCC"
@@ -1645,27 +1577,13 @@ dnl with very low deployment targets.
 dnl
 
 AC_DEFUN([CURL_DARWIN_CFLAGS], [
-
-  tst_cflags="no"
-  case $host in
-    *-apple-*)
-      tst_cflags="yes"
-      ;;
-  esac
-
-  AC_MSG_CHECKING([for good-to-use Darwin CFLAGS])
-  AC_MSG_RESULT([$tst_cflags]);
-
-  if test "$tst_cflags" = "yes"; then
-    old_CFLAGS=$CFLAGS
-    CFLAGS="$CFLAGS -Werror=partial-availability"
-    AC_MSG_CHECKING([whether $CC accepts -Werror=partial-availability])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
-      [AC_MSG_RESULT([yes])],
-      [AC_MSG_RESULT([no])
-      CFLAGS=$old_CFLAGS])
-  fi
-
+  old_CFLAGS=$CFLAGS
+  CFLAGS="$CFLAGS -Werror=partial-availability"
+  AC_MSG_CHECKING([whether $CC accepts -Werror=partial-availability])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+    [AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])
+    CFLAGS=$old_CFLAGS])
 ])
 
 

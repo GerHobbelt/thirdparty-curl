@@ -36,26 +36,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: check
         run: git ls-files -z "*.[ch]" | xargs -0 -n1 ./scripts/checksrc.pl
 
   codespell-cmakelint-pytype-ruff:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: install
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: >-
-          sudo apt-get install -y --no-install-suggests --no-install-recommends
-          codespell python3-pip python3-networkx python3-pydot python3-yaml
-          python3-toml python3-markupsafe python3-jinja2 python3-tabulate
-          python3-typing-extensions python3-libcst python3-impacket
-          python3-websockets python3-pytest &&
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get -o Dpkg::Use-Pty=0 update
+          sudo apt-get -o Dpkg::Use-Pty=0 install \
+            codespell python3-pip python3-networkx python3-pydot python3-yaml \
+            python3-toml python3-markupsafe python3-jinja2 python3-tabulate \
+            python3-typing-extensions python3-libcst python3-impacket \
+            python3-websockets python3-pytest
           python3 -m pip install --break-system-packages cmakelint==1.4.3 pytype==2024.9.13 ruff==0.6.8
 
       - name: spellcheck
@@ -79,16 +85,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@3ae3c6bdf1257ab19397fab11fd3312144692083 # v4
+        uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542 # v5
 
   miscchecks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: shellcheck
@@ -99,9 +109,6 @@ jobs:
 
       - name: yamlcheck
         run: .github/scripts/yamlcheck.sh
-
-      - name: binarycheck
-        run: .github/scripts/binarycheck.pl
 
       # we allow some extra in source code
       - name: badwords

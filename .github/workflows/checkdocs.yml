@@ -14,7 +14,8 @@ name: Docs
       - '*/ci'
     paths:
       - '.github/workflows/checkdocs.yml'
-      - '.github/scripts/**'
+      - '.github/scripts/mdlinkcheck'
+      - '/scripts/**'
       - '**.md'
       - 'docs/*'
   pull_request:
@@ -23,6 +24,7 @@ name: Docs
     paths:
       - '.github/workflows/checkdocs.yml'
       - '.github/scripts/**'
+      - '.github/scripts/mdlinkcheck'
       - '**.md'
       - 'docs/*'
 
@@ -37,13 +39,15 @@ jobs:
   #    runs-on: ubuntu-latest
   #    steps:
   #      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
+  #        with:
+  #          persist-credentials: false
   #        name: checkout
   #
   #      - name: install prereqs
   #        run: |
   #          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-  #          sudo apt-get install -y --no-install-suggests --no-install-recommends \
-  #            python3-proselint
+  #          sudo apt-get -o Dpkg::Use-Pty=0 update
+  #          sudo apt-get -o Dpkg::Use-Pty=0 install python3-proselint
   #
   #      # config file help: https://github.com/amperser/proselint/
   #      - name: create proselint config
@@ -84,43 +88,33 @@ jobs:
   #      - name: check special prose
   #        run: proselint docs/internals/CHECKSRC.md docs/libcurl/curl_mprintf.md docs/libcurl/opts/CURLOPT_INTERFACE.md docs/cmdline-opts/interface.md
 
-  # Docs: https://github.com/marketplace/actions/markdown-link-check
   linkcheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
-      - name: trim the cmdline docs markdown files
-        run: find docs/cmdline-opts -name "*.md" ! -name "_*" ! -name MANPAGE.md -print0 | xargs -0 -n1 .github/scripts/cleancmd.pl
-
-      - uses: gaurav-nelson/github-action-markdown-link-check@5c5dfc0ac2e225883c0e5f03a85311ec2830d368 # v1
-        with:
-          use-quiet-mode: 'yes'
+      - name: Run mdlinkcheck
+        run: ./scripts/mdlinkcheck
 
   spellcheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
-      - name: trim all man page *.md files
-        run: find docs -name "*.md" ! -name "_*" -print0 | xargs -0 -n1 .github/scripts/cleancmd.pl
-
-      - name: trim libcurl man page *.md files
-        run: find docs/libcurl \( -name "curl_*.md" -o -name "libcurl*.md" \) -print0 | xargs -0 -n1 .github/scripts/cleanspell.pl
-
-      - name: trim libcurl option man page *.md files
-        run: find docs/libcurl/opts -name "CURL*.md" -print0 | xargs -0 -n1 .github/scripts/cleanspell.pl
-
-      - name: trim cmdline docs markdown _*.md files
-        run: find docs/cmdline-opts -name "_*.md" -print0 | xargs -0 -n1 .github/scripts/cleancmd.pl --no-header
+      - name: trim all *.md files in docs/
+        run: .github/scripts/cleancmd.pl $(find docs -name "*.md")
 
       - name: setup the custom wordlist
         run: grep -v '^#' .github/scripts/spellcheck.words >  wordlist.txt
 
       - name: Check Spelling
-        uses: rojopolis/spellcheck-github-actions@74c2a1451c617e7dd9532340b199e18d5411b168 # v0
+        uses: rojopolis/spellcheck-github-actions@ed0756273a1658136c36d26e3d0353de35b98c8b # v0
         with:
           config_path: .github/scripts/spellcheck.yaml
 
@@ -128,10 +122,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: badwords
-        run: .github/scripts/badwords.pl < .github/scripts/badwords.txt docs/*.md docs/libcurl/*.md docs/libcurl/opts/*.md docs/cmdline-opts/*.md docs/TODO docs/KNOWN_BUGS tests/*.md
+        run: .github/scripts/badwords.pl < .github/scripts/badwords.txt `git ls-files '**.md'` docs/TODO docs/KNOWN_BUGS packages/OS400/README.OS400
 
       - name: verify-synopsis
         run: .github/scripts/verify-synopsis.pl docs/libcurl/curl*.md
@@ -140,6 +136,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: render nroff versions
@@ -149,10 +147,12 @@ jobs:
         run: .github/scripts/verify-examples.pl docs/libcurl/curl*.3 docs/libcurl/opts/*.3
 
   miscchecks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
         name: checkout
 
       - name: spacecheck

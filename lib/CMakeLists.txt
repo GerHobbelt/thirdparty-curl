@@ -23,16 +23,14 @@
 ###########################################################################
 set(LIB_NAME "libcurl")
 set(LIBCURL_OUTPUT_NAME "libcurl" CACHE STRING "Basename of the curl library")
-add_definitions("-DBUILDING_LIBCURL")
+set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS "BUILDING_LIBCURL")
+set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS "${CURL_DEBUG_MACROS}")
 
 configure_file("curl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/curl_config.h")
 
 # Get 'CSOURCES', 'HHEADERS' variables
-transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
+curl_transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
 include("${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
-
-# DllMain is added later for DLL builds only.
-list(REMOVE_ITEM CSOURCES "dllmain.c")
 
 list(APPEND HHEADERS "${CMAKE_CURRENT_BINARY_DIR}/curl_config.h")
 
@@ -55,6 +53,9 @@ if(CURL_BUILD_TESTING)
   )
   target_compile_definitions(curlu PUBLIC "UNITTESTS" "CURL_STATICLIB")
   target_link_libraries(curlu PRIVATE ${CURL_LIBS})
+  # There is plenty of parallelism when building the testdeps target.
+  # Override the curlu batch size with the maximum to optimize performance.
+  set_target_properties(curlu PROPERTIES UNITY_BUILD_BATCH_SIZE 0)
 endif()
 
 if(ENABLE_CURLDEBUG)
@@ -65,12 +66,28 @@ endif()
 
 ## Library definition
 
-# Add "_imp" as a suffix before the extension to avoid conflicting with
-# the statically linked "libcurl.lib" (typically with MSVC)
-if(WIN32 AND
-   NOT IMPORT_LIB_SUFFIX AND
-   CMAKE_STATIC_LIBRARY_SUFFIX STREQUAL CMAKE_IMPORT_LIBRARY_SUFFIX)
-  set(IMPORT_LIB_SUFFIX "_imp")
+if(NOT DEFINED IMPORT_LIB_SUFFIX)
+  # Suffix implib name with "_imp" by default, to avoid conflicting with
+  # the generated static "libcurl.lib" (typically with MSVC).
+  if(WIN32 AND BUILD_SHARED_LIBS AND
+     CMAKE_IMPORT_LIBRARY_SUFFIX STREQUAL CMAKE_STATIC_LIBRARY_SUFFIX)
+    set(IMPORT_LIB_SUFFIX "_imp")
+  else()
+    set(IMPORT_LIB_SUFFIX "")
+  endif()
+endif()
+if(NOT DEFINED STATIC_LIB_SUFFIX)
+  set(STATIC_LIB_SUFFIX "")
+endif()
+
+# Detect implib static lib filename collision
+if(WIN32 AND BUILD_STATIC_LIBS AND BUILD_SHARED_LIBS AND
+   "${IMPORT_LIB_SUFFIX}${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL
+   "${STATIC_LIB_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  message(FATAL_ERROR "Library suffix is the same ('${STATIC_LIB_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}') "
+    "for the import and static '${LIBCURL_OUTPUT_NAME}' library. "
+    "Set IMPORT_LIB_SUFFIX and/or STATIC_LIB_SUFFIX to different values, "
+    "or disable building either the shared or static library to avoid the filename collision.")
 endif()
 
 # Whether to do a single compilation pass for libcurl sources and reuse these
@@ -87,9 +104,9 @@ if(NOT DEFINED SHARE_LIB_OBJECT)
   endif()
 endif()
 
-if(SHARE_LIB_OBJECT)
+if(SHARE_LIB_OBJECT AND NOT CMAKE_VERSION VERSION_LESS 3.12)
   set(LIB_OBJECT "libcurl_object")
-  add_library(${LIB_OBJECT} OBJECT ${HHEADERS} ${CSOURCES})
+  add_library(${LIB_OBJECT} OBJECT ${HHEADERS} ${CSOURCES})  # Requires CMake 3.12
   if(WIN32)
     # Define CURL_STATICLIB always, to disable __declspec(dllexport) for
     # exported libcurl symbols. We handle exports via libcurl.def instead.
@@ -105,9 +122,7 @@ if(SHARE_LIB_OBJECT)
     set_property(TARGET ${LIB_OBJECT} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_HIDDEN_SYMBOLS")
   endif()
   if(CURL_HAS_LTO)
-    set_target_properties(${LIB_OBJECT} PROPERTIES
-      INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-      INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE)
+    set_target_properties(${LIB_OBJECT} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
 
   target_include_directories(${LIB_OBJECT} INTERFACE
@@ -125,22 +140,21 @@ if(BUILD_STATIC_LIBS)
   add_library(${LIB_STATIC} STATIC ${LIB_SOURCE})
   add_library(${PROJECT_NAME}::${LIB_STATIC} ALIAS ${LIB_STATIC})
   if(WIN32)
-    set_property(TARGET ${LIB_OBJECT} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_STATICLIB")
+    set_property(TARGET ${LIB_STATIC} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_STATICLIB")
   endif()
   target_link_libraries(${LIB_STATIC} PRIVATE ${CURL_LIBS})
   # Remove the "lib" prefix since the library is already named "libcurl".
   set_target_properties(${LIB_STATIC} PROPERTIES
     PREFIX "" OUTPUT_NAME "${LIBCURL_OUTPUT_NAME}"
     SUFFIX "${STATIC_LIB_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}"
-    INTERFACE_COMPILE_DEFINITIONS "CURL_STATICLIB")
+    INTERFACE_COMPILE_DEFINITIONS "CURL_STATICLIB"
+    INTERFACE_LINK_DIRECTORIES "${CURL_LIBDIRS}")
   if(CURL_HIDES_PRIVATE_SYMBOLS)
     set_property(TARGET ${LIB_STATIC} APPEND PROPERTY COMPILE_FLAGS "${CURL_CFLAG_SYMBOLS_HIDE}")
     set_property(TARGET ${LIB_STATIC} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_HIDDEN_SYMBOLS")
   endif()
   if(CURL_HAS_LTO)
-    set_target_properties(${LIB_STATIC} PROPERTIES
-      INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-      INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE)
+    set_target_properties(${LIB_STATIC} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
 
   target_include_directories(${LIB_STATIC} INTERFACE
@@ -177,9 +191,7 @@ if(BUILD_SHARED_LIBS)
     set_property(TARGET ${LIB_SHARED} APPEND PROPERTY COMPILE_DEFINITIONS "CURL_HIDDEN_SYMBOLS")
   endif()
   if(CURL_HAS_LTO)
-    set_target_properties(${LIB_SHARED} PROPERTIES
-      INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-      INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE)
+    set_target_properties(${LIB_SHARED} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
 
   target_include_directories(${LIB_SHARED} INTERFACE
@@ -208,7 +220,7 @@ if(BUILD_SHARED_LIBS)
 
   if(CURL_LIBCURL_SOVERSION OR CURL_LIBCURL_VERSIONED_SYMBOLS)
     # Get 'VERSIONCHANGE', 'VERSIONADD', 'VERSIONDEL', 'VERSIONINFO' variables
-    transform_makefile_inc("Makefile.soname" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.soname.cmake")
+    curl_transform_makefile_inc("Makefile.soname" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.soname.cmake")
     include("${CMAKE_CURRENT_BINARY_DIR}/Makefile.soname.cmake")
 
     math(EXPR _cmakesoname "${VERSIONCHANGE} - ${VERSIONDEL}")

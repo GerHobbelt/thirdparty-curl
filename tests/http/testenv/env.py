@@ -24,6 +24,7 @@
 #
 ###########################################################################
 #
+import gzip
 import logging
 import os
 import re
@@ -32,6 +33,7 @@ import socket
 import subprocess
 import tempfile
 from configparser import ConfigParser, ExtendedInterpolation
+from datetime import timedelta
 from typing import Optional
 
 from .certs import CertificateSpec, Credentials, TestCA
@@ -126,7 +128,6 @@ class EnvConfig:
             'ws': socket.SOCK_STREAM,
         })
         self.httpd = self.config['httpd']['httpd']
-        self.apachectl = self.config['httpd']['apachectl']
         self.apxs = self.config['httpd']['apxs']
         if len(self.apxs) == 0:
             self.apxs = None
@@ -143,11 +144,14 @@ class EnvConfig:
         self.domain2 = f"two.{self.tld}"
         self.ftp_domain = f"ftp.{self.tld}"
         self.proxy_domain = f"proxy.{self.tld}"
+        self.expired_domain = f"expired.{self.tld}"
         self.cert_specs = [
             CertificateSpec(domains=[self.domain1, self.domain1brotli, 'localhost', '127.0.0.1'], key_type='rsa2048'),
             CertificateSpec(domains=[self.domain2], key_type='rsa2048'),
             CertificateSpec(domains=[self.ftp_domain], key_type='rsa2048'),
             CertificateSpec(domains=[self.proxy_domain, '127.0.0.1'], key_type='rsa2048'),
+            CertificateSpec(domains=[self.expired_domain], key_type='rsa2048',
+                            valid_from=timedelta(days=-100), valid_to=timedelta(days=-10)),
             CertificateSpec(name="clientsX", sub_specs=[
                CertificateSpec(name="user1", client=True),
             ]),
@@ -253,7 +257,6 @@ class EnvConfig:
 
     def is_complete(self) -> bool:
         return os.path.isfile(self.httpd) and \
-               os.path.isfile(self.apachectl) and \
                self.apxs is not None and \
                os.path.isfile(self.apxs)
 
@@ -262,8 +265,6 @@ class EnvConfig:
             return 'httpd not configured, see `--with-test-httpd=<path>`'
         if not os.path.isfile(self.httpd):
             return f'httpd ({self.httpd}) not found'
-        if not os.path.isfile(self.apachectl):
-            return f'apachectl ({self.apachectl}) not found'
         if self.apxs is None:
             return "command apxs not found (commonly provided in apache2-dev)"
         if not os.path.isfile(self.apxs):
@@ -380,6 +381,18 @@ class Env:
     @staticmethod
     def curl_is_debug() -> bool:
         return Env.CONFIG.curl_is_debug
+
+    @staticmethod
+    def curl_can_early_data() -> bool:
+        return Env.curl_uses_lib('gnutls') or \
+            Env.curl_uses_lib('wolfssl') or \
+            Env.curl_uses_lib('quictls') or \
+            Env.curl_uses_lib('openssl')
+
+    @staticmethod
+    def curl_can_h3_early_data() -> bool:
+        return Env.curl_can_early_data() and \
+            Env.curl_uses_lib('ngtcp2')
 
     @staticmethod
     def have_h3() -> bool:
@@ -503,6 +516,10 @@ class Env:
         return self.CONFIG.proxy_domain
 
     @property
+    def expired_domain(self) -> str:
+        return self.CONFIG.expired_domain
+
+    @property
     def http_port(self) -> int:
         return self.CONFIG.ports['http']
 
@@ -571,10 +588,6 @@ class Env:
         return self.CONFIG.httpd
 
     @property
-    def apachectl(self) -> str:
-        return self.CONFIG.apachectl
-
-    @property
     def apxs(self) -> str:
         return self.CONFIG.apxs
 
@@ -617,4 +630,25 @@ class Env:
             if remain != 0:
                 i = int(fsize / line_length) + 1
                 fd.write(f"{i:09d}-{s}"[0:remain-1] + "\n")
+        return fpath
+
+    def make_data_gzipbomb(self, indir: str, fname: str, fsize: int) -> str:
+        fpath = os.path.join(indir, fname)
+        gzpath = f'{fpath}.gz'
+        varpath = f'{fpath}.var'
+
+        with open(fpath, 'w') as fd:
+            fd.write('not what we are looking for!\n')
+        count = int(fsize / 1024)
+        zero1k = bytearray(1024)
+        with gzip.open(gzpath, 'wb') as fd:
+            for _ in range(count):
+                fd.write(zero1k)
+        with open(varpath, 'w') as fd:
+            fd.write(f'URI: {fname}\n')
+            fd.write('\n')
+            fd.write(f'URI: {fname}.gz\n')
+            fd.write('Content-Type: text/plain\n')
+            fd.write('Content-Encoding: x-gzip\n')
+            fd.write('\n')
         return fpath

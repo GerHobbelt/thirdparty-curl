@@ -37,7 +37,7 @@
 
 #include "memdebug.h"
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(CURL_GNUC_DIAG) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 #pragma GCC diagnostic ignored "-Wformat-extra-args"
@@ -1207,6 +1207,46 @@ static int test_pos_arguments(void)
   return errors;
 }
 
+static int test_width_precision(void)
+{
+  /* 325 is max precision (and width) for a double */
+  char larger[1024];
+#define SPACE60 "                                                            "
+#define SPACE300 SPACE60 SPACE60 SPACE60 SPACE60 SPACE60
+#define OK325 SPACE300 "                        0"
+
+  int rc;
+  int errors = 0;
+  rc = curl_msnprintf(larger, sizeof(larger), "%325.325f", 0.1);
+  if(rc != 325)
+    errors++;
+  errors += string_check(larger, OK325);
+
+  rc = curl_msnprintf(larger, sizeof(larger), "%326.326f", 0.1);
+  if(rc != 325)
+    errors++;
+  errors += string_check(larger, OK325);
+
+  rc = curl_msnprintf(larger, sizeof(larger), "%1000.1000f", 0.1);
+  if(rc != 325)
+    errors++;
+  errors += string_check(larger, OK325);
+
+  rc = curl_msnprintf(larger, sizeof(larger), "%324.324f", 0.1);
+  if(rc != 324)
+    errors++;
+  rc = curl_msnprintf(larger, sizeof(larger), "%324.0f", 0.1);
+  if(rc != 324)
+    errors++;
+  rc = curl_msnprintf(larger, sizeof(larger), "%0.324f", 0.1);
+  if(rc != 325)
+    errors++;
+
+  return errors;
+}
+
+
+
 static int test_weird_arguments(void)
 {
   int errors = 0;
@@ -1214,21 +1254,21 @@ static int test_weird_arguments(void)
   int rc;
 
   /* verify %% */
-  rc = curl_msnprintf(buf, sizeof(buf), "%-20d%% right? %%", 500);
+  (void)curl_msnprintf(buf, sizeof(buf), "%-20d%% right? %%", 500);
   errors += string_check(buf, "500                 % right? %");
 
   /* 100 x % */
-  rc = curl_msnprintf(buf, sizeof(buf), "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-                      "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-                      "%%%%%%%%%%%%%%%%%%%%%%");
+  (void)curl_msnprintf(buf, sizeof(buf), "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+                       "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+                       "%%%%%%%%%%%%%%%%%%%%%%");
   /* 50 x % */
   errors += string_check(buf, "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
                          "%%%%%%%%%%%%%%%");
 
-  rc = curl_msnprintf(buf, sizeof(buf), "%2 AA %d %K", 500, 501, 502);
+  (void)curl_msnprintf(buf, sizeof(buf), "%2 AA %d %K", 500, 501, 502);
   errors += string_check(buf, "%2 AA 500 %K");
 
-  rc = curl_msnprintf(buf, sizeof(buf), "%2 %d %K", 500, 501, 502);
+  (void)curl_msnprintf(buf, sizeof(buf), "%2 %d %K", 500, 501, 502);
   errors += string_check(buf, "%2 500 %K");
 
   /* MAX_PARAMETERS is 128, try exact 128! */
@@ -1319,6 +1359,8 @@ static int test_weird_arguments(void)
   }
 
   errors += string_check(buf, "");
+
+  errors += test_width_precision();
 
   if(errors)
     printf("Some curl_mprintf() weird arguments tests failed!\n");
@@ -1559,6 +1601,6 @@ CURLcode test(char *URL)
     return CURLE_OK;
 }
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(CURL_GNUC_DIAG) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif

@@ -28,14 +28,6 @@
 #  include <locale.h> /* for setlocale() */
 #endif
 
-#ifdef HAVE_IO_H
-#  include <io.h> /* for setmode() */
-#endif
-
-#ifdef HAVE_FCNTL_H
-#  include <fcntl.h> /* for setmode() */
-#endif
-
 #ifdef CURLDEBUG
 #  define MEMDEBUG_NODEFINES
 #  include "memdebug.h"
@@ -43,11 +35,13 @@
 
 #include "timediff.h"
 
+#include "tool_binmode.h"
+
 int select_wrapper(int nfds, fd_set *rd, fd_set *wr, fd_set *exc,
                    struct timeval *tv)
 {
   if(nfds < 0) {
-    SET_SOCKERRNO(EINVAL);
+    SET_SOCKERRNO(SOCKEINVAL);
     return -1;
   }
 #ifdef USE_WINSOCK
@@ -81,6 +75,7 @@ void wait_ms(int ms)
 
 char *libtest_arg2 = NULL;
 char *libtest_arg3 = NULL;
+char *libtest_arg4 = NULL;
 int test_argc;
 char **test_argv;
 
@@ -141,13 +136,7 @@ int main(int argc, char **argv)
   int basearg;
   test_func_t test_func;
 
-#ifdef O_BINARY
-#  ifdef __HIGHC__
-  _setmode(stdout, O_BINARY);
-#  else
-  setmode(fileno(stdout), O_BINARY);
-#  endif
-#endif
+  CURL_SET_BINMODE(stdout);
 
   memory_tracking_init();
 
@@ -181,7 +170,7 @@ int main(int argc, char **argv)
     test_func = NULL;
     {
       size_t tmp;
-      for(tmp = 0; tmp < (sizeof(s_tests)/sizeof((s_tests)[0])); ++tmp) {
+      for(tmp = 0; tmp < CURL_ARRAYSIZE(s_tests); ++tmp) {
         if(strcmp(test_name, s_tests[tmp].name) == 0) {
           test_func = s_tests[tmp].ptr;
           break;
@@ -193,8 +182,6 @@ int main(int argc, char **argv)
       fprintf(stderr, "Test '%s' not found.\n", test_name);
       return 1;
     }
-
-    fprintf(stderr, "Test: %s\n", test_name);
   }
 #else
   basearg = 1;
@@ -212,6 +199,9 @@ int main(int argc, char **argv)
 
   if(argc > (basearg + 2))
     libtest_arg3 = argv[basearg + 2];
+
+  if(argc > (basearg + 2))
+    libtest_arg4 = argv[basearg + 3];
 
   URL = argv[basearg]; /* provide this to the rest */
 

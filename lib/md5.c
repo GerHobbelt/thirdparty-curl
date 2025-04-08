@@ -106,7 +106,8 @@ static void my_md5_final(unsigned char *digest, void *ctx)
   md5_digest(ctx, 16, digest);
 }
 
-#elif defined(USE_OPENSSL_MD5) || defined(USE_WOLFSSL_MD5)
+#elif defined(USE_OPENSSL_MD5) || \
+  (defined(USE_WOLFSSL_MD5) && !defined(OPENSSL_COEXIST))
 
 typedef MD5_CTX my_md5_ctx;
 
@@ -128,6 +129,30 @@ static void my_md5_update(void *ctx,
 static void my_md5_final(unsigned char *digest, void *ctx)
 {
   (void)MD5_Final(digest, ctx);
+}
+
+#elif defined(USE_WOLFSSL_MD5)
+
+typedef WOLFSSL_MD5_CTX my_md5_ctx;
+
+static CURLcode my_md5_init(void *ctx)
+{
+  if(!wolfSSL_MD5_Init(ctx))
+    return CURLE_OUT_OF_MEMORY;
+
+  return CURLE_OK;
+}
+
+static void my_md5_update(void *ctx,
+                          const unsigned char *input,
+                          unsigned int len)
+{
+  (void)wolfSSL_MD5_Update(ctx, input, len);
+}
+
+static void my_md5_final(unsigned char *digest, void *ctx)
+{
+  (void)wolfSSL_MD5_Final(digest, ctx);
 }
 
 #elif defined(USE_MBEDTLS)
@@ -227,7 +252,11 @@ static void my_md5_update(void *in,
                           unsigned int inputLen)
 {
   my_md5_ctx *ctx = in;
-  CryptHashData(ctx->hHash, (unsigned char *)input, inputLen, 0);
+#ifdef __MINGW32CE__
+  CryptHashData(ctx->hHash, (BYTE *)CURL_UNCONST(input), inputLen, 0);
+#else
+  CryptHashData(ctx->hHash, (const BYTE *)input, inputLen, 0);
+#endif
 }
 
 static void my_md5_final(unsigned char *digest, void *in)
@@ -331,7 +360,7 @@ static void my_md5_final(unsigned char *result, void *ctx);
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define MD5_SET(n) \
-        (*(MD5_u32plus *)(void *)&ptr[(n) * 4])
+        (*(const MD5_u32plus *)(const void *)&ptr[(n) * 4])
 #define MD5_GET(n) \
         MD5_SET(n)
 #else

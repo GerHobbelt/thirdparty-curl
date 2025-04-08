@@ -45,7 +45,13 @@
 #ifdef _WIN32
 #  undef  PATH_MAX
 #  define PATH_MAX MAX_PATH
+#elif !defined(__DJGPP__) || (__DJGPP__ < 2)  /* DJGPP 2.0 has _use_lfn() */
+#  define _use_lfn(f) (0)  /* long filenames never available */
+#elif defined(__DJGPP__)
+#  include <fcntl.h>       /* _use_lfn(f) prototype */
 #endif
+
+#ifdef MSDOS
 
 #ifndef S_ISCHR
 #  ifdef S_IFCHR
@@ -55,15 +61,6 @@
 #  endif
 #endif
 
-#ifdef _WIN32
-#  define _use_lfn(f) (1)   /* long filenames always available */
-#elif !defined(__DJGPP__) || (__DJGPP__ < 2)  /* DJGPP 2.0 has _use_lfn() */
-#  define _use_lfn(f) (0)  /* long filenames never available */
-#elif defined(__DJGPP__)
-#  include <fcntl.h>                /* _use_lfn(f) prototype */
-#endif
-
-#ifdef MSDOS
 /* only used by msdosify() */
 static SANITIZEcode truncate_dryrun(const char *path,
                                     const size_t truncate_pos);
@@ -180,7 +177,6 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
 
     if(clip) {
       *clip = '\0';
-      len = clip - target;
     }
   }
 
@@ -216,7 +212,7 @@ SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
   return SANITIZE_ERR_OK;
 }
 
-#if defined(MSDOS)
+#ifdef MSDOS
 /*
 Test if truncating a path to a file will leave at least a single character in
 the filename. Filenames suffixed by an alternate data stream cannot be
@@ -242,7 +238,8 @@ SANITIZE_ERR_OK: Good -- 'path' can be truncated
 SANITIZE_ERR_INVALID_PATH: Bad -- 'path' cannot be truncated
 != SANITIZE_ERR_OK && != SANITIZE_ERR_INVALID_PATH: Error
 */
-SANITIZEcode truncate_dryrun(const char *path, const size_t truncate_pos)
+static SANITIZEcode truncate_dryrun(const char *path,
+                                    const size_t truncate_pos)
 {
   size_t len;
 
@@ -291,8 +288,8 @@ sanitize_file_name.
 Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
 Failure: (!= SANITIZE_ERR_OK) *sanitized is NULL.
 */
-SANITIZEcode msdosify(char **const sanitized, const char *file_name,
-                      int flags)
+static SANITIZEcode msdosify(char **const sanitized, const char *file_name,
+                             int flags)
 {
   char dos_name[PATH_MAX];
   static const char illegal_chars_dos[] = ".+, ;=[]" /* illegal in DOS */
@@ -418,7 +415,7 @@ SANITIZEcode msdosify(char **const sanitized, const char *file_name,
   }
 
   *sanitized = strdup(dos_name);
-  return (*sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY);
+  return *sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY;
 }
 #endif /* MSDOS */
 
@@ -547,11 +544,10 @@ static SANITIZEcode rename_if_reserved_dos(char **const sanitized,
 #endif
 
   *sanitized = strdup(fname);
-  return (*sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY);
+  return *sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY;
 }
 
-#if defined(MSDOS) && (defined(__DJGPP__) || defined(__GO32__))
-
+#ifdef __DJGPP__
 /*
  * Disable program default argument globbing. We do it on our own.
  */
@@ -560,12 +556,11 @@ char **__crt0_glob_function(char *arg)
   (void)arg;
   return (char **)0;
 }
-
-#endif /* MSDOS && (__DJGPP__ || __GO32__) */
+#endif
 
 #ifdef _WIN32
 
-#if !defined(CURL_WINDOWS_UWP) && \
+#if !defined(CURL_WINDOWS_UWP) && !defined(UNDER_CE) && \
   !defined(CURL_DISABLE_CA_SEARCH) && !defined(CURL_CA_SEARCH_SAFE)
 /* Search and set the CA cert file for Windows.
  *
@@ -599,7 +594,7 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
   res_len = SearchPath(NULL, bundle_file, NULL, PATH_MAX, buf, &ptr);
   if(res_len > 0) {
     char *mstr = curlx_convert_tchar_to_UTF8(buf);
-    Curl_safefree(config->cacert);
+    curlx_safefree(config->cacert);
     if(mstr)
       config->cacert = strdup(mstr);
     curlx_unicodefree(mstr);
@@ -616,9 +611,10 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
  */
 struct curl_slist *GetLoadedModulePaths(void)
 {
+  struct curl_slist *slist = NULL;
+#if !defined(CURL_WINDOWS_UWP) && !defined(UNDER_CE)
   HANDLE hnd = INVALID_HANDLE_VALUE;
   MODULEENTRY32 mod = {0};
-  struct curl_slist *slist = NULL;
 
   mod.dwSize = sizeof(MODULEENTRY32);
 
@@ -661,12 +657,13 @@ error:
 cleanup:
   if(hnd != INVALID_HANDLE_VALUE)
     CloseHandle(hnd);
+#endif
   return slist;
 }
 
 bool tool_term_has_bold;
 
-#ifndef CURL_WINDOWS_UWP
+#if !defined(CURL_WINDOWS_UWP) && !defined(UNDER_CE)
 /* The terminal settings to restore on exit */
 static struct TerminalSettings {
   HANDLE hStdOut;
@@ -734,22 +731,10 @@ static void init_terminal(void)
 }
 #endif
 
-LARGE_INTEGER tool_freq;
-bool tool_isVistaOrGreater;
-
 CURLcode win32_init(void)
 {
-  /* curlx_verify_windows_version must be called during init at least once
-     because it has its own initialization routine. */
-  if(curlx_verify_windows_version(6, 0, 0, PLATFORM_WINNT,
-                                  VERSION_GREATER_THAN_EQUAL))
-    tool_isVistaOrGreater = true;
-  else
-    tool_isVistaOrGreater = false;
-
-  QueryPerformanceFrequency(&tool_freq);
-
-#ifndef CURL_WINDOWS_UWP
+  curlx_now_init();
+#if !defined(CURL_WINDOWS_UWP) && !defined(UNDER_CE)
   init_terminal();
 #endif
 

@@ -269,6 +269,7 @@ DPAGES = \
   ssl-no-revoke.md \
   ssl-reqd.md \
   ssl-revoke-best-effort.md \
+  ssl-sessions.md \
   ssl.md \
   sslv2.md \
   sslv3.md \
@@ -300,6 +301,7 @@ DPAGES = \
   trace.md \
   unix-socket.md \
   upload-file.md \
+  upload-flags.md \
   url.md \
   url-query.md \
   use-ascii.md \

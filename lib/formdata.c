@@ -31,10 +31,6 @@ struct Curl_easy;
 #include "formdata.h"
 #if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_FORM_API)
 
-#if defined(HAVE_LIBGEN_H) && defined(HAVE_BASENAME)
-#include <libgen.h>
-#endif
-
 #include "urldata.h" /* for struct Curl_easy */
 #include "mime.h"
 #include "vtls/vtls.h"
@@ -241,7 +237,7 @@ CURLFORMcode FormAdd(struct curl_httppost **httppost,
     if(array_state && forms) {
       /* get the upcoming option from the given array */
       option = forms->option;
-      array_value = (char *)forms->value;
+      array_value = (char *)CURL_UNCONST(forms->value);
 
       forms++; /* advance this to next entry */
       if(CURLFORM_END == option) {
@@ -793,7 +789,7 @@ static CURLcode setname(curl_mimepart *part, const char *name, size_t len)
 /* wrap call to fseeko so it matches the calling convention of callback */
 static int fseeko_wrapper(void *stream, curl_off_t offset, int whence)
 {
-#if defined(HAVE__FSEEKI64)
+#if defined(_WIN32) && defined(USE_WIN32_LARGE_FILES)
   return _fseeki64(stream, (__int64)offset, whence);
 #elif defined(HAVE_FSEEKO) && defined(HAVE_DECL_FSEEKO)
   return fseeko(stream, (off_t)offset, whence);

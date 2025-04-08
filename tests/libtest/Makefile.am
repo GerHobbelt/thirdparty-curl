@@ -35,6 +35,7 @@ AUTOMAKE_OPTIONS = foreign nostdinc
 AM_CPPFLAGS = -I$(top_srcdir)/include        \
               -I$(top_builddir)/lib          \
               -I$(top_srcdir)/lib            \
+              -I$(top_srcdir)/src            \
               -I$(top_srcdir)/tests/libtest
 
 EXTRA_DIST = test307.pl test610.pl test613.pl test1013.pl test1022.pl   \
@@ -64,6 +65,12 @@ noinst_LTLIBRARIES =
 if USE_CPPFLAG_CURL_STATICLIB
 AM_CPPFLAGS += -DCURL_STATICLIB
 endif
+if DEBUGBUILD
+AM_CPPFLAGS += -DDEBUGBUILD
+endif
+if CURLDEBUG
+AM_CPPFLAGS += -DCURLDEBUG
+endif
 
 AM_LDFLAGS =
 AM_CFLAGS =
@@ -89,9 +96,7 @@ libstubgss_la_DEPENDENCIES =
 endif
 
 if USE_TEST_BUNDLES
-AM_CPPFLAGS += -DCURL_NO_GETADDRINFO_OVERRIDE
-
-libtest_bundle.c: $(top_srcdir)/tests/mk-bundle.pl lib1521.c
+libtest_bundle.c: $(top_srcdir)/tests/mk-bundle.pl Makefile.inc $(FIRSTFILES) lib1521.c
 	@PERL@ $(top_srcdir)/tests/mk-bundle.pl $(srcdir) > libtest_bundle.c
 
 noinst_PROGRAMS = libtests
@@ -103,7 +108,7 @@ CLEANFILES += libtest_bundle.c
 if USE_CPPFLAG_CURL_STATICLIB
 else
 # These are part of the libcurl static lib. Add them here when linking shared.
-libtests_SOURCES += $(WARNLESS) $(MULTIBYTE) $(TIMEDIFF) $(THREADS)
+libtests_SOURCES += $(WARNLESS) $(MULTIBYTE) $(INET_PTON) $(TIMEDIFF) $(THREADS)
 endif
 else
 noinst_PROGRAMS = $(LIBTESTPROGS)
@@ -117,8 +122,11 @@ CS_0 = @echo "  RUN     " $@;
 CS_1 =
 CS_ = $(CS_0)
 
+# ignore generated C files since they play by slightly different rules!
 checksrc:
-	$(CHECKSRC)@PERL@ $(top_srcdir)/scripts/checksrc.pl -D$(srcdir) $(srcdir)/*.[ch]
+	$(CHECKSRC)(@PERL@ $(top_srcdir)/scripts/checksrc.pl -D$(srcdir) \
+	  -W$(srcdir)/libtest_bundle.c \
+	  $(srcdir)/*.[ch])
 
 if DEBUGBUILD
 # for debug builds, we scan the sources on all regular make invokes

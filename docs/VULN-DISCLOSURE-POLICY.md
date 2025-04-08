@@ -153,6 +153,15 @@ levels depending how serious we consider the problem to be. We use **Low**,
 **Medium**, **High** and **Critical**. We refrain from using numerical scoring
 of vulnerabilities.
 
+We do not support CVSS as a method to grade security vulnerabilities, so we do
+not set them for CVE records published by the curl project. We believe CVSS is
+a broken system that often does not properly evaluate to suitable severity
+levels that reflect all dimensions and factors involved. Other organizations
+however set and provide CVSS scores for curl vulnerabilities. You need to
+decide for yourself if you believe they know enough about the subjects
+involved to make reasonable assessments. Deciding between four different
+severity levels is hard enough for us.
+
 When deciding severity level on a particular issue, we take all the factors
 into account: attack vector, attack complexity, required privileges, necessary
 build configuration, protocols involved, platform specifics and also what
@@ -238,11 +247,11 @@ local system or network, the bar is raised. If a local user wrongfully has
 elevated rights on your system enough to attack curl, they can probably
 already do much worse harm and the problem is not really in curl.
 
-## Experiments
+## Debug & Experiments
 
 Vulnerabilities in features which are off by default (in the build) and
-documented as experimental, are not eligible for a reward and we do not
-consider them security problems.
+documented as experimental, or exist only in debug mode, are not eligible for a
+reward and we do not consider them security problems.
 
 ## URL inconsistencies
 
@@ -313,3 +322,18 @@ that being the end of the world.
 
 There need to be more and special circumstances to treat such problems as
 security issues.
+
+## Legacy dependencies
+
+Problems that can be triggered only by the use of a *legacy dependency* are
+not considered security problems.
+
+A *legacy dependency* is here defined as:
+
+- the legacy version was released over ten years ago AND
+
+- the legacy version is no longer in use by any existing still supported
+  operating system or distribution AND
+
+- there are modern versions of equivalent or better functionality offered and
+  in common use
