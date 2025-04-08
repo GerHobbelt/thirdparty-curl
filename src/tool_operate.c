@@ -1513,6 +1513,22 @@ static CURLcode config2setopts(struct GlobalConfig *global,
     // printf("setting is %s\n", config->tls_extension_order);
     my_setopt_str(curl, CURLOPT_TLS_EXTENSION_ORDER, config->tls_extension_order);
 
+  /* curl-impersonate */
+  if (config->tls_use_new_alps_codepoint)
+    my_setopt(curl, CURLOPT_TLS_USE_NEW_ALPS_CODEPOINT, 1L);
+
+  /* curl-impersonate */
+  if(config->tls_delegated_credentials)
+    my_setopt_str(curl, CURLOPT_TLS_DELEGATED_CREDENTIALS, config->tls_delegated_credentials);
+ 
+  /* curl-impersonate */
+  if(config->tls_record_size_limit)
+    my_setopt(curl, CURLOPT_TLS_RECORD_SIZE_LIMIT, config->tls_record_size_limit);
+ 
+  /* curl-impersonate */
+  if(config->tls_key_shares_limit)
+    my_setopt(curl, CURLOPT_TLS_KEY_SHARES_LIMIT, config->tls_key_shares_limit);
+
   /* new in libcurl 7.9.2: */
   if(config->disable_epsv)
     /* disable it */
@@ -1719,8 +1735,12 @@ static CURLcode config2setopts(struct GlobalConfig *global,
     my_setopt(curl, CURLOPT_SSL_ENABLE_TICKET, 0L);
   }
 
-  // curl-impersonate: always enable thess two for browsers
-  my_setopt(curl, CURLOPT_TLS_SIGNED_CERT_TIMESTAMPS, 1L);
+  // curl-impersonate
+  if(config->tls_signed_cert_timestamps) {
+    my_setopt(curl, CURLOPT_TLS_SIGNED_CERT_TIMESTAMPS, 1L);
+  }
+
+  // curl-impersonate: always enable this
   my_setopt(curl, CURLOPT_TLS_STATUS_REQUEST, 1L);
 
   /* new in 7.40.0, abstract support added in 7.53.0 */

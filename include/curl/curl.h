@@ -2323,6 +2323,18 @@ typedef enum {
   /* curl-impersonate: enable tls status request */
   CURLOPT(CURLOPT_TLS_STATUS_REQUEST, CURLOPTTYPE_LONG, 1016),
 
+  /* curl-impersonate: firefox delegated credentials */
+  CURLOPT(CURLOPT_TLS_DELEGATED_CREDENTIALS, CURLOPTTYPE_STRINGPOINT, 1017),
+
+  /* curl-impersonate: firefox record size limit */
+  CURLOPT(CURLOPT_TLS_RECORD_SIZE_LIMIT, CURLOPTTYPE_LONG, 1018),
+
+  /* curl-impersonate: firefox key_shares_limit */
+  CURLOPT(CURLOPT_TLS_KEY_SHARES_LIMIT, CURLOPTTYPE_LONG, 1019),
+
+  /* curl-impersonate: Use the new ALPS code point */
+  CURLOPT(CURLOPT_TLS_USE_NEW_ALPS_CODEPOINT, CURLOPTTYPE_LONG, 1020),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

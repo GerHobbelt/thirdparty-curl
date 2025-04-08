@@ -1,7 +1,3 @@
-/***************************************************************************
- * Copyright (C) curl-impersonate developers
- ***************************************************************************/
-
 #include "curl_setup.h"
 
 #include <curl/curl.h>
@@ -53,6 +49,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -99,6 +97,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -145,6 +145,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -191,6 +193,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -237,6 +241,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -284,6 +290,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -331,6 +339,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -377,8 +387,10 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -425,8 +437,10 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -473,8 +487,10 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -523,8 +539,10 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -573,8 +591,62 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
+    .tls_grease = true
+  },
+  {
+    .target = "chrome133a",
+    .httpversion = CURL_HTTP_VERSION_2_0,
+    .ssl_version = CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT,
+    .ciphers =
+      "TLS_AES_128_GCM_SHA256,"
+      "TLS_AES_256_GCM_SHA384,"
+      "TLS_CHACHA20_POLY1305_SHA256,"
+      "ECDHE-ECDSA-AES128-GCM-SHA256,"
+      "ECDHE-RSA-AES128-GCM-SHA256,"
+      "ECDHE-ECDSA-AES256-GCM-SHA384,"
+      "ECDHE-RSA-AES256-GCM-SHA384,"
+      "ECDHE-ECDSA-CHACHA20-POLY1305,"
+      "ECDHE-RSA-CHACHA20-POLY1305,"
+      "ECDHE-RSA-AES128-SHA,"
+      "ECDHE-RSA-AES256-SHA,"
+      "AES128-GCM-SHA256,"
+      "AES256-GCM-SHA384,"
+      "AES128-SHA,"
+      "AES256-SHA",
+    .curves = "X25519MLKEM768:X25519:P-256:P-384",
+    .npn = false,
+    .alpn = true,
+    .alps = true,
+    .tls_permute_extensions = true,
+    .tls_session_ticket = true,
+    .cert_compression = "brotli",
+    .http_headers = {
+      "sec-ch-ua: \"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"",
+      "sec-ch-ua-mobile: ?0",
+      "sec-ch-ua-platform: \"macOS\"",
+      "Upgrade-Insecure-Requests: 1",
+      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "Sec-Fetch-Site: none",
+      "Sec-Fetch-Mode: navigate",
+      "Sec-Fetch-User: ?1",
+      "Sec-Fetch-Dest: document",
+      "Accept-Encoding: gzip, deflate, br, zstd",
+      "Accept-Language: en-US,en;q=0.9",
+      "Priority: u=0, i"
+    },
+    .http2_settings = "1:65536;2:0;4:6291456;6:262144",
+    .http2_window_update = 15663105,
+    .http2_stream_weight = 256,
+    .http2_stream_exclusive = 1,
+    .ech = "grease",
+    .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = true,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -621,6 +693,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -669,8 +743,10 @@ const struct impersonate_opts impersonations[] = {
     .http2_window_update = 15663105,
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
-    .ech = "GREASE",
+    .ech = "grease",
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -717,6 +793,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -763,6 +841,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 1,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -825,6 +905,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 255,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -882,6 +964,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 255,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -942,6 +1026,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 255,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -1002,6 +1088,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -1062,6 +1150,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 255,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -1122,6 +1212,8 @@ const struct impersonate_opts impersonations[] = {
     .http2_stream_weight = 256,
     .http2_stream_exclusive = 0,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
@@ -1181,10 +1273,12 @@ const struct impersonate_opts impersonations[] = {
     .http2_pseudo_headers_order = "mspa",
     .http2_stream_weight = 255,
     .tls_extension_order = NULL,
+    .tls_use_new_alps_codepoint = false,
+    .tls_signed_cert_timestamps = true,
     .tls_grease = true
   },
   {
-    .target = "firefox120", /* not working */
+    .target = "firefox133",
     .httpversion = CURL_HTTP_VERSION_2_0,
     .ssl_version = CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT,
     .ciphers =
@@ -1206,23 +1300,168 @@ const struct impersonate_opts impersonations[] = {
       "TLS_RSA_WITH_AES_128_CBC_SHA,"
       "TLS_RSA_WITH_AES_256_CBC_SHA",
     .http_headers = {
-      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
-      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0",
+      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language: en-US,en;q=0.5",
-      "Accept-Encoding: gzip, deflate, br",
+      "Accept-Encoding: gzip, deflate, br, zstd",
       "Upgrade-Insecure-Requests: 1",
       "Sec-Fetch-Dest: document",
       "Sec-Fetch-Mode: navigate",
       "Sec-Fetch-Site: none",
       "Sec-Fetch-User: ?1",
+      "Priority: u=0, i",
       "Te: trailers"
     },
-    .http2_settings = "1:65536;4:131072;5:16384",
+    .curves = "X25519MLKEM768:X25519:P-256:P-384:P-521:ffdhe2048:ffdhe3072",
+    .sig_hash_algs =
+      "ecdsa_secp256r1_sha256,"
+      "ecdsa_secp384r1_sha384,"
+      "ecdsa_secp521r1_sha512,"
+      "rsa_pss_rsae_sha256,"
+      "rsa_pss_rsae_sha384,"
+      "rsa_pss_rsae_sha512,"
+      "rsa_pkcs1_sha256,"
+      "rsa_pkcs1_sha384,"
+      "rsa_pkcs1_sha512,"
+      "ecdsa_sha1,"
+      "rsa_pkcs1_sha1",
+    .alpn = true,
+    .http2_settings = "1:65536;2:0;4:131072;5:16384",
     .http2_window_update = 12517377,
     .http2_pseudo_headers_order = "mpas",
-    .http2_streams = "3:0:0:201,5:0:0:101,7:0:0:1,9:0:7:1,11:0:3:1,13:0:0:241",
-    .tls_extension_order = NULL,
-    .tls_grease = true
+    .cert_compression = "zlib,brotli,zstd",
+    .ech = "grease",
+    .tls_session_ticket = true,
+    .tls_extension_order = "0-23-65281-10-11-35-16-5-34-51-43-13-45-28-27-65037",
+    .tls_delegated_credentials = "ecdsa_secp256r1_sha256:ecdsa_secp384r1_sha384:ecdsa_secp521r1_sha512:ecdsa_sha1",
+    .tls_record_size_limit = 4001,
+    .tls_grease = false,
+    .tls_signed_cert_timestamps = false,
+    .tls_key_shares_limit = 3
+  },
+  {
+    .target = "firefox135",
+    .httpversion = CURL_HTTP_VERSION_2_0,
+    .ssl_version = CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT,
+    .ciphers =
+      "TLS_AES_128_GCM_SHA256,"
+      "TLS_CHACHA20_POLY1305_SHA256,"
+      "TLS_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,"
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,"
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,"
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,"
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
+      "TLS_RSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_RSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_RSA_WITH_AES_128_CBC_SHA,"
+      "TLS_RSA_WITH_AES_256_CBC_SHA",
+    .http_headers = {
+      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:135.0) Gecko/20100101 Firefox/135.0",
+      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language: en-US,en;q=0.5",
+      "Accept-Encoding: gzip, deflate, br, zstd",
+      "Upgrade-Insecure-Requests: 1",
+      "Sec-Fetch-Dest: document",
+      "Sec-Fetch-Mode: navigate",
+      "Sec-Fetch-Site: none",
+      "Sec-Fetch-User: ?1",
+      "Priority: u=0, i",
+      "Te: trailers"
+    },
+    .curves = "X25519MLKEM768:X25519:P-256:P-384:P-521:ffdhe2048:ffdhe3072",
+    .sig_hash_algs =
+      "ecdsa_secp256r1_sha256,"
+      "ecdsa_secp384r1_sha384,"
+      "ecdsa_secp521r1_sha512,"
+      "rsa_pss_rsae_sha256,"
+      "rsa_pss_rsae_sha384,"
+      "rsa_pss_rsae_sha512,"
+      "rsa_pkcs1_sha256,"
+      "rsa_pkcs1_sha384,"
+      "rsa_pkcs1_sha512,"
+      "ecdsa_sha1,"
+      "rsa_pkcs1_sha1",
+    .alpn = true,
+    .http2_settings = "1:65536;2:0;4:131072;5:16384",
+    .http2_window_update = 12517377,
+    .http2_pseudo_headers_order = "mpas",
+    .cert_compression = "zlib,brotli,zstd",
+    .ech = "grease",
+    .tls_session_ticket = true,
+    .tls_extension_order = "0-23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037",
+    .tls_delegated_credentials = "ecdsa_secp256r1_sha256:ecdsa_secp384r1_sha384:ecdsa_secp521r1_sha512:ecdsa_sha1",
+    .tls_record_size_limit = 4001,
+    .tls_grease = false,
+    .tls_signed_cert_timestamps = true,
+    .tls_key_shares_limit = 3
+  },
+  {
+    .target = "firefox135",
+    .httpversion = CURL_HTTP_VERSION_2_0,
+    .ssl_version = CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT,
+    .ciphers =
+      "TLS_AES_128_GCM_SHA256,"
+      "TLS_CHACHA20_POLY1305_SHA256,"
+      "TLS_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,"
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,"
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,"
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,"
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
+      "TLS_RSA_WITH_AES_128_GCM_SHA256,"
+      "TLS_RSA_WITH_AES_256_GCM_SHA384,"
+      "TLS_RSA_WITH_AES_128_CBC_SHA,"
+      "TLS_RSA_WITH_AES_256_CBC_SHA",
+    .http_headers = {
+      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:135.0) Gecko/20100101 Firefox/135.0",
+      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language: en-US,en;q=0.5",
+      "Accept-Encoding: gzip, deflate, br, zstd",
+      "Upgrade-Insecure-Requests: 1",
+      "Sec-Fetch-Dest: document",
+      "Sec-Fetch-Mode: navigate",
+      "Sec-Fetch-Site: none",
+      "Sec-Fetch-User: ?1",
+      "Priority: u=0, i",
+      "Te: trailers"
+    },
+    .curves = "X25519MLKEM768:X25519:P-256:P-384:P-521:ffdhe2048:ffdhe3072",
+    .sig_hash_algs =
+      "ecdsa_secp256r1_sha256,"
+      "ecdsa_secp384r1_sha384,"
+      "ecdsa_secp521r1_sha512,"
+      "rsa_pss_rsae_sha256,"
+      "rsa_pss_rsae_sha384,"
+      "rsa_pss_rsae_sha512,"
+      "rsa_pkcs1_sha256,"
+      "rsa_pkcs1_sha384,"
+      "rsa_pkcs1_sha512,"
+      "ecdsa_sha1,"
+      "rsa_pkcs1_sha1",
+    .alpn = true,
+    .http2_settings = "1:65536;2:0;4:131072;5:16384",
+    .http2_window_update = 12517377,
+    .http2_pseudo_headers_order = "mpas",
+    .cert_compression = "zlib,brotli,zstd",
+    .ech = "grease",
+    .tls_session_ticket = true,
+    .tls_extension_order = "0-23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037",
+    .tls_delegated_credentials = "ecdsa_secp256r1_sha256:ecdsa_secp384r1_sha384:ecdsa_secp521r1_sha512:ecdsa_sha1",
+    .tls_record_size_limit = 4001,
+    .tls_grease = false,
+    .tls_signed_cert_timestamps = false,
+    .tls_key_shares_limit = 3
   },
   {
     /* Last one must be NULL. */

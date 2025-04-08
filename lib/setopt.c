@@ -1395,6 +1395,16 @@ static CURLcode setopt_long(struct Curl_easy *data, CURLoption option,
       return CURLE_BAD_FUNCTION_ARGUMENT;
     data->set.maxlifetime_conn = arg;
     break;
+  case CURLOPT_TLS_RECORD_SIZE_LIMIT:
+    data->set.tls_record_size_limit = arg;
+    break;
+  case CURLOPT_TLS_KEY_SHARES_LIMIT:
+    data->set.tls_key_shares_limit = arg;
+    break;
+  case CURLOPT_TLS_USE_NEW_ALPS_CODEPOINT:
+    data->set.tls_use_new_alps_codepoint = enabled;
+    break;
+
 #ifndef CURL_DISABLE_HSTS
   case CURLOPT_HSTS_CTRL:
     if(arg & CURLHSTS_ENABLE) {
@@ -1759,6 +1769,10 @@ static CURLcode setopt_cptr(struct Curl_easy *data, CURLoption option,
      */
     return Curl_setstropt(&data->set.str[STRING_SSL_CERT_COMPRESSION], ptr);
     break;
+  case CURLOPT_TLS_DELEGATED_CREDENTIALS:
+    return Curl_setstropt(&data->set.str[STRING_TLS_DELEGATED_CREDENTIALS], ptr);
+    break;
+
 #ifndef CURL_DISABLE_PROXY
   case CURLOPT_PROXY_TLS13_CIPHERS:
     if(Curl_ssl_supports(data, SSLSUPP_TLS13_CIPHERSUITES))

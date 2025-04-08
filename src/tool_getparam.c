@@ -101,10 +101,10 @@ static const struct LongShort aliases[]= {
   {"cacert",                     ARG_FILE|ARG_TLS, ' ', C_CACERT},
   {"capath",                     ARG_FILE|ARG_TLS, ' ', C_CAPATH},
   {"cert",                       ARG_FILE|ARG_TLS, 'E', C_CERT},
+  {"cert-compression",           ARG_STRG|ARG_TLS, ' ', C_CERT_COMPRESSION},  // curl-impersonate
   {"cert-status",                ARG_BOOL|ARG_TLS, ' ', C_CERT_STATUS},
   {"cert-type",                  ARG_STRG|ARG_TLS, ' ', C_CERT_TYPE},
   {"ciphers",                    ARG_STRG|ARG_TLS, ' ', C_CIPHERS},
-  {"cert-compression",           ARG_STRG|ARG_TLS, ' ', C_CERT_COMPRESSION},  // curl-impersonate
   {"clobber",                    ARG_BOOL|ARG_NO, ' ', C_CLOBBER},
   {"compressed",                 ARG_BOOL, ' ', C_COMPRESSED},
   {"compressed-ssh",             ARG_BOOL, ' ', C_COMPRESSED_SSH},
@@ -350,12 +350,17 @@ static const struct LongShort aliases[]= {
   {"tftp-blksize",               ARG_STRG, ' ', C_TFTP_BLKSIZE},
   {"tftp-no-options",            ARG_BOOL, ' ', C_TFTP_NO_OPTIONS},
   {"time-cond",                  ARG_STRG, 'z', C_TIME_COND},
+  {"tls-delegated-credentials",  ARG_STRG, ' ', C_TLS_DELEGATED_CREDENTIALS},  // curl-impersonate
   {"tls-earlydata",              ARG_BOOL|ARG_TLS, ' ', C_TLS_EARLYDATA},
-  {"tls-extension-order",        ARG_STRG|ARG_TLS, ' ', C_TLS_EXTENSION_ORDER},  // curl-impersonate
-  {"tls-grease",                 ARG_BOOL|ARG_TLS, ' ', C_TLS_GREASE},  // curl-impersonate
+  {"tls-extension-order",        ARG_STRG, ' ', C_TLS_EXTENSION_ORDER},  // curl-impersonate
+  {"tls-grease",                 ARG_BOOL, ' ', C_TLS_GREASE},  // curl-impersonate
+  {"tls-key-shares-limit",       ARG_STRG, ' ', C_TLS_KEY_SHARES_LIMIT},  // curl-impersonate
   {"tls-max",                    ARG_STRG|ARG_TLS, ' ', C_TLS_MAX},
-  {"tls-permute-extensions",     ARG_BOOL|ARG_TLS, ' ', C_TLS_PERMUTE_EXTENSIONS},  // curl-impersonate
-  {"tls-session-ticket",         ARG_BOOL|ARG_TLS, ' ', C_TLS_SESSION_TICKET},  // curl-impersonate
+  {"tls-permute-extensions",     ARG_BOOL, ' ', C_TLS_PERMUTE_EXTENSIONS},  // curl-impersonate
+  {"tls-record-size-limit",      ARG_STRG, ' ', C_TLS_RECORD_SIZE_LIMIT},  // curl-impersonate
+  {"tls-session-ticket",         ARG_BOOL, ' ', C_TLS_SESSION_TICKET},  // curl-impersonate
+  {"tls-signed-cert-timestamps", ARG_BOOL, ' ', C_TLS_SIGNED_CERT_TIMESTAMPS}, // curl-impersonate
+  {"tls-use-new-alps-codepoint", ARG_BOOL, ' ', C_TLS_USE_NEW_ALPS_CODEPOINT},  // curl-impersonate
   {"tls13-ciphers",              ARG_STRG|ARG_TLS, ' ', C_TLS13_CIPHERS},
   {"tlsauthtype",                ARG_STRG|ARG_TLS, ' ', C_TLSAUTHTYPE},
   {"tlspassword",                ARG_STRG|ARG_TLS, ' ', C_TLSPASSWORD},
@@ -1877,7 +1882,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
         /* if given a blank string, make it NULL again */
         curlx_safefree(config->doh_url);
       break;
-    case C_CIPHERS: /* -- ciphers */
+    case C_CIPHERS: /* --ciphers */
       err = getstr(&config->cipher_list, nextarg, DENY_BLANK);
       break;
     case C_DNS_INTERFACE: /* --dns-interface */
@@ -2310,6 +2315,9 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
     case C_TLS_MAX: /* --tls-max */
       err = str2tls_max(&config->ssl_version_max, nextarg);
       break;
+    case C_TLS_SIGNED_CERT_TIMESTAMPS:
+      config->tls_signed_cert_timestamps = toggle;
+      break;
     case C_TLS_SESSION_TICKET:  /* --tls-session-ticket curl-impersonate */
       config->noticket = (!toggle)?TRUE:FALSE;
       break;
@@ -2319,8 +2327,20 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
     case C_TLS_EXTENSION_ORDER:  /* --tls-extension-order curl-impersonate */
       err = getstr(&config->tls_extension_order, nextarg, ALLOW_BLANK);
       break;
+    case C_TLS_DELEGATED_CREDENTIALS:
+      err = getstr(&config->tls_delegated_credentials, nextarg, ALLOW_BLANK);
+      break;
+    case C_TLS_RECORD_SIZE_LIMIT:
+      err = str2unum(&config->tls_record_size_limit, nextarg);
+      break;
+    case C_TLS_KEY_SHARES_LIMIT:
+      err = str2unum(&config->tls_key_shares_limit, nextarg);
+      break;
     case C_TLS_GREASE:  /* --tls-grease curl-impersonate */
       config->tls_grease = toggle;
+      break;
+    case C_TLS_USE_NEW_ALPS_CODEPOINT: /* --tls-use-new-alps-codepoint curl-impersonate */
+      config->tls_use_new_alps_codepoint = toggle;
       break;
     case C_SUPPRESS_CONNECT_HEADERS: /* --suppress-connect-headers */
       config->suppress_connect_headers = toggle;

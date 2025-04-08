@@ -1683,7 +1683,7 @@ static CURLcode cf_ssl_create(struct Curl_cfilter **pcf,
   DEBUGASSERT(data->conn);
 
   ctx = cf_ctx_new(data, alpn_get_spec(data->state.http_neg.wanted, conn->bits.tls_enable_alpn),
-                   alps_get_spec(data->state.httpwant, conn->bits.tls_enable_alps));
+                   alps_get_spec(data->state.http_neg.wanted, conn->bits.tls_enable_alps));
   if(!ctx) {
     result = CURLE_OUT_OF_MEMORY;
     goto out;
@@ -1733,14 +1733,8 @@ static CURLcode cf_ssl_proxy_create(struct Curl_cfilter **pcf,
   struct ssl_connect_data *ctx;
   CURLcode result;
   bool use_alpn = conn->bits.tls_enable_alpn;
-<<<<<<< HEAD
   bool use_alps = conn->bits.tls_enable_alps;
-  int httpwant = CURL_HTTP_VERSION_1_1;
-||||||| b1ef0e1a0
-  int httpwant = CURL_HTTP_VERSION_1_1;
-=======
   http_majors allowed = CURL_HTTP_V1x;
->>>>>>> curl-8_13_0
 
 #ifdef USE_HTTP2
   if(conn->http_proxy.proxytype == CURLPROXY_HTTPS2) {
@@ -1750,7 +1744,7 @@ static CURLcode cf_ssl_proxy_create(struct Curl_cfilter **pcf,
 #endif
 
   ctx = cf_ctx_new(data, alpn_get_spec(allowed, use_alpn),
-                   alps_get_spec(httpwant, use_alps));
+                   alps_get_spec(allowed, use_alps));
   if(!ctx) {
     result = CURLE_OUT_OF_MEMORY;
     goto out;

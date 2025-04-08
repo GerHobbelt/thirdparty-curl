@@ -513,6 +513,7 @@ struct ConnectBits {
   BIT(tls_enable_alps); /* TLS ALPS extension? */
   BIT(tls_enable_ticket); /* TLS session ticket extension? */
   BIT(tls_permute_extensions); /* TLS extension permutations */
+  BIT(tls_use_new_alps_codepoint); /* TLS ALPS new codepoint */
   BIT(tls_grease);  /* TLS grease? */
 #ifndef CURL_DISABLE_DOH
   BIT(doh);
@@ -1518,6 +1519,7 @@ enum dupstring {
   STRING_HTTP2_SETTINGS,
   STRING_HTTP2_STREAMS,
   STRING_TLS_EXTENSION_ORDER,
+  STRING_TLS_DELEGATED_CREDENTIALS,
 
   /* -- end of null-terminated strings -- */
 
@@ -1840,6 +1842,7 @@ struct UserDefined {
   BIT(tls_key_usage_no_check);  /* TLS key_usage_check? */
   BIT(tls_signed_cert_timestamps);  /* TLS signed cert timestamps? */
   BIT(tls_status_request);  /* TLS status request */
+  BIT(tls_use_new_alps_codepoint); /* TLS use new alps codepoint */
   BIT(path_as_is);     /* allow dotdots? */
   BIT(pipewait);       /* wait for multiplex status before starting a new
                           connection */
@@ -1866,6 +1869,8 @@ struct UserDefined {
   BIT(ws_raw_mode);
 #endif
   int http2_window_update;
+  int tls_record_size_limit;
+  int tls_key_shares_limit;
 };
 
 #ifndef CURL_DISABLE_MIME

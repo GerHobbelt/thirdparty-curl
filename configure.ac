@@ -5367,6 +5367,8 @@ SUPPORT_PROTOCOLS=`echo $SUPPORT_PROTOCOLS | tr ' ' '\012' | sort | tr '\012' ' 
 
 AC_SUBST(SUPPORT_PROTOCOLS)
 
+AC_CHECK_FUNCS([SSL_set_alps_use_new_codepoint])
+
 dnl squeeze whitespace out of some variables
 
 squeeze CFLAGS

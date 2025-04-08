@@ -91,6 +91,10 @@
 #ifdef HAVE_BROTLI
 #include <brotli/decode.h>
 #endif
+#ifdef HAVE_ZSTD
+#include <zstd.h>
+#endif
+
 
 #ifdef HAVE_SSL_SET1_ECH_CONFIG_LIST
 #define USE_ECH_OPENSSL
@@ -2836,7 +2840,35 @@ int DecompressBrotliCert(SSL* ssl,
 }
 #endif
 
-#if defined(HAVE_LIBZ) || defined(HAVE_BROTLI)
+// curl-impersonate: decompress the zstd cert
+#ifdef HAVE_ZSTD
+int DecompressZstdCert(SSL* ssl,
+                       CRYPTO_BUFFER** out,
+                       size_t uncompressed_len,
+                       const uint8_t* in,
+                       size_t in_len) {
+  size_t result;
+  uint8_t* data;
+  CRYPTO_BUFFER* decompressed = CRYPTO_BUFFER_alloc(&data, uncompressed_len);
+  if (!decompressed) {
+    return 0;
+  }
+
+  // zstd returns the size of decompressed content
+  result = ZSTD_decompress(data, uncompressed_len, in, in_len);
+  if (ZSTD_isError(result)) {
+    CRYPTO_BUFFER_free(decompressed);
+    return 0;
+  }
+
+  *out = decompressed;
+  return 1;
+}
+
+#endif
+
+
+#if defined(HAVE_LIBZ) || defined(HAVE_BROTLI) || defined(HAVE_ZSTD)
 static struct {
   char *alg_name;
   uint16_t alg_id;
@@ -2848,6 +2880,9 @@ static struct {
 #endif
 #ifdef HAVE_BROTLI
   {"brotli", TLSEXT_cert_compression_brotli, NULL, DecompressBrotliCert},
+#endif
+#ifdef HAVE_ZSTD
+  {"zstd", TLSEXT_cert_compression_zstd, NULL, DecompressZstdCert},
 #endif
 };
 
@@ -4181,6 +4216,18 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
     SSL_CTX_set_extension_order(octx->ssl_ctx, data->set.str[STRING_TLS_EXTENSION_ORDER]);
   }
 
+  if(data->set.str[STRING_TLS_DELEGATED_CREDENTIALS]) {
+    SSL_CTX_set_delegated_credentials(octx->ssl_ctx, data->set.str[STRING_TLS_DELEGATED_CREDENTIALS]);
+  }
+
+  if(data->set.tls_record_size_limit) {
+    SSL_CTX_set_record_size_limit(octx->ssl_ctx, data->set.tls_record_size_limit);
+  }
+
+  if(data->set.tls_key_shares_limit) {
+    SSL_CTX_set_key_shares_limit(octx->ssl_ctx, data->set.tls_key_shares_limit);
+  }
+
   // curl-impersonate: Set key usage check
   if(data->set.tls_key_usage_no_check) {
     SSL_CTX_set_key_usage_check_enabled(octx->ssl_ctx, 0);
@@ -4253,11 +4300,17 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
 
   SSL_set_app_data(octx->ssl, ssl_user_data);
 
-<<<<<<< HEAD
-#ifdef HAS_ALPN
+
+
+#ifdef HAS_ALPN_OPENSSL
   if(connssl->alps) {
     size_t i;
     struct alpn_proto_buf proto;
+
+    /* curl-impersonate: Set new ALPS codepoint before adding any ALPS settings */
+    if(data->set.tls_use_new_alps_codepoint) {
+      SSL_set_alps_use_new_codepoint(octx->ssl, 1);
+    }
 
     for(i = 0; i < connssl->alps->count; ++i) {
       /* curl-impersonate: Add the ALPS extension (17513) like Chrome does. */
@@ -4272,15 +4325,7 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
   }
 #endif
 
-
-#if (OPENSSL_VERSION_NUMBER >= 0x0090808fL) && !defined(OPENSSL_NO_TLSEXT) && \
-  !defined(OPENSSL_NO_OCSP)
-||||||| b1ef0e1a0
-#if (OPENSSL_VERSION_NUMBER >= 0x0090808fL) && !defined(OPENSSL_NO_TLSEXT) && \
-  !defined(OPENSSL_NO_OCSP)
-=======
 #if !defined(OPENSSL_NO_TLSEXT) && !defined(OPENSSL_NO_OCSP)
->>>>>>> curl-8_13_0
   if(conn_config->verifystatus)
     SSL_set_tlsext_status_type(octx->ssl, TLSEXT_STATUSTYPE_ocsp);
 #endif
