@@ -2817,8 +2817,8 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
 
   /* curl-impersonate: Add HTTP headers to impersonate real browsers. */
   result = Curl_http_merge_headers(data);
-  if (result)
-    return result;
+  if(result)
+    goto fail;
 
   result = http_host(data, conn);
   if(result)

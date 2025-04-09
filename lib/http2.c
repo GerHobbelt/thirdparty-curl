@@ -458,22 +458,6 @@ static CURLcode cf_h2_update_local_win(struct Curl_cfilter *cf,
                   stream->id, dwsize - wsize);
     }
     else {
-      // curl-impersonate:
-      // Directly changing the initial window update using users' settings.
-      int current_window_size = nghttp2_session_get_local_window_size(ctx->h2);
-
-      // Use chrome's value as default
-      int window_update = 15663105;
-      if(data->set.http2_window_update) {
-        window_update = data->set.http2_window_update;
-      }
-
-      // printf("Using window update %d\n", window_update);
-
-      rv = nghttp2_session_set_local_window_size(
-          ctx->h2, NGHTTP2_FLAG_NONE, 0,
-          current_window_size + window_update);
-
       if(rv) {
         failf(data, "[%d] nghttp2_session_set_local_window_size() failed: "
               "%s(%d)", stream->id, nghttp2_strerror(rv), rv);
@@ -758,9 +742,23 @@ static CURLcode cf_h2_ctx_open(struct Curl_cfilter *cf,
       goto out;
     }
   }
+  
+  // curl-impersonate:
+  // Directly changing the initial window update using users' settings.
+  int current_window_size = nghttp2_session_get_local_window_size(ctx->h2);
 
-  rc = nghttp2_session_set_local_window_size(ctx->h2, NGHTTP2_FLAG_NONE, 0,
-                                             HTTP2_HUGE_WINDOW_SIZE);
+  // Use chrome's value as default
+  int window_update = 15663105;
+  if(data->set.http2_window_update) {
+    window_update = data->set.http2_window_update;
+  }
+
+  // printf("Using window update %d\n", window_update);
+
+  rc = nghttp2_session_set_local_window_size(
+      ctx->h2, NGHTTP2_FLAG_NONE, 0,
+      current_window_size + window_update);
+
   if(rc) {
     failf(data, "nghttp2_session_set_local_window_size() failed: %s(%d)",
           nghttp2_strerror(rc), rc);

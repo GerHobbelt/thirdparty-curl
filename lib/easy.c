@@ -489,11 +489,9 @@ static CURLcode _do_impersonate(struct Curl_easy *data,
       return ret;
   }
 
-  if(opts->tls_grease) {
-    ret = curl_easy_setopt(data, CURLOPT_TLS_GREASE, opts->tls_grease);
-    if(ret)
-      return ret;
-  }
+  ret = curl_easy_setopt(data, CURLOPT_TLS_GREASE, opts->tls_grease);
+  if(ret)
+    return ret;
 
   if(opts->tls_extension_order) {
     ret = curl_easy_setopt(data, CURLOPT_TLS_EXTENSION_ORDER, opts->tls_extension_order);
