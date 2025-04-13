@@ -106,7 +106,7 @@ typedef unsigned int curl_prot_t;
 #define CURL_DEFAULT_USER "anonymous"
 #define CURL_DEFAULT_PASSWORD "ftp@example.com"
 
-#if !defined(_WIN32) && !defined(MSDOS) && !defined(__EMX__)
+#if !defined(_WIN32) && !defined(MSDOS)
 /* do FTP line-end CRLF => LF conversions on platforms that prefer LF-only. It
    also means: keep CRLF line endings on the CRLF platforms */
 #define CURL_PREFER_LF_LINEENDS
@@ -985,6 +985,8 @@ struct PureInfo {
   curl_off_t request_size; /* the amount of bytes sent in the request(s) */
   unsigned long proxyauthavail; /* what proxy auth types were announced */
   unsigned long httpauthavail;  /* what host auth types were announced */
+  unsigned long proxyauthpicked; /* selected proxy auth type */
+  unsigned long httpauthpicked;  /* selected host auth type */
   long numconnects; /* how many new connection did libcurl created */
   char *contenttype; /* the content type of the object */
   char *wouldredirect; /* URL this would have been redirected to if asked to */
@@ -1213,6 +1215,10 @@ struct UrlState {
 #if defined(USE_OPENSSL)
   /* void instead of ENGINE to avoid bleeding OpenSSL into this header */
   void *engine;
+  /* this is just a flag -- we do not need to reference the provider in any
+   * way as OpenSSL takes care of that */
+  BIT(provider);
+  BIT(provider_failed);
 #endif /* USE_OPENSSL */
   struct curltime expiretime; /* set this with Curl_expire() only */
   struct Curl_tree timenode; /* for the splay stuff */

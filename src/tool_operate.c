@@ -88,6 +88,7 @@
 #include "tool_parsecfg.h"
 #include "tool_setopt.h"
 #include "tool_sleep.h"
+#include "tool_ssls.h"
 #include "tool_urlglob.h"
 #include "tool_util.h"
 #include "tool_writeout.h"
@@ -111,14 +112,6 @@ CURL_EXTERN CURLcode curl_easy_perform_ev(CURL *easy);
 #define CURL_DECLARED_CURL_CA_EMBED
 extern const unsigned char curl_ca_embed[];
 #endif
-#endif
-
-/* since O_BINARY is used in bitmasks, setting it to zero makes it usable in
-   source code but yet it does not ruin anything */
-#ifdef O_BINARY
-#define CURL_O_BINARY O_BINARY
-#else
-#define CURL_O_BINARY 0
 #endif
 
 #ifndef SOL_IP
@@ -1999,6 +1992,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
       }
 
       if(config->etag_save_file) {
+        if(config->create_dirs) {
+          result = create_dir_hierarchy(config->etag_save_file, global);
+          if(result)
+            break;
+        }
+
         /* open file for output: */
         if(strcmp(config->etag_save_file, "-")) {
               if (config->create_dirs) {
@@ -3297,18 +3296,31 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_PSL);
           curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
 
-          /* Get the required arguments for each operation */
-          do {
-            result = get_args(operation, count++);
+          if(global->ssl_sessions && feature_ssls_export)
+            result = tool_ssls_load(global, global->first, share,
+                                    global->ssl_sessions);
 
-            operation = operation->next;
-          } while(!result && operation);
+          if(!result) {
+            /* Get the required arguments for each operation */
+            do {
+              result = get_args(operation, count++);
 
-          /* Set the current operation pointer */
-          global->current = global->first;
+              operation = operation->next;
+            } while(!result && operation);
 
-          /* now run! */
-          result = run_all_transfers(global, share, result);
+            /* Set the current operation pointer */
+            global->current = global->first;
+
+            /* now run! */
+            result = run_all_transfers(global, share, result);
+
+            if(global->ssl_sessions && feature_ssls_export) {
+              CURLcode r2 = tool_ssls_save(global, global->first, share,
+                                           global->ssl_sessions);
+              if(r2 && !result)
+                result = r2;
+            }
+          }
 
           curl_share_cleanup(share);
           if(global->libcurl) {

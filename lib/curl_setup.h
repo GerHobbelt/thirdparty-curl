@@ -775,6 +775,17 @@ extern "C" {
 #define USE_SSL    /* SSL support has been enabled */
 #endif
 
+#if defined(USE_OPENSSL) && defined(USE_WOLFSSL)
+#  include <wolfssl/version.h>
+#  if LIBWOLFSSL_VERSION_HEX >= 0x05007006
+#    ifndef OPENSSL_COEXIST
+#    define OPENSSL_COEXIST
+#    endif
+#  else
+#    error "OpenSSL can only coexist with wolfSSL v5.7.6 or upper"
+#  endif
+#endif
+
 #if defined(USE_WOLFSSL) && defined(USE_GNUTLS)
 /* Avoid defining unprefixed wolfSSL SHA macros colliding with nettle ones */
 #define NO_OLD_WC_NAMES
@@ -959,7 +970,8 @@ endings either CRLF or LF so 't' is appropriate.
 #define STRCONST(x) x,sizeof(x)-1
 
 /* Some versions of the Android SDK is missing the declaration */
-#if defined(HAVE_GETPWUID_R) && defined(HAVE_DECL_GETPWUID_R_MISSING)
+#if defined(HAVE_GETPWUID_R) && \
+  defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
 struct passwd;
 int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf,
                size_t buflen, struct passwd **result);
@@ -984,7 +996,7 @@ int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf,
     defined(USE_QUICHE) || defined(USE_MSH3)
 
 #ifdef CURL_WITH_MULTI_SSL
-#error "Multi-SSL combined with QUIC is not supported"
+#error "MultiSSL combined with QUIC is not supported"
 #endif
 
 #define USE_HTTP3

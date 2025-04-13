@@ -45,7 +45,15 @@
 #ifdef _WIN32
 #  undef  PATH_MAX
 #  define PATH_MAX MAX_PATH
+
+#  define _use_lfn(f) (1)  /* long filenames always available */
+#elif !defined(__DJGPP__) || (__DJGPP__ < 2)  /* DJGPP 2.0 has _use_lfn() */
+#  define _use_lfn(f) (0)  /* long filenames never available */
+#elif defined(__DJGPP__)
+#  include <fcntl.h>       /* _use_lfn(f) prototype */
 #endif
+
+#ifdef MSDOS
 
 #ifndef S_ISCHR
 #  ifdef S_IFCHR
@@ -53,14 +61,6 @@
 #  else
 #    define S_ISCHR(m) (0) /* cannot tell if file is a device */
 #  endif
-#endif
-
-#ifdef _WIN32
-#  define _use_lfn(f) (1)   /* long filenames always available */
-#elif !defined(__DJGPP__) || (__DJGPP__ < 2)  /* DJGPP 2.0 has _use_lfn() */
-#  define _use_lfn(f) (0)  /* long filenames never available */
-#elif defined(__DJGPP__)
-#  include <fcntl.h>                /* _use_lfn(f) prototype */
 #endif
 
 #ifndef UNITTESTS

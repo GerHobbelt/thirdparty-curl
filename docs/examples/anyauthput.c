@@ -115,6 +115,9 @@ int main(int argc, const char** argv)
 
   /* get the file size of the local file */
   fp = fopen(file, "rb");
+  if(!fp)
+    return 2;
+
   fstat(fileno(fp), &file_info);
 
   /* In Windows, this inits the Winsock stuff */

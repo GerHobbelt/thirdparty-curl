@@ -317,13 +317,16 @@ int main(int argc, const char **argv)
   struct curl_slist *host = NULL;
   char *resolve = NULL;
   size_t max_host_conns = 0;
+  size_t max_total_conns = 0;
   int fresh_connect = 0;
+  int result = 0;
 
-  while((ch = getopt(argc, argv, "aefhm:n:xA:F:M:P:r:V:")) != -1) {
+  while((ch = getopt(argc, argv, "aefhm:n:xA:F:M:P:r:T:V:")) != -1) {
     switch(ch) {
     case 'h':
       usage(NULL);
-      return 2;
+      result = 2;
+      goto cleanup;
     case 'a':
       abort_paused = 1;
       break;
@@ -355,7 +358,11 @@ int main(int argc, const char **argv)
       pause_offset = (size_t)strtol(optarg, NULL, 10);
       break;
     case 'r':
+      free(resolve);
       resolve = strdup(optarg);
+      break;
+    case 'T':
+      max_total_conns = (size_t)strtol(optarg, NULL, 10);
       break;
     case 'V': {
       if(!strcmp("http/1.1", optarg))
@@ -366,13 +373,15 @@ int main(int argc, const char **argv)
         http_version = CURL_HTTP_VERSION_3ONLY;
       else {
         usage("invalid http version");
-        return 1;
+        result = 1;
+        goto cleanup;
       }
       break;
     }
     default:
-     usage("invalid option");
-     return 1;
+      usage("invalid option");
+      result = 1;
+      goto cleanup;
     }
   }
   argc -= optind;
@@ -383,7 +392,8 @@ int main(int argc, const char **argv)
 
   if(argc != 1) {
     usage("not enough arguments");
-    return 2;
+    result = 2;
+    goto cleanup;
   }
   url = argv[0];
 
@@ -393,7 +403,8 @@ int main(int argc, const char **argv)
   share = curl_share_init();
   if(!share) {
     fprintf(stderr, "error allocating share\n");
-    return 1;
+    result = 1;
+    goto cleanup;
   }
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
@@ -405,11 +416,14 @@ int main(int argc, const char **argv)
   transfers = calloc(transfer_count, sizeof(*transfers));
   if(!transfers) {
     fprintf(stderr, "error allocating transfer structs\n");
-    return 1;
+    result = 1;
+    goto cleanup;
   }
 
   multi_handle = curl_multi_init();
   curl_multi_setopt(multi_handle, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+  curl_multi_setopt(multi_handle, CURLMOPT_MAX_TOTAL_CONNECTIONS,
+                    (long)max_total_conns);
   curl_multi_setopt(multi_handle, CURLMOPT_MAX_HOST_CONNECTIONS,
                     (long)max_host_conns);
 
@@ -430,7 +444,8 @@ int main(int argc, const char **argv)
        setup(t->easy, url, t, http_version, host, share, use_earlydata,
              fresh_connect)) {
       fprintf(stderr, "[t-%d] FAILED setup\n", (int)i);
-      return 1;
+      result = 1;
+      goto cleanup;
     }
     curl_multi_add_handle(multi_handle, t->easy);
     t->started = 1;
@@ -473,7 +488,6 @@ int main(int argc, const char **argv)
         }
       }
 
-
       /* nothing happening, maintenance */
       if(abort_paused) {
         /* abort paused transfers */
@@ -510,7 +524,8 @@ int main(int argc, const char **argv)
                setup(t->easy, url, t, http_version, host, share,
                      use_earlydata, fresh_connect)) {
               fprintf(stderr, "[t-%d] FAILED setup\n", (int)i);
-              return 1;
+              result = 1;
+              goto cleanup;
             }
             curl_multi_add_handle(multi_handle, t->easy);
             t->started = 1;
@@ -544,9 +559,10 @@ int main(int argc, const char **argv)
 
   curl_share_cleanup(share);
   curl_slist_free_all(host);
+cleanup:
   free(resolve);
 
-  return 0;
+  return result;
 #else
   (void)argc;
   (void)argv;

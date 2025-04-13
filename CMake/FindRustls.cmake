@@ -38,18 +38,21 @@
 # - `RUSTLS_CFLAGS`:        Required compiler flags.
 # - `RUSTLS_VERSION`:       Version of Rustls.
 
+set(RUSTLS_PC_REQUIRES "rustls")
+
 if(CURL_USE_PKGCONFIG AND
    NOT DEFINED RUSTLS_INCLUDE_DIR AND
    NOT DEFINED RUSTLS_LIBRARY)
   find_package(PkgConfig QUIET)
-  pkg_check_modules(RUSTLS "rustls")
+  pkg_check_modules(RUSTLS ${RUSTLS_PC_REQUIRES})
 endif()
 
 if(RUSTLS_FOUND)
-  set(RUSTLS_PC_REQUIRES "rustls")
   string(REPLACE ";" " " RUSTLS_CFLAGS "${RUSTLS_CFLAGS}")
   message(STATUS "Found Rustls (via pkg-config): ${RUSTLS_INCLUDE_DIRS} (found version \"${RUSTLS_VERSION}\")")
 else()
+  set(RUSTLS_PC_REQUIRES "")  # Depend on pkg-config only when found via pkg-config
+
   find_path(RUSTLS_INCLUDE_DIR NAMES "rustls.h")
   find_library(RUSTLS_LIBRARY NAMES "rustls")
 
@@ -69,35 +72,35 @@ else()
 endif()
 
 if(APPLE)
-  find_library(SECURITY_FRAMEWORK "Security")
+  find_library(SECURITY_FRAMEWORK NAMES "Security")
   mark_as_advanced(SECURITY_FRAMEWORK)
   if(NOT SECURITY_FRAMEWORK)
     message(FATAL_ERROR "Security framework not found")
   endif()
   list(APPEND RUSTLS_LIBRARIES "-framework Security")
 
-  find_library(FOUNDATION_FRAMEWORK "Foundation")
+  find_library(FOUNDATION_FRAMEWORK NAMES "Foundation")
   mark_as_advanced(FOUNDATION_FRAMEWORK)
   if(NOT FOUNDATION_FRAMEWORK)
     message(FATAL_ERROR "Foundation framework not found")
   endif()
   list(APPEND RUSTLS_LIBRARIES "-framework Foundation")
 elseif(NOT WIN32)
-  find_library(_pthread_library "pthread")
-  if(_pthread_library)
-    list(APPEND RUSTLS_LIBRARIES "pthread")
+  find_library(PTHREAD_LIBRARY NAMES "pthread")
+  if(PTHREAD_LIBRARY)
+    list(APPEND RUSTLS_LIBRARIES ${PTHREAD_LIBRARY})
   endif()
-  mark_as_advanced(_pthread_library)
+  mark_as_advanced(PTHREAD_LIBRARY)
 
-  find_library(_dl_library "dl")
-  if(_dl_library)
-    list(APPEND RUSTLS_LIBRARIES "dl")
+  find_library(DL_LIBRARY NAMES "dl")
+  if(DL_LIBRARY)
+    list(APPEND RUSTLS_LIBRARIES ${DL_LIBRARY})
   endif()
-  mark_as_advanced(_dl_library)
+  mark_as_advanced(DL_LIBRARY)
 
-  find_library(_math_library "m")
-  if(_math_library)
-    list(APPEND RUSTLS_LIBRARIES "m")
+  find_library(MATH_LIBRARY NAMES "m")
+  if(MATH_LIBRARY)
+    list(APPEND RUSTLS_LIBRARIES ${MATH_LIBRARY})
   endif()
-  mark_as_advanced(_math_library)
+  mark_as_advanced(MATH_LIBRARY)
 endif()

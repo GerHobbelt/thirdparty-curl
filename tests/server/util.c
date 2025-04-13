@@ -341,12 +341,10 @@ void set_advisor_read_lock(const char *filename)
     return;
   }
 
-  do {
-    res = fclose(lockfile);
-  } while(res && ((error = errno) == EINTR));
+  res = fclose(lockfile);
   if(res)
     logmsg("Error closing lock file %s error: %d %s",
-           filename, error, strerror(error));
+           filename, errno, strerror(errno));
 }
 
 void clear_advisor_read_lock(const char *filename)
@@ -472,7 +470,7 @@ long timediff(struct timeval newer, struct timeval older)
 
 typedef void (*SIGHANDLER_T)(int);
 
-#if defined(_MSC_VER) && _MSC_VER == 1600
+#if defined(_MSC_VER) && (_MSC_VER <= 1700)
 /* Workaround for warning C4306:
    'type cast' : conversion from 'int' to 'void (__cdecl *)(int)' */
 #undef SIG_ERR

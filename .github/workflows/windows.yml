@@ -39,7 +39,7 @@ jobs:
   cygwin:
     name: "cygwin, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.platform }} ${{ matrix.name }}"
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     defaults:
       run:
         shell: C:\cygwin\bin\bash.exe '{0}'
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           persist-credentials: false
-      - uses: cygwin/cygwin-install-action@006ad0b0946ca6d0a3ea2d4437677fa767392401 # v4
+      - uses: cygwin/cygwin-install-action@f61179d72284ceddc397ed07ddb444d82bf9e559 # v5
         with:
           platform: ${{ matrix.platform }}
           site: https://mirrors.kernel.org/sourceware/cygwin/
@@ -162,7 +162,7 @@ jobs:
   msys2:  # both msys and mingw-w64
     name: "${{ matrix.sys == 'msys' && 'msys2' || 'mingw' }}, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.env }} ${{ matrix.name }} ${{ matrix.test }}"
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     defaults:
       run:
         shell: msys2 {0}
@@ -359,7 +359,7 @@ jobs:
   old-mingw-w64:
     name: 'old-mingw, CM ${{ matrix.env }} ${{ matrix.name }}'
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     defaults:
       run:
         shell: C:\msys64\usr\bin\bash.exe {0}
@@ -652,17 +652,6 @@ jobs:
             config: >-
               -DCURL_USE_LIBSSH2=OFF -DCURL_USE_LIBSSH=ON
               -DCURL_USE_SCHANNEL=OFF -DCURL_USE_MBEDTLS=ON
-              -DCURL_USE_GSASL=ON
-
-          - name: 'msh3'
-            install: 'brotli zlib zstd libpsl nghttp2 msh3 libssh2 pkgconf gsasl'
-            arch: 'x64'
-            plat: 'windows'
-            type: 'Debug'
-            tflags: 'skipall'
-            config: >-
-              -DCURL_USE_LIBSSH2=ON
-              -DCURL_USE_SCHANNEL=OFF -DUSE_MSH3=ON
               -DCURL_USE_GSASL=ON
 
       fail-fast: false

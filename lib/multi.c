@@ -59,7 +59,7 @@
 /*
   CURL_SOCKET_HASH_TABLE_SIZE should be a prime number. Increasing it from 97
   to 911 takes on a 32-bit machine 4 x 804 = 3211 more bytes. Still, every
-  CURL handle takes 45-50 K memory, therefore this 3K are not significant.
+  curl handle takes 6K memory, therefore this 3K are not significant.
 */
 #ifndef CURL_SOCKET_HASH_TABLE_SIZE
 #define CURL_SOCKET_HASH_TABLE_SIZE 911
@@ -787,7 +787,7 @@ CURLMcode curl_multi_remove_handle(CURLM *m, CURL *d)
     return CURLM_BAD_HANDLE;
 
   /* Verify that we got a somewhat good easy handle too */
-  if(!GOOD_EASY_HANDLE(data) || !multi->num_easy)
+  if(!GOOD_EASY_HANDLE(data))
     return CURLM_BAD_EASY_HANDLE;
 
   /* Prevent users from trying to remove same easy handle more than once */
@@ -797,6 +797,11 @@ CURLMcode curl_multi_remove_handle(CURLM *m, CURL *d)
   /* Prevent users from trying to remove an easy handle from the wrong multi */
   if(data->multi != multi)
     return CURLM_BAD_EASY_HANDLE;
+
+  if(!multi->num_easy) {
+    DEBUGASSERT(0);
+    return CURLM_INTERNAL_ERROR;
+  }
 
   if(multi->in_callback)
     return CURLM_RECURSIVE_API_CALL;
@@ -1200,8 +1205,9 @@ CURLMcode curl_multi_waitfds(CURLM *m,
   CURLMcode result = CURLM_OK;
   struct Curl_llist_node *e;
   struct Curl_multi *multi = m;
+  unsigned int need = 0;
 
-  if(!ufds)
+  if(!ufds && (size || !fd_count))
     return CURLM_BAD_FUNCTION_ARGUMENT;
 
   if(!GOOD_MULTI_HANDLE(multi))
@@ -1214,20 +1220,17 @@ CURLMcode curl_multi_waitfds(CURLM *m,
   for(e = Curl_llist_head(&multi->process); e; e = Curl_node_next(e)) {
     struct Curl_easy *data = Curl_node_elem(e);
     multi_getsock(data, &data->last_poll);
-    if(Curl_waitfds_add_ps(&cwfds, &data->last_poll)) {
-      result = CURLM_OUT_OF_MEMORY;
-      goto out;
-    }
+    need += Curl_waitfds_add_ps(&cwfds, &data->last_poll);
   }
 
-  if(Curl_cpool_add_waitfds(&multi->cpool, &cwfds)) {
+  need += Curl_cpool_add_waitfds(&multi->cpool, &cwfds);
+
+  if(need != cwfds.n && ufds) {
     result = CURLM_OUT_OF_MEMORY;
-    goto out;
   }
 
-out:
   if(fd_count)
-    *fd_count = cwfds.n;
+    *fd_count = need;
   return result;
 }
 
@@ -3029,8 +3032,10 @@ CURLMcode curl_multi_perform(CURLM *m, int *running_handles)
 
   sigpipe_apply(multi->cpool.idata, &pipe_st);
   Curl_cpool_multi_perform(multi);
-
   sigpipe_restore(&pipe_st);
+
+  if(multi_ischanged(m, TRUE))
+    process_pending_handles(m);
 
   /*
    * Simply remove all expired timers from the splay since handles are dealt
@@ -3650,6 +3655,9 @@ out:
   }
   sigpipe_restore(&mrc.pipe_st);
 
+  if(multi_ischanged(multi, TRUE))
+    process_pending_handles(multi);
+
   if(running_handles)
     *running_handles = (int)multi->num_alive;
 
@@ -3707,9 +3715,6 @@ CURLMcode curl_multi_setopt(CURLM *m,
     break;
   case CURLMOPT_MAX_TOTAL_CONNECTIONS:
     multi->max_total_connections = va_arg(param, long);
-    /* for now, let this also decide the max number of connections
-     * in shutdown handling */
-    multi->max_shutdown_connections = va_arg(param, long);
     break;
     /* options formerly used for pipelining */
   case CURLMOPT_MAX_PIPELINE_LENGTH:

@@ -54,6 +54,7 @@ CURL_CHECK_OPTION_ARES
 CURL_CHECK_OPTION_RT
 CURL_CHECK_OPTION_HTTPSRR
 CURL_CHECK_OPTION_ECH
+CURL_CHECK_OPTION_SSLS_EXPORT
 
 XC_CHECK_PATH_SEPARATOR
 
@@ -530,6 +531,7 @@ if test X"$want_werror" = Xyes; then
   fi
 fi
 AC_SUBST(CURL_CFLAG_EXTRAS)
+AM_CONDITIONAL(CURL_WERROR, test X"$want_werror" = Xyes)
 
 CURL_CHECK_COMPILER_HALT_ON_ERROR
 CURL_CHECK_COMPILER_ARRAY_SIZE_NEGATIVE
@@ -3814,7 +3816,6 @@ AC_CHECK_HEADERS(
   sys/socket.h \
   sys/ioctl.h \
   unistd.h \
-  stdlib.h \
   arpa/inet.h \
   net/if.h \
   netinet/in.h \
@@ -3841,14 +3842,14 @@ AC_CHECK_HEADERS(
   locale.h \
   stdbool.h \
   sys/filio.h \
-  sys/eventfd.h \
-  setjmp.h,
+  sys/eventfd.h,
 dnl to do if not found
 [],
 dnl to do if found
 [],
 dnl default includes
 [
+#include <stdlib.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -3965,24 +3966,30 @@ AC_CHECK_TYPE([suseconds_t],[
 #endif
 ])
 
-AC_MSG_CHECKING([if time_t is unsigned])
-CURL_RUN_IFELSE(
-  [
-  #include <time.h>
-  #include <limits.h>
-  int main(void) {
-    time_t t = -1;
-    return (t < 0);
-  }
-  ],[
-  AC_MSG_RESULT([yes])
-  AC_DEFINE(HAVE_TIME_T_UNSIGNED, 1, [Define this if time_t is unsigned])
-],[
-  AC_MSG_RESULT([no])
-],[
-  dnl cross-compiling, most systems are unsigned
-  AC_MSG_RESULT([no])
-])
+case $host_os in
+  amigaos*|msdos*)
+    AC_DEFINE(HAVE_TIME_T_UNSIGNED, 1, [Define this if time_t is unsigned])
+    ;;
+  *)
+    AC_MSG_CHECKING([if time_t is unsigned])
+    CURL_RUN_IFELSE(
+      [
+      #include <time.h>
+      int main(void) {
+        time_t t = -1;
+        return t < 0;
+      }
+      ],[
+      AC_MSG_RESULT([yes])
+      AC_DEFINE(HAVE_TIME_T_UNSIGNED, 1, [Define this if time_t is unsigned])
+    ],[
+      AC_MSG_RESULT([no])
+    ],[
+      dnl cross-compiling, most systems are signed
+      AC_MSG_RESULT([no])
+    ])
+    ;;
+esac
 
 TYPE_IN_ADDR_T
 
@@ -4021,11 +4028,8 @@ CURL_CHECK_FUNC_SIGNAL
 CURL_CHECK_FUNC_SIGSETJMP
 CURL_CHECK_FUNC_SOCKET
 CURL_CHECK_FUNC_SOCKETPAIR
-CURL_CHECK_FUNC_STRCASECMP
-CURL_CHECK_FUNC_STRCMPI
 CURL_CHECK_FUNC_STRDUP
 CURL_CHECK_FUNC_STRERROR_R
-CURL_CHECK_FUNC_STRICMP
 CURL_CHECK_FUNC_STRTOK_R
 CURL_CHECK_FUNC_STRTOLL
 
@@ -4036,10 +4040,6 @@ case $host in
     AC_MSG_NOTICE([skip check for pipe on msdosdjgpp])
     ;;
 esac
-
-AC_CHECK_DECLS([getpwuid_r], [], [AC_DEFINE(HAVE_DECL_GETPWUID_R_MISSING, 1, "Set if getpwuid_r() declaration is missing")],
-        [[#include <pwd.h>
-          #include <sys/types.h>]])
 
 AC_CHECK_FUNCS([\
   eventfd \
@@ -4066,6 +4066,12 @@ AC_CHECK_FUNCS([\
   utime \
   utimes \
 ])
+
+if test "$curl_cv_native_windows" != 'yes'; then
+  CURL_CHECK_FUNC_STRCASECMP
+  CURL_CHECK_FUNC_STRCMPI
+  CURL_CHECK_FUNC_STRICMP
+fi
 
 if test "$curl_cv_native_windows" = 'yes' -o "$curl_cv_cygwin" = 'yes'; then
   AC_CHECK_FUNCS([_setmode])
@@ -4942,6 +4948,26 @@ else
   CURL_DISABLE_WEBSOCKETS=1
 fi
 
+dnl *************************************************************
+dnl check whether experimental SSL Session Im-/Export is enabled
+dnl
+if test "x$want_ssls_export" != "xno"; then
+  AC_MSG_CHECKING([whether SSL session export support is available])
+
+  dnl assume NOT and look for sufficient condition
+  SSLS_EXPORT_ENABLED=0
+  SSLS_EXPORT_SUPPORT=''
+
+  if test "x$SSL_ENABLED" != "x1"; then
+    AC_MSG_ERROR([--enable-ssls-export ignored: No SSL support])
+  else
+    SSLS_EXPORT_ENABLED=1
+    AC_DEFINE(USE_SSLS_EXPORT, 1, [if SSL session export support is available])
+    AC_MSG_RESULT("SSL session im-/export enabled")
+    experimental="$experimental SSLS-EXPORT"
+  fi
+fi
+
 dnl ************************************************************
 dnl hiding of library internal symbols
 dnl
@@ -5142,6 +5168,10 @@ if test "x$OPENSSL_ENABLED" = "x1" -o -n "$SSL_ENABLED"; then
   if test "x$ECH_ENABLED" = "x1"; then
     SUPPORT_FEATURES="$SUPPORT_FEATURES ECH"
   fi
+fi
+
+if test "x$SSLS_EXPORT_ENABLED" = "x1"; then
+  SUPPORT_FEATURES="$SUPPORT_FEATURES SSLS-EXPORT"
 fi
 
 if test ${ac_cv_sizeof_curl_off_t} -gt 4; then
@@ -5411,6 +5441,7 @@ AC_MSG_NOTICE([Configured to build curl/libcurl:
   HTTP2:            ${curl_h2_msg}
   HTTP3:            ${curl_h3_msg}
   ECH:              ${curl_ech_msg}
+  SSLS-EXPORT:      ${curl_ssls_export_msg}
   Protocols:        ${SUPPORT_PROTOCOLS_LOWER}
   Features:         ${SUPPORT_FEATURES}
 ])

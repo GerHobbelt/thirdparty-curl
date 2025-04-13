@@ -40,6 +40,7 @@ CMAKE_DIST =                                    \
  CMake/FindLibgsasl.cmake                       \
  CMake/FindLibidn2.cmake                        \
  CMake/FindLibpsl.cmake                         \
+ CMake/FindLibrtmp.cmake                        \
  CMake/FindLibssh.cmake                         \
  CMake/FindLibssh2.cmake                        \
  CMake/FindLibuv.cmake                          \
@@ -58,17 +59,14 @@ CMAKE_DIST =                                    \
  CMake/Macros.cmake                             \
  CMake/OtherTests.cmake                         \
  CMake/PickyWarnings.cmake                      \
- CMake/Platforms/WindowsCache.cmake             \
  CMake/Utilities.cmake                          \
+ CMake/win32-cache.cmake                        \
  CMakeLists.txt
 
 VC_DIST = projects/README.md                           \
  projects/build-openssl.bat                            \
- projects/build-wolfssl.bat                            \
  projects/checksrc.bat                                 \
- projects/generate.bat                                 \
- projects/wolfssl_options.h                            \
- projects/wolfssl_override.props
+ projects/generate.bat
 
 WINBUILD_DIST = winbuild/README.md \
  winbuild/MakefileBuild.vc winbuild/Makefile.vc winbuild/makedebug.bat

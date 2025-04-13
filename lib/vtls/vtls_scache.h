@@ -118,10 +118,12 @@ CURLcode Curl_ssl_scache_add_obj(struct Curl_cfilter *cf,
 struct Curl_ssl_session {
   const unsigned char *sdata;  /* session ticket data, plain bytes */
   size_t sdata_len;            /* number of bytes in sdata */
-  curl_off_t time_received;    /* seconds since EPOCH ticket was received */
-  int lifetime_secs;           /* ticket lifetime (-1 unknown) */
+  curl_off_t valid_until;      /* seconds since EPOCH until ticket expires */
   int ietf_tls_id;             /* TLS protocol identifier negotiated */
   char *alpn;                  /* APLN TLS negotiated protocol string */
+  size_t earlydata_max;        /* max 0-RTT data supported by peer */
+  const unsigned char *quic_tp; /* Optional QUIC transport param bytes */
+  size_t quic_tp_len;          /* number of bytes in quic_tp */
   struct Curl_llist_node list; /*  internal storage handling */
 };
 
@@ -131,18 +133,26 @@ struct Curl_ssl_session {
  * @param sdata_len amount of session data bytes
  * @param ietf_tls_id  IETF protocol version, e.g. 0x304 for TLSv1.3
  * @param alpn      ALPN protocol selected or NULL
- * @param time_received seconds since EPOCH session was received, pass 0
- *                  to have the value set to time of call
- * @param lifetime_secs seconds of announced lifetime, <0 if unknown.
- *                      values longer than 1 week will be capped as
- *                      required by RFC 8446
+ * @param valid_until seconds since EPOCH when session expires, pass 0
+ *                  in case this is not known.
  * @param psession on return the scached session instance created
  */
 CURLcode
 Curl_ssl_session_create(unsigned char *sdata, size_t sdata_len,
                         int ietf_tls_id, const char *alpn,
-                        curl_off_t time_received, long lifetime_secs,
+                        curl_off_t valid_until,
+                        size_t earlydata_max,
                         struct Curl_ssl_session **psession);
+
+/* Variation of session creation with quic transport parameter bytes,
+ * Takes ownership of `quic_tp` regardless of return code. */
+CURLcode
+Curl_ssl_session_create2(unsigned char *sdata, size_t sdata_len,
+                         int ietf_tls_id, const char *alpn,
+                         curl_off_t valid_until,
+                         size_t earlydata_max,
+                         unsigned char *quic_tp, size_t quic_tp_len,
+                         struct Curl_ssl_session **psession);
 
 /* Destroy a `session` instance. Can be called with NULL.
  * Does NOT need locking. */
@@ -185,6 +195,18 @@ void Curl_ssl_scache_remove_all(struct Curl_cfilter *cf,
                                 struct Curl_easy *data,
                                 const char *ssl_peer_key);
 
+#ifdef USE_SSLS_EXPORT
+
+CURLcode Curl_ssl_session_import(struct Curl_easy *data,
+                                 const char *ssl_peer_key,
+                                 const unsigned char *shmac, size_t shmac_len,
+                                 const unsigned char *sdata, size_t sdata_len);
+
+CURLcode Curl_ssl_session_export(struct Curl_easy *data,
+                                 curl_ssls_export_cb *export_fn,
+                                 void *userptr);
+
+#endif /* USE_SSLS_EXPORT */
 
 #else /* USE_SSL */
 

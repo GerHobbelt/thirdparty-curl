@@ -649,6 +649,9 @@
 /* if you have the zlib-ng.h header file */
 #cmakedefine HAVE_ZLIB_NG_H 1
 
+/* Define this if time_t is unsigned */
+#cmakedefine HAVE_TIME_T_UNSIGNED 1
+
 /* Define to 1 if _REENTRANT preprocessor symbol must be defined. */
 #cmakedefine NEED_REENTRANT 1
 

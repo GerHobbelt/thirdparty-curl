@@ -534,6 +534,8 @@ CURLcode Curl_http_auth_act(struct Curl_easy *data)
     pickhost = pickoneauth(&data->state.authhost, authmask & am);
     if(!pickhost)
       data->state.authproblem = TRUE;
+    else
+      data->info.httpauthpicked = data->state.authhost.picked;
     if(data->state.authhost.picked == CURLAUTH_NTLM &&
        conn->httpversion > 11) {
       infof(data, "Forcing HTTP/1.1 for NTLM");
@@ -553,6 +555,9 @@ CURLcode Curl_http_auth_act(struct Curl_easy *data)
                             authmask & am & ~CURLAUTH_BEARER);
     if(!pickproxy)
       data->state.authproblem = TRUE;
+    else
+      data->info.proxyauthpicked = data->state.authproxy.picked;
+
   }
 #endif
 
@@ -865,12 +870,12 @@ CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
   struct connectdata *conn = data->conn;
 #ifdef USE_SPNEGO
   curlnegotiate *negstate = proxy ? &conn->proxy_negotiate_state :
-                                    &conn->http_negotiate_state;
+    &conn->http_negotiate_state;
 #endif
-#if defined(USE_SPNEGO) || \
-  defined(USE_NTLM) || \
-  !defined(CURL_DISABLE_DIGEST_AUTH) || \
-  !defined(CURL_DISABLE_BASIC_AUTH) || \
+#if defined(USE_SPNEGO) ||                      \
+  defined(USE_NTLM) ||                          \
+  !defined(CURL_DISABLE_DIGEST_AUTH) ||         \
+  !defined(CURL_DISABLE_BASIC_AUTH) ||          \
   !defined(CURL_DISABLE_BEARER_AUTH)
 
   unsigned long *availp;
@@ -1001,7 +1006,7 @@ CURLcode Curl_http_input_auth(struct Curl_easy *data, bool proxy,
               authp->avail |= CURLAUTH_BEARER;
               if(authp->picked == CURLAUTH_BEARER) {
                 /* We asked for Bearer authentication but got a 40X back
-                  anyway, which basically means our token is not valid. */
+                   anyway, which basically means our token is not valid. */
                 authp->avail = CURLAUTH_NONE;
                 infof(data, "Authentication problem. Ignoring this.");
                 data->state.authproblem = TRUE;
@@ -2165,6 +2170,8 @@ static CURLcode http_cookies(struct Curl_easy *data,
   }
   return result;
 }
+#else
+#define http_cookies(a,b,c) CURLE_OK
 #endif
 
 static CURLcode http_range(struct Curl_easy *data,
@@ -2929,11 +2936,19 @@ static CURLcode http_header(struct Curl_easy *data,
       (void)curlx_strtoofft(v, NULL, 10, &retry_after);
       if(!retry_after) {
         time_t date = Curl_getdate_capped(v);
-        if((time_t)-1 != date)
+        time_t current = time(NULL);
+        if((time_t)-1 != date && date > current) {
           /* convert date to number of seconds into the future */
-          retry_after = date - time(NULL);
+          retry_after = date - current;
+        }
       }
-      data->info.retry_after = retry_after; /* store it */
+      if(retry_after < 0)
+        retry_after = 0;
+      /* limit to 6 hours max. this is not documented so that it can be changed
+         in the future if necessary. */
+      if(retry_after > 21600)
+        retry_after = 21600;
+      data->info.retry_after = retry_after;
       return CURLE_OK;
     }
     break;
@@ -4141,7 +4156,9 @@ struct name_const {
   size_t namelen;
 };
 
+/* keep them sorted by length! */
 static struct name_const H2_NON_FIELD[] = {
+  { STRCONST("TE") },
   { STRCONST("Host") },
   { STRCONST("Upgrade") },
   { STRCONST("Connection") },

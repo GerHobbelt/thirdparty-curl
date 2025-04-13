@@ -431,8 +431,9 @@ CURLcode Curl_wssl_cache_session(struct Curl_cfilter *cf,
   }
 
   result = Curl_ssl_session_create(sdata, sdata_len,
-                                   ietf_tls_id, alpn, 0,
-                                   wolfSSL_SESSION_get_timeout(session),
+                                   ietf_tls_id, alpn,
+                                   (curl_off_t)time(NULL) +
+                                   wolfSSL_SESSION_get_timeout(session), 0,
                                    &sc_session);
   sdata = NULL;  /* took ownership of sdata */
   if(!result) {

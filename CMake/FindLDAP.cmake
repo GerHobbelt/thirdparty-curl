@@ -39,12 +39,14 @@
 # - `LDAP_CFLAGS`:        Required compiler flags.
 # - `LDAP_VERSION`:       Version of ldap.
 
+set(LDAP_PC_REQUIRES "ldap")
+
 if(CURL_USE_PKGCONFIG AND
    NOT DEFINED LDAP_INCLUDE_DIR AND
    NOT DEFINED LDAP_LIBRARY AND
    NOT DEFINED LDAP_LBER_LIBRARY)
   find_package(PkgConfig QUIET)
-  pkg_check_modules(LDAP "ldap")
+  pkg_check_modules(LDAP ${LDAP_PC_REQUIRES})
   pkg_check_modules(LDAP_LBER "lber")
 endif()
 
@@ -53,20 +55,22 @@ if(LDAP_FOUND AND LDAP_LBER_FOUND)
   list(REVERSE LDAP_LIBRARIES)
   list(REMOVE_DUPLICATES LDAP_LIBRARIES)
   list(REVERSE LDAP_LIBRARIES)
-  set(LDAP_PC_REQUIRES "ldap")
   string(REPLACE ";" " " LDAP_CFLAGS "${LDAP_CFLAGS}")
   message(STATUS "Found LDAP (via pkg-config): ${LDAP_INCLUDE_DIRS} (found version \"${LDAP_VERSION}\")")
 else()
+  set(LDAP_PC_REQUIRES "")  # Depend on pkg-config only when found via pkg-config
+
   # On Apple the SDK LDAP gets picked up from
   # 'MacOSX.sdk/System/Library/Frameworks/LDAP.framework/Headers', which contains
   # ldap.h and lber.h both being stubs to include <ldap.h> and <lber.h>.
-  # This causes an infinite inclusion loop in compile.
+  # This causes an infinite inclusion loop in compile. Also do this for libraries
+  # to avoid picking up the 'ldap.framework' with a full path.
   set(_save_cmake_system_framework_path ${CMAKE_SYSTEM_FRAMEWORK_PATH})
   set(CMAKE_SYSTEM_FRAMEWORK_PATH "")
   find_path(LDAP_INCLUDE_DIR NAMES "ldap.h")
-  set(CMAKE_SYSTEM_FRAMEWORK_PATH ${_save_cmake_system_framework_path})
   find_library(LDAP_LIBRARY NAMES "ldap")
   find_library(LDAP_LBER_LIBRARY NAMES "lber")
+  set(CMAKE_SYSTEM_FRAMEWORK_PATH ${_save_cmake_system_framework_path})
 
   unset(LDAP_VERSION CACHE)
   if(LDAP_INCLUDE_DIR AND EXISTS "${LDAP_INCLUDE_DIR}/ldap_features.h")
