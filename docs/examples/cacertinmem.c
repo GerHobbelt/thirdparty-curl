@@ -34,6 +34,10 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic ignored "-Woverlength-strings"
+#endif
+
 static size_t writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
   fwrite(ptr, size, nmemb, (FILE *)stream);
@@ -43,11 +47,6 @@ static size_t writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm)
 {
   CURLcode rv = CURLE_ABORTED_BY_CALLBACK;
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverlength-strings"
-#endif
 
   /** This example uses two (fake) certificates **/
   static const char mypem[] =
@@ -92,10 +91,6 @@ static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm)
     "r0CodaxWkHS4oJyleW/c6RrIaQXpuvoDs3zk4E7Czp3otkYNbn5XOmeUwssfnHdK\n"
     "Z05phkOTOPu220+DkdRgfks+KzgHVZhepA==\n"
     "-----END CERTIFICATE-----\n";
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 
   BIO *cbio = BIO_new_mem_buf(mypem, sizeof(mypem));
   X509_STORE  *cts = SSL_CTX_get_cert_store((SSL_CTX *)sslctx);
