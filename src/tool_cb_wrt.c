@@ -48,8 +48,10 @@
 #include <direct.h>
 #endif
 
-#ifndef O_BINARY
-#define O_BINARY 0
+#ifdef O_BINARY
+#define CURL_O_BINARY O_BINARY
+#else
+#define CURL_O_BINARY 0
 #endif
 #ifdef _WIN32
 #define OPENMODE S_IREAD | S_IWRITE
@@ -511,7 +513,7 @@ bool tool_create_output_file(struct OutStruct *outs,
     }
 
     do {
-      fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+      fd = open(fname, O_CREAT | O_WRONLY | O_EXCL | CURL_O_BINARY, OPENMODE);
       /* Keep retrying in the hope that it is not interrupted sometime */
     } while(fd == -1 && errno == EINTR);
     if (fd == -1) {
@@ -544,7 +546,8 @@ bool tool_create_output_file(struct OutStruct *outs,
         }
         next_num++;
         do {
-          fd = open(newname, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, OPENMODE);
+          fd = open(newname, O_CREAT | O_WRONLY | O_EXCL | CURL_O_BINARY,
+                             OPENMODE);
           /* Keep retrying in the hope that it is not interrupted sometime */
         } while(fd == -1 && errno == EINTR);
       }

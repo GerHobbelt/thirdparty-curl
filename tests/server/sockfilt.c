@@ -107,6 +107,8 @@
 #include "timediff.h"
 #include "warnless.h"
 
+#include "tool_binmode.h"
+
 /* include memdebug.h last */
 #include "memdebug.h"
 
@@ -1501,11 +1503,11 @@ int main(int argc, const char** argv)
 #ifdef _WIN32
   win32_init();
   atexit(win32_cleanup);
-
-  setmode(fileno(stdin), O_BINARY);
-  setmode(fileno(stdout), O_BINARY);
-  setmode(fileno(stderr), O_BINARY);
 #endif
+
+  CURL_SET_BINMODE(stdin);
+  CURL_SET_BINMODE(stdout);
+  CURL_SET_BINMODE(stderr);
 
   install_signal_handlers(false);
 

@@ -25,14 +25,12 @@
  ***************************************************************************/
 #include "tool_setup.h"
 
-#if defined(HAVE_SETMODE) || defined(HAVE__SETMODE)
+void Curl_set_binmode(FILE *stream);
 
-void set_binmode(FILE *stream);
+#define CURL_SET_BINMODE(stream)  Curl_set_binmode(stream)
 
-#else
+void Curl_reset_vbuf_to_default(FILE *stream);
 
-#define set_binmode(x) Curl_nop_stmt
-
-#endif /* HAVE_SETMODE || HAVE__SETMODE */
+#define CURL_RESET_VBUF_TO_DEFAULT(stream)  Curl_reset_vbuf_to_default(stream)
 
 #endif /* HEADER_CURL_TOOL_BINMODE_H */

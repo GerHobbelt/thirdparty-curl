@@ -23,8 +23,6 @@
  ***************************************************************************/
 #include "tool_setup.h"
 
-#if defined(HAVE_SETMODE) || defined(HAVE__SETMODE)
-
 #ifdef HAVE_IO_H
 #  include <io.h>
 #endif
@@ -37,8 +35,9 @@
 
 #include "memdebug.h" /* keep this as LAST include */
 
-void set_binmode(FILE *stream)
+void Curl_set_binmode(FILE *stream)
 {
+#if defined(HAVE_SETMODE) || defined(HAVE__SETMODE)
 #ifdef O_BINARY
 #  ifdef __HIGHC__
   _setmode(stream, O_BINARY);
@@ -47,14 +46,19 @@ void set_binmode(FILE *stream)
 #  else
   (void)setmode(fileno(stream), O_BINARY);
 #  endif
+#endif
+#endif /* HAVE_SETMODE || HAVE__SETMODE */
+
+  Curl_reset_vbuf_to_default(stream);
+}
+
+
+void Curl_reset_vbuf_to_default(FILE *stream)
+{
+#if ( defined(HAVE_SETVBUF) || defined(_MSC_VER) ) && defined(_IONBF) && ( defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64) )
+  (void)setvbuf(stream, NULL, _IONBF, 0);
 #else
   (void)stream;
 #endif
-
-#if ( defined(HAVE_SETVBUF) || defined(_MSC_VER) ) && defined(_IONBF) && ( defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64) )
-  (void)setvbuf(stdout, NULL, _IONBF, 0);
-  (void)setvbuf(stderr, NULL, _IONBF, 0);
-#endif
 }
 
-#endif /* HAVE_SETMODE || HAVE__SETMODE */
