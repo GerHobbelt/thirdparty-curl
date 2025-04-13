@@ -2049,7 +2049,7 @@ static CURLMcode state_do(struct Curl_easy *data,
     }
   }
 
-  if(data->set.connect_only == 1) {
+  if(data->set.connect_only && !data->set.connect_only_ws) {
     /* keep connection open for application to use the socket */
     connkeep(data->conn, "CONNECT_ONLY");
     multistate(data, MSTATE_DONE);

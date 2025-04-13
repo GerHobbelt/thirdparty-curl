@@ -390,8 +390,6 @@ static void state(struct Curl_easy *data, sshstate nowstate)
   sshc->state = nowstate;
 }
 
-
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
 static int sshkeycallback(CURL *easy,
                           const struct curl_khkey *knownkey, /* known */
                           const struct curl_khkey *foundkey, /* found */
@@ -406,37 +404,24 @@ static int sshkeycallback(CURL *easy,
   /* we only allow perfect matches, and we reject everything else */
   return (match != CURLKHMATCH_OK) ? CURLKHSTAT_REJECT : CURLKHSTAT_FINE;
 }
-#endif
 
 /*
  * Earlier libssh2 versions did not have the ability to seek to 64-bit
  * positions with 32-bit size_t.
  */
-#ifdef HAVE_LIBSSH2_SFTP_SEEK64
 #define SFTP_SEEK(x,y) libssh2_sftp_seek64(x, (libssh2_uint64_t)y)
-#else
-#define SFTP_SEEK(x,y) libssh2_sftp_seek(x, (size_t)y)
-#endif
 
 /*
  * Earlier libssh2 versions did not do SCP properly beyond 32-bit sizes on
  * 32-bit architectures so we check of the necessary function is present.
  */
-#ifndef HAVE_LIBSSH2_SCP_SEND64
 #define SCP_SEND(a,b,c,d) libssh2_scp_send_ex(a, b, (int)(c), (size_t)d, 0, 0)
-#else
-#define SCP_SEND(a,b,c,d) libssh2_scp_send64(a, b, (int)(c),            \
-                                             (libssh2_int64_t)d, 0, 0)
-#endif
 
 /*
  * libssh2 1.2.8 fixed the problem with 32-bit ints used for sockets on win64.
  */
-#ifdef HAVE_LIBSSH2_SESSION_HANDSHAKE
 #define session_startup(x,y) libssh2_session_handshake(x, y)
-#else
-#define session_startup(x,y) libssh2_session_startup(x, (int)y)
-#endif
+
 static enum curl_khtype convert_ssh2_keytype(int sshkeytype)
 {
   enum curl_khtype keytype = CURLKHTYPE_UNKNOWN;
@@ -501,8 +486,7 @@ static CURLcode ssh_knownhost(struct Curl_easy *data)
     }
 
   }
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
-    else if(data->set.str[STRING_SSH_KNOWNHOSTS]) {
+  else if(data->set.str[STRING_SSH_KNOWNHOSTS]) {
     /* we are asked to verify the host against a file */
     struct connectdata *conn = data->conn;
     struct ssh_conn *sshc = &conn->proto.sshc;
@@ -567,7 +551,6 @@ static CURLcode ssh_knownhost(struct Curl_easy *data)
         /* no check means failure! */
         rc = CURLKHSTAT_REJECT;
       else {
-#ifdef HAVE_LIBSSH2_KNOWNHOST_CHECKP
         keycheck = libssh2_knownhost_checkp(sshc->kh,
                                             conn->host.name,
                                             (conn->remote_port != PORT_SSH) ?
@@ -577,15 +560,6 @@ static CURLcode ssh_knownhost(struct Curl_easy *data)
                                             LIBSSH2_KNOWNHOST_KEYENC_RAW|
                                             keybit,
                                             &host);
-#else
-        keycheck = libssh2_knownhost_check(sshc->kh,
-                                           conn->host.name,
-                                           remotekey, keylen,
-                                           LIBSSH2_KNOWNHOST_TYPE_PLAIN|
-                                           LIBSSH2_KNOWNHOST_KEYENC_RAW|
-                                           keybit,
-                                           &host);
-#endif
 
         infof(data, "SSH host check: %d, key: %s", keycheck,
               (keycheck <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH) ?
@@ -673,9 +647,6 @@ static CURLcode ssh_knownhost(struct Curl_easy *data)
       Curl_share_unlock(data, CURL_LOCK_DATA_KNOWNHOSTS);
     }
   }
-#else /* HAVE_LIBSSH2_KNOWNHOST_API */
-  (void)data;
-#endif
   return result;
 }
 
@@ -853,8 +824,6 @@ static CURLcode ssh_force_knownhost_key_type(struct Curl_easy *data)
 {
   CURLcode result = CURLE_OK;
 
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
-
 #ifdef LIBSSH2_KNOWNHOST_KEY_ED25519
   static const char * const hostkey_method_ssh_ed25519
     = "ssh-ed25519";
@@ -950,12 +919,10 @@ static CURLcode ssh_force_knownhost_key_type(struct Curl_easy *data)
         break;
 #endif
       case LIBSSH2_KNOWNHOST_KEY_SSHRSA:
-#ifdef HAVE_LIBSSH2_VERSION
         if(libssh2_version(0x010900))
           /* since 1.9.0 libssh2_session_method_pref() works as expected */
           hostkey_method = hostkey_method_ssh_rsa_all;
         else
-#endif
           /* old libssh2 which cannot correctly remove unsupported methods due
            * to bug in src/kex.c or does not support the new methods anyways.
            */
@@ -989,8 +956,6 @@ static CURLcode ssh_force_knownhost_key_type(struct Curl_easy *data)
             conn->host.name, data->set.str[STRING_SSH_KNOWNHOSTS]);
     }
   }
-
-#endif /* HAVE_LIBSSH2_KNOWNHOST_API */
 
   return result;
 }
@@ -1128,12 +1093,10 @@ static CURLcode sftp_quote(struct Curl_easy *data,
     state(data, SSH_SFTP_QUOTE_UNLINK);
     return result;
   }
-#ifdef HAS_STATVFS_SUPPORT
   else if(strncasecompare(cmd, "statvfs ", 8)) {
     state(data, SSH_SFTP_QUOTE_STATVFS);
     return result;
   }
-#endif
 
   failf(data, "Unknown SFTP command");
   Curl_safefree(sshc->quote_path1);
@@ -1912,7 +1875,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
       break;
 
     case SSH_AUTH_AGENT_INIT:
-#ifdef HAVE_LIBSSH2_AGENT_API
       if((data->set.ssh_auth_types & CURLSSH_AUTH_AGENT)
          && (strstr(sshc->authlist, "publickey") != NULL)) {
 
@@ -1942,12 +1904,10 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         }
       }
       else
-#endif /* HAVE_LIBSSH2_AGENT_API */
         state(data, SSH_AUTH_KEY_INIT);
       break;
 
     case SSH_AUTH_AGENT_LIST:
-#ifdef HAVE_LIBSSH2_AGENT_API
       rc = libssh2_agent_list_identities(sshc->ssh_agent);
 
       if(rc == LIBSSH2_ERROR_EAGAIN)
@@ -1961,11 +1921,9 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         state(data, SSH_AUTH_AGENT);
         sshc->sshagent_prev_identity = NULL;
       }
-#endif
       break;
 
     case SSH_AUTH_AGENT:
-#ifdef HAVE_LIBSSH2_AGENT_API
       /* as prev_identity evolves only after an identity user auth finished we
          can safely request it again as long as EAGAIN is returned here or by
          libssh2_agent_userauth */
@@ -2002,7 +1960,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         state(data, SSH_AUTH_KEY_INIT);
         rc = 0; /* clear rc and continue */
       }
-#endif
       break;
 
     case SSH_AUTH_KEY_INIT:
@@ -2954,15 +2911,12 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
       break;
 
     case SSH_SESSION_FREE:
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
       if(sshc->kh && !(data->share &&
         data->share->specifier & (1<< CURL_LOCK_DATA_KNOWNHOSTS)) ) {
         libssh2_knownhost_free(sshc->kh);
         sshc->kh = NULL;
       }
-#endif
 
-#ifdef HAVE_LIBSSH2_AGENT_API
       if(sshc->ssh_agent) {
         rc = libssh2_agent_disconnect(sshc->ssh_agent);
         if(rc == LIBSSH2_ERROR_EAGAIN) {
@@ -2983,7 +2937,6 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
         sshc->sshagent_identity = NULL;
         sshc->sshagent_prev_identity = NULL;
       }
-#endif
 
       if(sshc->ssh_session) {
         rc = libssh2_session_free(sshc->ssh_session);
@@ -3005,12 +2958,8 @@ static CURLcode ssh_statemachine(struct Curl_easy *data, bool *block)
       DEBUGASSERT(sshc->ssh_channel == NULL);
       DEBUGASSERT(sshc->sftp_session == NULL);
       DEBUGASSERT(sshc->sftp_handle == NULL);
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
       DEBUGASSERT(sshc->kh == NULL);
-#endif
-#ifdef HAVE_LIBSSH2_AGENT_API
       DEBUGASSERT(sshc->ssh_agent == NULL);
-#endif
 
       Curl_safefree(sshc->rsa_pub);
       Curl_safefree(sshc->rsa);
@@ -3367,7 +3316,6 @@ static CURLcode ssh_connect(struct Curl_easy *data, bool *done)
       infof(data, "Failed to enable compression for ssh session");
   }
 
-#ifdef HAVE_LIBSSH2_KNOWNHOST_API
   if(data->set.str[STRING_SSH_KNOWNHOSTS]) {
     int rc;
 
@@ -3402,7 +3350,6 @@ static CURLcode ssh_connect(struct Curl_easy *data, bool *done)
       infof(data, "Failed to read known hosts from %s",
             data->set.str[STRING_SSH_KNOWNHOSTS]);
   }
-#endif /* HAVE_LIBSSH2_KNOWNHOST_API */
 
 #ifdef CURL_LIBSSH2_DEBUG
   libssh2_trace(sshc->ssh_session, ~0);
@@ -3813,20 +3760,16 @@ static const char *sftp_libssh2_strerror(unsigned long err)
 
 CURLcode Curl_ssh_init(void)
 {
-#ifdef HAVE_LIBSSH2_INIT
   if(libssh2_init(0)) {
     DEBUGF(fprintf(stderr, "Error: libssh2_init failed\n"));
     return CURLE_FAILED_INIT;
   }
-#endif
   return CURLE_OK;
 }
 
 void Curl_ssh_cleanup(void)
 {
-#ifdef HAVE_LIBSSH2_EXIT
   (void)libssh2_exit();
-#endif
 }
 
 void Curl_ssh_version(char *buffer, size_t buflen)

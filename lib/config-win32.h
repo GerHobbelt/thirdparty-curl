@@ -448,11 +448,7 @@ Vista
 /*                           LDAP SUPPORT                           */
 /* ---------------------------------------------------------------- */
 
-#ifdef CURL_HAS_NOVELL_LDAPSDK
-#undef USE_WIN32_LDAP
-#define HAVE_LDAP_SSL_H 1
-#define HAVE_LDAP_URL_PARSE 1
-#elif defined(CURL_HAS_OPENLDAP_LDAPSDK)
+#ifdef CURL_HAS_OPENLDAP_LDAPSDK
 #undef USE_WIN32_LDAP
 #define HAVE_LDAP_URL_PARSE 1
 #elif !defined(CURL_WINDOWS_UWP) && !defined(UNDER_CE)
@@ -499,11 +495,6 @@ Vista
 #    endif
 #  endif /* UNDER_CE */
 #endif /* !CURL_OS */
-
-/* If you want to build curl with the built-in manual */
-#ifndef UNDER_CE
-#define USE_MANUAL 1
-#endif
 
 /* ---------------------------------------------------------------- */
 /*                            Windows CE                            */

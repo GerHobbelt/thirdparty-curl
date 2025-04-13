@@ -73,6 +73,10 @@
 
 #if defined(HAVE_LIBZ) || defined(HAVE_LIBZ_NG)
 
+#if !defined(ZLIB_VERNUM) || (ZLIB_VERNUM < 0x1204)
+#error "requires zlib 1.2.0.4 or newer"
+#endif
+
 typedef enum {
   ZLIB_UNINIT,               /* uninitialized */
   ZLIB_INIT,                 /* initialized */
@@ -314,27 +318,15 @@ static CURLcode gzip_do_init(struct Curl_easy *data,
 {
   struct zlib_writer *zp = (struct zlib_writer *) writer;
   zng_stream *z = &zp->z;     /* zlib state structure */
-  const char *v = zng_zlibVersion();
 
   /* Initialize zlib */
   z->zalloc = (alloc_func) zalloc_cb;
   z->zfree = (free_func) zfree_cb;
 
-#if defined(HAVE_LIBZ) && !defined(HAVE_LIBZ_NG)
-  if(strcmp(v, "1.2.0.4") >= 0) {
-#else
-  if(TRUE) {
-#endif
-    /* zlib version >= 1.2.0.4 supports transparent gzip decompressing */
-    if(zng_inflateInit2(z, MAX_WBITS + 32) != Z_OK) {
-      return process_zlib_error(data, z);
-    }
-    zp->zlib_init = ZLIB_INIT_GZIP; /* Transparent gzip decompress state */
+  if(zng_inflateInit2(z, MAX_WBITS + 32) != Z_OK) {
+    return process_zlib_error(data, z);
   }
-  else {
-    failf(data, "too old zlib version: %s", v);
-    return CURLE_FAILED_INIT;
-  }
+  zp->zlib_init = ZLIB_INIT_GZIP; /* Transparent gzip decompress state */
 
   return CURLE_OK;
 }

@@ -31,13 +31,6 @@
 /* Tell "curl/curl.h" not to include "curl/mprintf.h" */
 #define CURL_SKIP_INCLUDE_MPRINTF
 
-/* Make these warnings visible with an option. */
-#if !defined(CURL_WARN_SIGN_CONVERSION)
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#endif
-#endif
-
 /* Set default _WIN32_WINNT */
 #ifdef __MINGW32__
 #include <_mingw.h>
@@ -294,14 +287,6 @@
 #  define CURL_DISABLE_HTTP_AUTH 1
 #endif
 
-/*
- * ECH requires HTTPSRR.
- */
-
-#if defined(USE_ECH) && !defined(USE_HTTPSRR)
-#  define USE_HTTPSRR
-#endif
-
 /* ================================================================ */
 /* No system header file shall be included in this file before this */
 /* point.                                                           */
@@ -394,6 +379,15 @@
 #  if TARGET_OS_MAC && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) && \
      defined(USE_IPV6)
 #    define CURL_MACOS_CALL_COPYPROXIES 1
+#  endif
+#endif
+
+#ifdef USE_ARES
+#  ifndef CARES_NO_DEPRECATED
+#  define CARES_NO_DEPRECATED  /* for ares_getsock() */
+#  endif
+#  if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) && defined(_WIN32)
+#    define CARES_STATICLIB  /* define it before including ares.h */
 #  endif
 #endif
 
@@ -725,15 +719,15 @@ extern "C" {
 #  define CURLRES_IPV4
 #endif
 
-#ifdef USE_ARES
+#if defined(USE_THREADS_POSIX) || defined(USE_THREADS_WIN32)
+#  define CURLRES_ASYNCH
+#  define CURLRES_THREADED
+#elif defined(USE_ARES)
 #  define CURLRES_ASYNCH
 #  define CURLRES_ARES
 /* now undef the stock libc functions just to avoid them being used */
 #  undef HAVE_GETADDRINFO
 #  undef HAVE_FREEADDRINFO
-#elif defined(USE_THREADS_POSIX) || defined(USE_THREADS_WIN32)
-#  define CURLRES_ASYNCH
-#  define CURLRES_THREADED
 #else
 #  define CURLRES_SYNCH
 #endif

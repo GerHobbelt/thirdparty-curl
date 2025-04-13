@@ -88,6 +88,7 @@ EXTRA_DIST =                                    \
  HSTS.md                                        \
  HTTP-COOKIES.md                                \
  HTTP3.md                                       \
+ HTTPSRR.md                                     \
  INFRASTRUCTURE.md                              \
  INSTALL                                        \
  INSTALL-CMAKE.md                               \
