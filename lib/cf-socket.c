@@ -1298,7 +1298,7 @@ static int do_connect(struct Curl_cfilter *cf, struct Curl_easy *data,
 
     rc = connect(ctx->sock, &ctx->addr.curl_sa_addr, ctx->addr.addrlen);
 #elif defined(MSG_FASTOPEN) /* old Linux */
-    if(cf->conn->given->flags & PROTOPT_SSL)
+    if(Curl_conn_is_ssl(cf->conn, cf->sockindex))
       rc = connect(ctx->sock, &ctx->addr.curl_sa_addr, ctx->addr.addrlen);
     else
       rc = 0; /* Do nothing */
@@ -1459,7 +1459,7 @@ static bool cf_socket_data_pending(struct Curl_cfilter *cf,
 
   (void)data;
   readable = SOCKET_READABLE(ctx->sock, 0);
-  return (readable > 0 && (readable & CURL_CSELECT_IN));
+  return readable > 0 && (readable & CURL_CSELECT_IN);
 }
 
 #ifdef USE_WINSOCK

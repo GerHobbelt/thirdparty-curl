@@ -495,7 +495,7 @@ CURLcode Curl_pollfds_add_ps(struct curl_pollfds *cpfds,
   return CURLE_OK;
 }
 
-void Curl_waitfds_init(struct curl_waitfds *cwfds,
+void Curl_waitfds_init(struct Curl_waitfds *cwfds,
                        struct curl_waitfd *static_wfds,
                        unsigned int static_count)
 {
@@ -506,7 +506,7 @@ void Curl_waitfds_init(struct curl_waitfds *cwfds,
   cwfds->count = static_count;
 }
 
-static unsigned int cwfds_add_sock(struct curl_waitfds *cwfds,
+static unsigned int cwfds_add_sock(struct Curl_waitfds *cwfds,
                                    curl_socket_t sock, short events)
 {
   int i;
@@ -531,7 +531,7 @@ static unsigned int cwfds_add_sock(struct curl_waitfds *cwfds,
   return 1;
 }
 
-unsigned int Curl_waitfds_add_ps(struct curl_waitfds *cwfds,
+unsigned int Curl_waitfds_add_ps(struct Curl_waitfds *cwfds,
                                  struct easy_pollset *ps)
 {
   size_t i;

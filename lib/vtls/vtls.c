@@ -526,12 +526,6 @@ CURLcode Curl_ssl_get_channel_binding(struct Curl_easy *data, int sockindex,
 
 void Curl_ssl_close_all(struct Curl_easy *data)
 {
-  /* kill the session ID cache if not shared */
-  if(data->state.ssl_scache && !CURL_SHARE_ssl_scache(data)) {
-    Curl_ssl_scache_destroy(data->state.ssl_scache);
-    data->state.ssl_scache = NULL;
-  }
-
   if(Curl_ssl->close_all)
     Curl_ssl->close_all(data);
 }
@@ -1386,7 +1380,8 @@ static CURLcode ssl_cf_connect(struct Curl_cfilter *cf,
 
   if(!result && *done) {
     cf->connected = TRUE;
-    connssl->handshake_done = Curl_now();
+    if(connssl->state == ssl_connection_complete)
+      connssl->handshake_done = Curl_now();
     /* Connection can be deferred when sending early data */
     DEBUGASSERT(connssl->state == ssl_connection_complete ||
                 connssl->state == ssl_connection_deferred);

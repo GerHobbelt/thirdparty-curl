@@ -59,6 +59,8 @@
 #include "select.h"
 #include "progress.h"
 #include "timediff.h"
+#include "httpsrr.h"
+#include "strdup.h"
 
 #if defined(CURL_STATICLIB) && !defined(CARES_STATICLIB) &&   \
   defined(_WIN32)
@@ -93,6 +95,13 @@
 #define HAVE_CARES_GETADDRINFO 1
 #endif
 
+#if ARES_VERSION >= 0x011c00
+/* 1.28.0 and later have ares_query_dnsrec */
+#define HAVE_ARES_QUERY_DNSREC 1
+#else
+#undef USE_HTTPSRR
+#endif
+
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
 #include "curl_memory.h"
@@ -105,6 +114,9 @@ struct thread_data {
   int last_status;
 #ifndef HAVE_CARES_GETADDRINFO
   struct curltime happy_eyeballs_dns_time; /* when this timer started, or 0 */
+#endif
+#ifdef USE_HTTPSRR
+  struct Curl_https_rrinfo hinfo;
 #endif
   char hostname[1];
 };
@@ -417,8 +429,18 @@ CURLcode Curl_resolver_is_resolved(struct Curl_easy *data,
 
     if(!data->state.async.dns)
       result = Curl_resolver_error(data);
-    else
+    else {
       *dns = data->state.async.dns;
+#ifdef USE_HTTPSRR
+      {
+        struct Curl_https_rrinfo *lhrr =
+          Curl_memdup(&res->hinfo, sizeof(struct Curl_https_rrinfo));
+        if(!lhrr)
+          return CURLE_OUT_OF_MEMORY;
+        (*dns)->hinfo = lhrr;
+      }
+#endif
+    }
 
     destroy_async_data(&data->state.async);
   }
@@ -745,6 +767,73 @@ static void addrinfo_cb(void *arg, int status, int timeouts,
 }
 
 #endif
+
+#ifdef USE_HTTPSRR
+static void httpsrr_opt(struct Curl_easy *data,
+                        const ares_dns_rr_t *rr,
+                        ares_dns_rr_key_t key, size_t idx)
+{
+  size_t len = 0;
+  const unsigned char *val = NULL;
+  unsigned short code;
+  struct thread_data *res = data->state.async.tdata;
+
+  code  = ares_dns_rr_get_opt(rr, key, idx, &val, &len);
+
+  switch(code) {
+  case HTTPS_RR_CODE_ALPN: /* str_list */
+    Curl_httpsrr_decode_alpn(val, len, res->hinfo.alpns);
+    infof(data, "HTTPS RR ALPN: %u %u %u %u",
+          res->hinfo.alpns[0], res->hinfo.alpns[1], res->hinfo.alpns[2],
+          res->hinfo.alpns[3]);
+    break;
+  case HTTPS_RR_CODE_NO_DEF_ALPN:
+    infof(data, "HTTPS RR no-def-alpn");
+    break;
+  case HTTPS_RR_CODE_IPV4: /* addr4 list */
+    infof(data, "HTTPS RR IPv4");
+    break;
+  case HTTPS_RR_CODE_ECH:
+    infof(data, "HTTPS RR ECH");
+    break;
+  case HTTPS_RR_CODE_IPV6: /* addr6 list */
+    infof(data, "HTTPS RR IPv6");
+    break;
+  case HTTPS_RR_CODE_PORT:
+    infof(data, "HTTPS RR port");
+    break;
+  default:
+    infof(data, "HTTPS RR unknown code");
+    break;
+  }
+}
+
+static void dnsrec_done_cb(void *arg, ares_status_t status,
+                           size_t timeouts,
+                           const ares_dns_record_t *dnsrec)
+{
+  struct Curl_easy *data = arg;
+  size_t i;
+  struct thread_data *res = data->state.async.tdata;
+  (void)timeouts;
+
+  res->num_pending--;
+  if((ARES_SUCCESS != status) || !dnsrec)
+    return;
+
+  for(i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+    size_t opt;
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get_const(dnsrec, ARES_SECTION_ANSWER, i);
+    if(ares_dns_rr_get_type(rr) != ARES_REC_TYPE_HTTPS)
+      continue;
+    for(opt = 0; opt < ares_dns_rr_get_opt_cnt(rr, ARES_RR_HTTPS_PARAMS);
+        opt++)
+      httpsrr_opt(data, rr, ARES_RR_HTTPS_PARAMS, opt);
+  }
+}
+#endif
+
 /*
  * Curl_resolver_getaddrinfo() - when using ares
  *
@@ -827,6 +916,16 @@ struct Curl_addrinfo *Curl_resolver_getaddrinfo(struct Curl_easy *data,
                          query_completed_cb, data);
     }
 #endif
+#ifdef USE_HTTPSRR
+    {
+      res->num_pending++; /* one more */
+      memset(&res->hinfo, 0, sizeof(struct Curl_https_rrinfo));
+      ares_query_dnsrec((ares_channel)data->state.async.resolver,
+                        hostname, ARES_CLASS_IN,
+                        ARES_REC_TYPE_HTTPS,
+                        dnsrec_done_cb, data, NULL);
+    }
+#endif
     *waitp = 1; /* expect asynchronous response */
   }
   return NULL; /* no struct yet */
@@ -838,14 +937,26 @@ CURLcode Curl_set_dns_servers(struct Curl_easy *data,
   CURLcode result = CURLE_NOT_BUILT_IN;
   int ares_result;
 
-  /* If server is NULL or empty, this would purge all DNS servers
-   * from ares library, which will cause any and all queries to fail.
-   * So, just return OK if none are configured and do not actually make
-   * any changes to c-ares. This lets c-ares use its defaults, which
-   * it gets from the OS (for instance from /etc/resolv.conf on Linux).
+  /* If server is NULL, this purges all DNS servers from c-ares. Reset it to
+   * default.
    */
-  if(!(servers && servers[0]))
-    return CURLE_OK;
+  if(!servers) {
+    Curl_resolver_cleanup(data->state.async.resolver);
+    result = Curl_resolver_init(data, &data->state.async.resolver);
+    if(!result) {
+      /* this now needs to restore the other options set to c-ares */
+      if(data->set.str[STRING_DNS_INTERFACE])
+        (void)Curl_set_dns_interface(data,
+                                     data->set.str[STRING_DNS_INTERFACE]);
+      if(data->set.str[STRING_DNS_LOCAL_IP4])
+        (void)Curl_set_dns_local_ip4(data,
+                                     data->set.str[STRING_DNS_LOCAL_IP4]);
+      if(data->set.str[STRING_DNS_LOCAL_IP6])
+        (void)Curl_set_dns_local_ip6(data,
+                                     data->set.str[STRING_DNS_LOCAL_IP6]);
+    }
+    return result;
+  }
 
 #ifdef HAVE_CARES_SERVERS_CSV
 #ifdef HAVE_CARES_PORTS_CSV

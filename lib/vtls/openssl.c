@@ -83,8 +83,7 @@
 #include <openssl/tls1.h>
 #include <openssl/evp.h>
 
-#if defined(HAVE_SSL_SET1_ECH_CONFIG_LIST) || \
-    defined(HAVE_SSL_ECH_SET1_ECHCONFIG)
+#if defined(HAVE_SSL_SET1_ECH_CONFIG_LIST)
 #define USE_ECH_OPENSSL
 #endif
 
@@ -751,7 +750,7 @@ static long ossl_bio_cf_ctrl(BIO *bio, int cmd, long num, void *ptr)
 #ifdef BIO_CTRL_EOF
   case BIO_CTRL_EOF:
     /* EOF has been reached on input? */
-    return (!cf->next || !cf->next->connected);
+    return !cf->next || !cf->next->connected;
 #endif
   default:
     ret = 0;
@@ -1025,7 +1024,7 @@ static int passwd_callback(char *buf, int num, int encrypting,
  */
 static bool rand_enough(void)
 {
-  return (0 != RAND_status());
+  return 0 != RAND_status();
 }
 
 static CURLcode ossl_seed(struct Curl_easy *data)
@@ -1081,8 +1080,8 @@ static CURLcode ossl_seed(struct Curl_easy *data)
   }
 
   infof(data, "libcurl is now using a weak random seed");
-  return (rand_enough() ? CURLE_OK :
-          CURLE_SSL_CONNECT_ERROR /* confusing error code */);
+  return rand_enough() ? CURLE_OK :
+         CURLE_SSL_CONNECT_ERROR; /* confusing error code */
 #endif
 }
 
@@ -1160,7 +1159,7 @@ static int ssl_ui_writer(UI *ui, UI_STRING *uis)
  */
 static bool is_pkcs11_uri(const char *string)
 {
-  return (string && strncasecompare(string, "pkcs11:", 7));
+  return string && strncasecompare(string, "pkcs11:", 7);
 }
 
 #endif
@@ -4073,7 +4072,7 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
       }
       if(SSL_set1_ech_config_list(octx->ssl, ech_config,
                                   ech_config_len) != 1) {
-        infof(data, "ECH: SSL_ECH_set1_echconfig failed");
+        infof(data, "ECH: SSL_ECH_set1_ech_config_list failed");
         if(data->set.tls_ech & CURLECH_HARD) {
           free(ech_config);
           return CURLE_SSL_CONNECT_ERROR;
@@ -4088,8 +4087,9 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
         return CURLE_SSL_CONNECT_ERROR;
       }
       ech_config_len = strlen(data->set.str[STRING_ECH_CONFIG]);
-      if(SSL_ech_set1_echconfig(octx->ssl, ech_config, ech_config_len) != 1) {
-        infof(data, "ECH: SSL_ECH_set1_echconfig failed");
+      if(SSL_set1_ech_config_list(octx->ssl, ech_config,
+                                  ech_config_len) != 1) {
+        infof(data, "ECH: SSL_ECH_set1_ech_config_list failed");
         if(data->set.tls_ech & CURLECH_HARD)
           return CURLE_SSL_CONNECT_ERROR;
       }
@@ -4117,19 +4117,11 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
           size_t elen = rinfo->echconfiglist_len;
 
           infof(data, "ECH: ECHConfig from DoH HTTPS RR");
-# if !defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
-          if(SSL_ech_set1_echconfig(octx->ssl, ecl, elen) != 1) {
-            infof(data, "ECH: SSL_ECH_set1_echconfig failed");
-            if(data->set.tls_ech & CURLECH_HARD)
-              return CURLE_SSL_CONNECT_ERROR;
-          }
-# else
           if(SSL_set1_ech_config_list(octx->ssl, ecl, elen) != 1) {
-            infof(data, "ECH: SSL_set1_ech_config_list failed (BoringSSL)");
+            infof(data, "ECH: SSL_set1_ech_config_list failed");
             if(data->set.tls_ech & CURLECH_HARD)
               return CURLE_SSL_CONNECT_ERROR;
           }
-# endif
           else {
             trying_ech_now = 1;
             infof(data, "ECH: imported ECHConfigList of length %zu", elen);
@@ -4152,7 +4144,7 @@ CURLcode Curl_ossl_ctx_init(struct ossl_ctx *octx,
     if(trying_ech_now && outername) {
       infof(data, "ECH: inner: '%s', outer: '%s'",
             peer->hostname ? peer->hostname : "NULL", outername);
-      result = SSL_ech_set_server_names(octx->ssl,
+      result = SSL_ech_set1_server_names(octx->ssl,
                                         peer->hostname, outername,
                                         0 /* do send outer */);
       if(result != 1) {
@@ -4291,7 +4283,7 @@ static void ossl_trace_ech_retry_configs(struct Curl_easy *data, SSL* ssl,
   if(!ECH_ENABLED(data))
     return;
 # if !defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
-  rv = SSL_ech_get_retry_config(ssl, &rcs, &rcl);
+  rv = SSL_ech_get1_retry_config(ssl, &rcs, &rcl);
 # else
   SSL_get0_ech_retry_configs(ssl, &rcs, &rcl);
   rv = (int)rcl;
@@ -4306,7 +4298,7 @@ static void ossl_trace_ech_retry_configs(struct Curl_easy *data, SSL* ssl,
       infof(data, "ECH: retry_configs %s", b64str);
       free(b64str);
 #if !defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
-      rv = SSL_ech_get_status(ssl, &inner, &outer);
+      rv = SSL_ech_get1_status(ssl, &inner, &outer);
       infof(data, "ECH: retry_configs for %s from %s, %d %d",
             inner ? inner : "NULL", outer ? outer : "NULL", reason, rv);
 #else
@@ -4514,7 +4506,7 @@ static CURLcode ossl_connect_step2(struct Curl_cfilter *cf,
       const char *status = NULL;
       int rv;
 
-      rv = SSL_ech_get_status(octx->ssl, &inner, &outer);
+      rv = SSL_ech_get1_status(octx->ssl, &inner, &outer);
       switch(rv) {
       case SSL_ECH_STATUS_SUCCESS:
         status = "succeeded";
@@ -5466,7 +5458,7 @@ static CURLcode ossl_random(struct Curl_easy *data,
   }
   /* RAND_bytes() returns 1 on success, 0 otherwise.  */
   rc = RAND_bytes(entropy, (ossl_valsize_t)curlx_uztosi(length));
-  return (rc == 1 ? CURLE_OK : CURLE_FAILED_INIT);
+  return rc == 1 ? CURLE_OK : CURLE_FAILED_INIT;
 }
 
 #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL) && !defined(OPENSSL_NO_SHA256)

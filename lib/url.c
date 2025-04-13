@@ -386,8 +386,6 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
 #endif
   set->dns_cache_timeout = 60; /* Timeout every 60 seconds by default */
 
-  /* Set the default size of the SSL session ID cache */
-  set->general_ssl.max_ssl_sessions = 5;
   /* Timeout every 24 hours by default */
   set->general_ssl.ca_cache_timeout = 24 * 60 * 60;
 
@@ -856,8 +854,8 @@ CURLcode Curl_conn_upkeep(struct Curl_easy *data,
 static bool ssh_config_matches(struct connectdata *one,
                                struct connectdata *two)
 {
-  return (Curl_safecmp(one->proto.sshc.rsa, two->proto.sshc.rsa) &&
-          Curl_safecmp(one->proto.sshc.rsa_pub, two->proto.sshc.rsa_pub));
+  return Curl_safecmp(one->proto.sshc.rsa, two->proto.sshc.rsa) &&
+         Curl_safecmp(one->proto.sshc.rsa_pub, two->proto.sshc.rsa_pub);
 }
 #else
 #define ssh_config_matches(x,y) FALSE
@@ -975,12 +973,12 @@ static bool url_match_conn(struct connectdata *conn, void *userdata)
     return FALSE;
 #endif
 
-  if((needle->handler->flags&PROTOPT_SSL) !=
-     (conn->handler->flags&PROTOPT_SSL))
-    /* do not do mixed SSL and non-SSL connections */
-    if(get_protocol_family(conn->handler) !=
-       needle->handler->protocol || !conn->bits.tls_upgraded)
-      /* except protocols that have been upgraded via TLS */
+  if((!(needle->handler->flags&PROTOPT_SSL) !=
+      !Curl_conn_is_ssl(conn, FIRSTSOCKET)) &&
+     !(get_protocol_family(conn->handler) == needle->handler->protocol &&
+       conn->bits.tls_upgraded))
+    /* Deny `conn` if it is not fit for `needle`'s SSL needs,
+     * UNLESS `conn` is the same protocol family and was upgraded to SSL. */
       return FALSE;
 
 #ifndef CURL_DISABLE_PROXY

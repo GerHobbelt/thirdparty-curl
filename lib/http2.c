@@ -2636,9 +2636,6 @@ static CURLcode cf_h2_cntrl(struct Curl_cfilter *cf,
   case CF_CTRL_FLUSH:
     result = cf_h2_flush(cf, data);
     break;
-  case CF_CTRL_DATA_DETACH:
-    http2_data_done(cf, data);
-    break;
   case CF_CTRL_DATA_DONE:
     http2_data_done(cf, data);
     break;
@@ -2955,7 +2952,7 @@ bool Curl_h2_http_1_1_error(struct Curl_easy *data)
 {
   if(Curl_conn_is_http2(data, data->conn, FIRSTSOCKET)) {
     int err = Curl_conn_get_stream_error(data, data->conn, FIRSTSOCKET);
-    return (err == NGHTTP2_HTTP_1_1_REQUIRED);
+    return err == NGHTTP2_HTTP_1_1_REQUIRED;
   }
   return FALSE;
 }

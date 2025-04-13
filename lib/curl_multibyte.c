@@ -32,7 +32,7 @@
 
 #include "curl_setup.h"
 
-#if defined(_WIN32)
+#ifdef _WIN32
 
 #include "curl_multibyte.h"
 /* The last 2 #include files should be in this order */
@@ -240,7 +240,7 @@ cleanup:
   free(ibuf);
   free(obuf);
 #endif
-  return (*out ? true : false);
+  return *out ? true : false;
 }
 
 int curlx_win32_open(const char *filename, int oflag, ...)

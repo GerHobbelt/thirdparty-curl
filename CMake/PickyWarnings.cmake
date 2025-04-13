@@ -173,7 +173,6 @@ if(PICKY_COMPILER)
           -Wold-style-declaration          #             gcc  4.3
           -Wpragmas                        # clang  3.5  gcc  4.1  appleclang  6.0
           -Wstrict-aliasing=3              #             gcc  4.0
-          -Wtrampolines                    #             gcc  4.3
         )
       endif()
       if(NOT CMAKE_C_COMPILER_VERSION VERSION_LESS 4.5 AND MINGW)
@@ -185,6 +184,7 @@ if(PICKY_COMPILER)
         list(APPEND _picky_enable
           -Wdouble-promotion               # clang  3.6  gcc  4.6  appleclang  6.3
           -Wformat=2                       # clang  3.0  gcc  4.8
+          -Wtrampolines                    #             gcc  4.6
         )
       endif()
       if(NOT CMAKE_C_COMPILER_VERSION VERSION_LESS 5.0)
@@ -249,7 +249,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND MSVC)
     if(_ccopt MATCHES "^-W" AND NOT _ccopt STREQUAL "-Wall")
       list(APPEND _picky_tmp ${_ccopt})
     else()
-      list(APPEND _picky_tmp "/clang:${_ccopt}")
+      list(APPEND _picky_tmp "-clang:${_ccopt}")
     endif()
   endforeach()
   set(_picky ${_picky_tmp})

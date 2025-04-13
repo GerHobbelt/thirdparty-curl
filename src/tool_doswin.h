@@ -28,11 +28,9 @@
 #if defined(_WIN32) || defined(MSDOS)
 
 
-#if defined(MSDOS) && (defined(__DJGPP__) || defined(__GO32__))
-
+#ifdef __DJGPP__
 char **__crt0_glob_function(char *arg);
-
-#endif /* MSDOS && (__DJGPP__ || __GO32__) */
+#endif
 
 #ifdef _WIN32
 

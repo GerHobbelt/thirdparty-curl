@@ -28,13 +28,13 @@
 
 /* For Windows, mainly (may be moved in a config file?) */
 #ifndef STDIN_FILENO
-  #define STDIN_FILENO 0
+#define STDIN_FILENO 0
 #endif
 #ifndef STDOUT_FILENO
-  #define STDOUT_FILENO 1
+#define STDOUT_FILENO 1
 #endif
 #ifndef STDERR_FILENO
-  #define STDERR_FILENO 2
+#define STDERR_FILENO 2
 #endif
 
 CURLcode test(char *URL)
@@ -96,6 +96,15 @@ CURLcode test(char *URL)
     if(res && res != CURLE_AGAIN)
       res = TEST_ERR_FAILURE;
   }
+
+#ifdef LIB696
+  /* attempt to use the handle again */
+  test_setopt(curl, CURLOPT_URL, URL);
+  test_setopt(curl, CURLOPT_CONNECT_ONLY, 1L);
+  test_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+  res = curl_easy_perform(curl);
+#endif
 
 test_cleanup:
 

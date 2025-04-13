@@ -324,17 +324,16 @@ AS_HELP_STRING([--with-test-vsftpd=PATH],[where to find vsftpd for testing]),
 )
 AC_SUBST(VSFTPD)
 
-dnl we'd like a httpd+apachectl as test server
+dnl we'd like a httpd as test server
 dnl
 HTTPD_ENABLED="maybe"
 AC_ARG_WITH(test-httpd, [AS_HELP_STRING([--with-test-httpd=PATH],
                          [where to find httpd/apache2 for testing])],
   [request_httpd=$withval], [request_httpd=check])
 if test x"$request_httpd" = "xcheck" -o x"$request_httpd" = "xyes"; then
-  if test -x "/usr/sbin/apache2" -a -x "/usr/sbin/apache2ctl"; then
+  if test -x "/usr/sbin/apache2"; then
     # common location on distros (debian/ubuntu)
     HTTPD="/usr/sbin/apache2"
-    APACHECTL="/usr/sbin/apache2ctl"
     AC_PATH_PROG([APXS], [apxs])
     if test "x$APXS" = "x"; then
       AC_MSG_NOTICE([apache2-dev not installed, httpd tests disabled])
@@ -345,9 +344,8 @@ if test x"$request_httpd" = "xcheck" -o x"$request_httpd" = "xyes"; then
     if test "x$HTTPD" = "x"; then
       AC_PATH_PROG([HTTPD], [apache2])
     fi
-    AC_PATH_PROG([APACHECTL], [apachectl])
     AC_PATH_PROG([APXS], [apxs])
-    if test "x$HTTPD" = "x" -o "x$APACHECTL" = "x"; then
+    if test "x$HTTPD" = "x"; then
       AC_MSG_NOTICE([httpd/apache2 not in PATH, http tests disabled])
       HTTPD_ENABLED="no"
     fi
@@ -358,13 +356,9 @@ if test x"$request_httpd" = "xcheck" -o x"$request_httpd" = "xyes"; then
   fi
 elif test x"$request_httpd" != "xno"; then
   HTTPD="${request_httpd}/bin/httpd"
-  APACHECTL="${request_httpd}/bin/apachectl"
   APXS="${request_httpd}/bin/apxs"
   if test ! -x "${HTTPD}"; then
     AC_MSG_NOTICE([httpd not found as ${HTTPD}, http tests disabled])
-    HTTPD_ENABLED="no"
-  elif test ! -x "${APACHECTL}"; then
-    AC_MSG_NOTICE([apachectl not found as ${APACHECTL}, http tests disabled])
     HTTPD_ENABLED="no"
   elif test ! -x "${APXS}"; then
     AC_MSG_NOTICE([apxs not found as ${APXS}, http tests disabled])
@@ -375,11 +369,9 @@ elif test x"$request_httpd" != "xno"; then
 fi
 if test x"$HTTPD_ENABLED" = "xno"; then
   HTTPD=""
-  APACHECTL=""
   APXS=""
 fi
 AC_SUBST(HTTPD)
-AC_SUBST(APACHECTL)
 AC_SUBST(APXS)
 
 dnl the nghttpx we might use in httpd testing
@@ -500,6 +492,14 @@ dnl **********************************************************************
 
 CURL_CHECK_COMPILER
 CURL_CHECK_NATIVE_WINDOWS
+
+curl_cv_winuwp='no'
+if test "$curl_cv_native_windows" = "yes"; then
+  case "$CPPFLAGS" in
+    *-DWINSTORECOMPAT*) curl_cv_winuwp='yes';;
+  esac
+fi
+
 CURL_SET_COMPILER_BASIC_OPTS
 CURL_SET_COMPILER_DEBUG_OPTS
 CURL_SET_COMPILER_OPTIMIZE_OPTS
@@ -881,6 +881,11 @@ AS_HELP_STRING([--disable-telnet],[Disable TELNET support]),
     AC_MSG_RESULT(yes)
 )
 
+if test "$curl_cv_winuwp" = 'yes'; then
+  AC_DEFINE(CURL_DISABLE_TELNET, 1, [to disable TELNET])
+  CURL_DISABLE_TELNET=1
+fi
+
 AC_MSG_CHECKING([whether to support tftp])
 AC_ARG_ENABLE(tftp,
 AS_HELP_STRING([--enable-tftp],[Enable TFTP support])
@@ -1154,7 +1159,9 @@ if test "$HAVE_GETHOSTBYNAME" != "1"; then
   ])
 fi
 
-if test "$HAVE_GETHOSTBYNAME" != "1"; then
+# In UWP mode gethostbyname gets detected via the core libs, but some
+# code (in6addr_any) still need ws2_32, so let us detect and add it.
+if test "$HAVE_GETHOSTBYNAME" != "1" -o "$curl_cv_winuwp" = "yes"; then
   dnl This is for Winsock systems
   if test "$curl_cv_native_windows" = "yes"; then
     winsock_LIB="-lws2_32"
@@ -1598,7 +1605,7 @@ if test x$CURL_DISABLE_LDAP != x1; then
   CURL_CHECK_HEADER_LDAP_SSL
 
   if test -z "$LDAPLIBNAME"; then
-    if test "$curl_cv_native_windows" = "yes"; then
+    if test "$curl_cv_native_windows" = "yes" -a "$curl_cv_winuwp" != "yes"; then
       dnl Windows uses a single and unique LDAP library name
       LDAPLIBNAME="wldap32"
       LBERLIBNAME="no"
@@ -2603,22 +2610,29 @@ dnl ----------------------------
 
 want_winuni="no"
 if test "$curl_cv_native_windows" = "yes"; then
-  AC_MSG_CHECKING([whether to enable Windows Unicode (Windows native builds only)])
-  AC_ARG_ENABLE(windows-unicode,
+  if test "$curl_cv_winuwp" = 'yes'; then
+    want_winuni="yes"
+  else
+    AC_MSG_CHECKING([whether to enable Windows Unicode (Windows native builds only)])
+    AC_ARG_ENABLE(windows-unicode,
 AS_HELP_STRING([--enable-windows-unicode],[Enable Windows Unicode])
 AS_HELP_STRING([--disable-windows-unicode],[Disable Windows Unicode (default)]),
-  [ case "$enableval" in
-    yes)
-      CPPFLAGS="${CPPFLAGS} -DUNICODE -D_UNICODE"
-      want_winuni="yes"
-      AC_MSG_RESULT([yes])
-      ;;
-    *)
-      AC_MSG_RESULT([no])
-      ;;
-    esac ],
-      AC_MSG_RESULT([no])
-  )
+    [ case "$enableval" in
+      yes)
+        want_winuni="yes"
+        AC_MSG_RESULT([yes])
+        ;;
+      *)
+        AC_MSG_RESULT([no])
+        ;;
+      esac ],
+        AC_MSG_RESULT([no])
+    )
+  fi
+
+  if test "$want_winuni" = "yes"; then
+    CPPFLAGS="${CPPFLAGS} -DUNICODE -D_UNICODE"
+  fi
 fi
 
 AM_CONDITIONAL([USE_UNICODE], [test "$want_winuni" = "yes"])
@@ -4056,7 +4070,6 @@ AC_CHECK_FUNCS([\
   mach_absolute_time \
   pipe \
   poll \
-  sched_yield \
   sendmsg \
   sendmmsg \
   setlocale \
@@ -4068,6 +4081,7 @@ AC_CHECK_FUNCS([\
 ])
 
 if test "$curl_cv_native_windows" != 'yes'; then
+  AC_CHECK_FUNCS([sched_yield])
   CURL_CHECK_FUNC_STRCASECMP
   CURL_CHECK_FUNC_STRCMPI
   CURL_CHECK_FUNC_STRICMP
@@ -4879,13 +4893,7 @@ if test "x$want_ech" != "xno"; then
   ECH_ENABLED=0
   ECH_SUPPORT=''
 
-  dnl check for OpenSSL
-  if test "x$OPENSSL_ENABLED" = "x1"; then
-    AC_CHECK_FUNCS(SSL_ech_set1_echconfig,
-      ECH_SUPPORT="ECH support available via OpenSSL with SSL_ech_set1_echconfig"
-      ECH_ENABLED=1)
-  fi
-  dnl check for BoringSSL equivalent
+  dnl check for OpenSSL equivalent
   if test "x$OPENSSL_ENABLED" = "x1"; then
     AC_CHECK_FUNCS(SSL_set1_ech_config_list,
       ECH_SUPPORT="ECH support available via BoringSSL with SSL_set1_ech_config_list"
