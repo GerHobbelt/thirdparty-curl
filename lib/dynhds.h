@@ -103,7 +103,7 @@ struct dynhds_entry *Curl_dynhds_cget(struct dynhds *dynhds, const char *name);
 /* used by unit2602.c */
 
 /**
- * Return TRUE iff one or more headers with the given name exist.
+ * Return TRUE if one or more headers with the given name exist.
  */
 bool Curl_dynhds_contains(struct dynhds *dynhds,
                           const char *name, size_t namelen);

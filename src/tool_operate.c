@@ -1505,7 +1505,7 @@ static CURLcode config2setopts(struct GlobalConfig *global,
     my_setopt(curl, CURLOPT_SSL_PERMUTE_EXTENSIONS, 1L);
 
   /* curl-impersonate */
-  if (config->tls_grease)
+  if(config->tls_grease)
     my_setopt(curl, CURLOPT_TLS_GREASE, 1L);
 
   /* curl-impersonate */

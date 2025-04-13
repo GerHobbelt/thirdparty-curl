@@ -4564,7 +4564,7 @@ struct name_const {
 
 /* keep them sorted by length! */
 static struct name_const H2_NON_FIELD[] = {
-  { STRCONST("TE") },
+  // { STRCONST("TE") },
   { STRCONST("Host") },
   { STRCONST("Upgrade") },
   { STRCONST("Connection") },
@@ -4660,7 +4660,6 @@ CURLcode Curl_http_req_to_h2(struct dynhds *h2_headers,
   if(data->set.str[STRING_HTTP2_PSEUDO_HEADERS_ORDER]) {
     order = data->set.str[STRING_HTTP2_PSEUDO_HEADERS_ORDER];
   }
-
 
   result = h2_check_pseudo_header_order(order);
 

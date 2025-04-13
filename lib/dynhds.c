@@ -56,7 +56,7 @@ entry_new(const char *name, size_t namelen,
   e->valuelen = valuelen;
   if(opts & DYNHDS_OPT_LOWERCASE)
     Curl_strntolower(e->name, e->name, e->namelen);
-  // curl-impersonate: Make value alsow lower case
+  // curl-impersonate: Make header value also lower case
   if(opts & DYNHDS_OPT_LOWERCASE_VAL)
     Curl_strntolower(e->value, e->value, e->valuelen);
   return e;
@@ -191,7 +191,7 @@ CURLcode Curl_dynhds_add(struct dynhds *dynhds,
   if(dynhds->strs_len + namelen + valuelen > dynhds->max_strs_size)
     return CURLE_OUT_OF_MEMORY;
 
-entry = entry_new(name, namelen, value, valuelen, dynhds->opts);
+  entry = entry_new(name, namelen, value, valuelen, dynhds->opts);
   if(!entry)
     goto out;
 
