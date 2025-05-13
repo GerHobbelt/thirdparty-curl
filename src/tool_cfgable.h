@@ -55,7 +55,7 @@ struct State {
 
 struct OperationConfig {
   struct State state;             /* for create_transfer() */
-  struct curlx_dynbuf postdata;
+  struct curl_dynbuf postdata;
   char *useragent;
   struct curl_slist *cookies;  /* cookies to serialize into a single line */
   char *cookiejar;          /* write to this file */

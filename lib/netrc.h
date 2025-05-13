@@ -29,7 +29,7 @@
 #include "dynbuf.h"
 
 struct store_netrc {
-  struct dynbuf filebuf;
+  struct curl_dynbuf filebuf;
   char *filename;
   BIT(loaded);
 };

@@ -1186,7 +1186,7 @@ struct UrlState {
   curl_off_t lastconnect_id; /* The last connection, -1 if undefined */
   curl_off_t recent_conn_id; /* The most recent connection used, might no
                               * longer exist */
-  struct dynbuf headerb; /* buffer to store headers in */
+  struct curl_dynbuf headerb; /* buffer to store headers in */
   struct curl_slist *hstslist; /* list of HSTS files set by
                                   curl_easy_setopt(HSTS) calls */
   curl_off_t current_speed;  /* the ProgressShow() function sets this,
@@ -1272,7 +1272,7 @@ struct UrlState {
                            demand */
 #endif
   size_t trailers_bytes_sent;
-  struct dynbuf trailers_buf; /* a buffer containing the compiled trailing
+  struct curl_dynbuf trailers_buf; /* a buffer containing the compiled trailing
                                  headers */
   struct Curl_llist httphdrs; /* received headers */
   struct curl_header headerout[2]; /* for external purposes */

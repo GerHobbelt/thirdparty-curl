@@ -73,7 +73,7 @@ struct IMAP {
 struct imap_conn {
   struct pingpong pp;
   struct SASL sasl;           /* SASL-related parameters */
-  struct dynbuf dyn;          /* for the IMAP commands */
+  struct curl_dynbuf dyn;          /* for the IMAP commands */
   char *mailbox;              /* The last selected mailbox */
   char *mailbox_uidvalidity;  /* UIDVALIDITY parsed from select response */
   imapstate state;            /* Always use imap.c:state() to change state! */

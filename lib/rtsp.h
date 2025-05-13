@@ -48,7 +48,7 @@ typedef enum {
  * Currently, only used for tracking incomplete RTP data reads
  */
 struct rtsp_conn {
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   int rtp_channel;
   size_t rtp_len;
   rtp_parse_st state;

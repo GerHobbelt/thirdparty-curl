@@ -58,8 +58,8 @@ struct pingpong {
                                off, used to time-out response reading */
   timediff_t response_time; /* When no timeout is given, this is the amount of
                                milliseconds we await for a server response. */
-  struct dynbuf sendbuf;
-  struct dynbuf recvbuf;
+  struct curl_dynbuf sendbuf;
+  struct curl_dynbuf recvbuf;
   size_t overflow; /* number of bytes left after a final response line */
   size_t nfinal;   /* number of bytes in the final response line, which
                       after a match is first in the receice buffer */

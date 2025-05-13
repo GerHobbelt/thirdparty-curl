@@ -45,7 +45,7 @@
 #define curlx_dynbuf dynbuf /* for the struct name */
 #endif
 
-struct dynbuf {
+struct curl_dynbuf {
   char *bufr;    /* point to a null-terminated allocated buffer */
   size_t leng;   /* number of bytes *EXCLUDING* the null-terminator */
   size_t allc;   /* size of the current allocation */
@@ -55,30 +55,30 @@ struct dynbuf {
 #endif
 };
 
-void Curl_dyn_init(struct dynbuf *s, size_t toobig);
-void Curl_dyn_free(struct dynbuf *s);
-CURLcode Curl_dyn_addn(struct dynbuf *s, const void *mem, size_t len)
+void Curl_dyn_init(struct curl_dynbuf *s, size_t toobig);
+void Curl_dyn_free(struct curl_dynbuf *s);
+CURLcode Curl_dyn_addn(struct curl_dynbuf *s, const void *mem, size_t len)
   WARN_UNUSED_RESULT;
-CURLcode Curl_dyn_add(struct dynbuf *s, const char *str)
+CURLcode Curl_dyn_add(struct curl_dynbuf *s, const char *str)
   WARN_UNUSED_RESULT;
-CURLcode Curl_dyn_addf(struct dynbuf *s, const char *fmt, ...)
+CURLcode Curl_dyn_addf(struct curl_dynbuf *s, const char *fmt, ...)
   WARN_UNUSED_RESULT CURL_PRINTF(2, 3);
-CURLcode Curl_dyn_vaddf(struct dynbuf *s, const char *fmt, va_list ap)
+CURLcode Curl_dyn_vaddf(struct curl_dynbuf *s, const char *fmt, va_list ap)
   WARN_UNUSED_RESULT CURL_PRINTF(2, 0);
-void Curl_dyn_reset(struct dynbuf *s);
-CURLcode Curl_dyn_tail(struct dynbuf *s, size_t trail);
-CURLcode Curl_dyn_setlen(struct dynbuf *s, size_t set);
-char *Curl_dyn_ptr(const struct dynbuf *s);
-unsigned char *Curl_dyn_uptr(const struct dynbuf *s);
-size_t Curl_dyn_len(const struct dynbuf *s);
+void Curl_dyn_reset(struct curl_dynbuf *s);
+CURLcode Curl_dyn_tail(struct curl_dynbuf *s, size_t trail);
+CURLcode Curl_dyn_setlen(struct curl_dynbuf *s, size_t set);
+char *Curl_dyn_ptr(const struct curl_dynbuf *s);
+unsigned char *Curl_dyn_uptr(const struct curl_dynbuf *s);
+size_t Curl_dyn_len(const struct curl_dynbuf *s);
 
 /* returns 0 on success, -1 on error */
 /* The implementation of this function exists in mprintf.c */
-int Curl_dyn_vprintf(struct dynbuf *dyn, const char *format, va_list ap_save);
+int Curl_dyn_vprintf(struct curl_dynbuf *dyn, const char *format, va_list ap_save);
 
 /* Take the buffer out of the dynbuf. Caller has ownership and
  * dynbuf resets to initial state. */
-char *Curl_dyn_take(struct dynbuf *s, size_t *plen);
+char *Curl_dyn_take(struct curl_dynbuf *s, size_t *plen);
 
 /* Dynamic buffer max sizes */
 #define DYN_DOH_RESPONSE    3000

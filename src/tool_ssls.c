@@ -62,7 +62,7 @@ CURLcode tool_ssls_load(struct GlobalConfig *global,
 {
   FILE *fp;
   CURL *easy = NULL;
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   unsigned char *shmac = NULL, *sdata = NULL;
   char *c, *line, *end;
   size_t shmac_len, sdata_len;

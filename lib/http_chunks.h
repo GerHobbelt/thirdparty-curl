@@ -94,7 +94,7 @@ struct Curl_chunker {
   curl_off_t datasize;
   ChunkyState state;
   CHUNKcode last_code;
-  struct dynbuf trailer; /* for chunked-encoded trailer */
+  struct curl_dynbuf trailer; /* for chunked-encoded trailer */
   unsigned char hexindex;
   char hexbuffer[CHUNK_MAXNUM_LEN + 1]; /* +1 for null-terminator */
   BIT(ignore_body); /* never write response body data */
