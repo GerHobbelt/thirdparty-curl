@@ -1415,12 +1415,6 @@ static CURLcode setopt_long(struct Curl_easy *data, CURLoption option,
     Curl_safefree(data->set.str[STRING_SSL_ENGINE]);
     return Curl_ssl_set_engine_default(data);
 
-	case CURLOPT_TIMEOUT_PER_ADDR:
-		if (arg < 0)
-			return CURLE_BAD_FUNCTION_ARGUMENT;
-		data->set.timeout_per_addr = arg;
-		break;
-
 	case CURLOPT_SAFE_AUTH:
 		/*
 		 * Disable unsafe authentication mechanisms (those that transfer clear

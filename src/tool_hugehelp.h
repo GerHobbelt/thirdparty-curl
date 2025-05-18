@@ -26,8 +26,8 @@
 #include "tool_setup.h"
 
 #ifdef USE_MANUAL
-void showhelp(const char *trigger, const char *arg, const char *endarg);
-void hugehelp(void);
+void Curl_showhelp(const char *trigger, const char *arg, const char *endarg);
+void Curl_hugehelp(void);
 #endif
 
 #endif /* HEADER_CURL_TOOL_HUGEHELP_H */

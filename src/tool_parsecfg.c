@@ -302,7 +302,7 @@ bool my_get_line(FILE *input, struct curl_dynbuf *buf, bool *error)
 {
   CURLcode result;
   char buffer[128];
-  curlx_dyn_reset(buf);
+  Curl_dyn_reset(buf);
   while(1) {
     char *b = fgets(buffer, sizeof(buffer), input);
 

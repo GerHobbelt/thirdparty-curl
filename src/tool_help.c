@@ -294,9 +294,9 @@ void tool_help(const char * const category)
 #ifdef USE_MANUAL
       if(a->cmd == C_XATTR)
         /* this is the last option, which then ends when FILES starts */
-        showhelp("\nALL OPTIONS\n", cmdbuf, "\nFILES");
+		Curl_showhelp("\nALL OPTIONS\n", cmdbuf, "\nFILES");
       else
-        showhelp("\nALL OPTIONS\n", cmdbuf, "\n    -");
+        Curl_showhelp("\nALL OPTIONS\n", cmdbuf, "\n    -");
 #endif
     }
 #else

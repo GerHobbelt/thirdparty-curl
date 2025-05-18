@@ -3237,7 +3237,7 @@ CURLcode operate(struct GlobalConfig *global, int argc, const char** argv)
       /* Check if we were asked for the manual */
       else if(res == PARAM_MANUAL_REQUESTED) {
 #ifdef USE_MANUAL
-        hugehelp();
+        Curl_hugehelp();
 #else
         puts("built-in manual was disabled at build-time");
 #endif

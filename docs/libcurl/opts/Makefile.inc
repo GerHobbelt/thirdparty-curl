@@ -398,7 +398,6 @@ man_MANS =                                      \
   CURLOPT_TIMECONDITION.3                       \
   CURLOPT_TIMEOUT.3                             \
   CURLOPT_TIMEOUT_MS.3                          \
-  CURLOPT_TIMEOUT_PER_ADDR.3                    \
   CURLOPT_TIMEVALUE.3                           \
   CURLOPT_TIMEVALUE_LARGE.3                     \
   CURLOPT_TLS13_CIPHERS.3                       \

@@ -111,7 +111,7 @@ static void zfree_func(voidpf opaque, voidpf ptr)
 #define HEADERLEN 10
 
 /* Decompress and send to stdout a gzip-compressed buffer */
-void hugehelp(void)
+void Curl_hugehelp(void)
 {
   unsigned char *buf;
   int status;
@@ -149,7 +149,7 @@ void hugehelp(void)
   inflateEnd(&z);
 }
 /* Show the help text for the 'arg' curl argument on stdout */
-void showhelp(const char *trigger, const char *arg, const char *endarg)
+void Curl_showhelp(const char *trigger, const char *arg, const char *endarg)
 {
   unsigned char *buf;
   int status;
@@ -222,7 +222,7 @@ for my $n (@out) {
 print <<ENDLINE
   NULL
 };
-void hugehelp(void)
+void Curl_hugehelp(void)
 {
   int i = 0;
   while(curlman[i])
@@ -230,7 +230,7 @@ void hugehelp(void)
 }
 
 /* Show the help text for the 'arg' curl argument on stdout */
-void showhelp(const char *trigger, const char *arg, const char *endarg)
+void Curl_showhelp(const char *trigger, const char *arg, const char *endarg)
 {
   int i = 0;
   struct scan_ctx ctx;

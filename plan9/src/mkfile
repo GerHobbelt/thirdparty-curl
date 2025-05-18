@@ -44,4 +44,4 @@ CLEANFILES=tool_hugehelp.c
 </sys/src/cmd/mkone
 
 tool_hugehelp.c:
-	echo 'void hugehelp(void) {}' >$target
+	echo 'void Curl_hugehelp(void) {}' >$target
