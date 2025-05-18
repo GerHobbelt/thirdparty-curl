@@ -44,6 +44,7 @@
 #include "vtls/vtls.h"
 #include "transfer.h"
 #include "multiif.h"
+#include "strtoofft.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -660,7 +661,6 @@ static CURLcode cf_h1_proxy_connect(struct Curl_cfilter *cf,
     cf->ctx = ts;
   }
 
-  /* TODO: can we do blocking? */
   /* We want "seamless" operations through HTTP proxy tunnel */
 
   result = H1_CONNECT(cf, data, ts);

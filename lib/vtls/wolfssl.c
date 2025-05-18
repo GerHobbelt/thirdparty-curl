@@ -235,12 +235,12 @@ struct group_name_map {
 };
 
 static const struct group_name_map gnm[] = {
-  { WOLFSSL_KYBER_LEVEL1, "KYBER_LEVEL1" },
-  { WOLFSSL_KYBER_LEVEL3, "KYBER_LEVEL3" },
-  { WOLFSSL_KYBER_LEVEL5, "KYBER_LEVEL5" },
-  { WOLFSSL_P256_KYBER_LEVEL1, "P256_KYBER_LEVEL1" },
-  { WOLFSSL_P384_KYBER_LEVEL3, "P384_KYBER_LEVEL3" },
-  { WOLFSSL_P521_KYBER_LEVEL5, "P521_KYBER_LEVEL5" },
+  { WOLFSSL_ML_KEM_512, "ML_KEM_512" },
+  { WOLFSSL_ML_KEM_768, "ML_KEM_768" },
+  { WOLFSSL_ML_KEM_1024, "ML_KEM_1024" },
+  { WOLFSSL_P256_ML_KEM_512, "P256_ML_KEM_512" },
+  { WOLFSSL_P384_ML_KEM_768, "P384_ML_KEM_768" },
+  { WOLFSSL_P521_ML_KEM_1024, "P521_ML_KEM_1024" },
   { 0, NULL }
 };
 #endif
@@ -770,7 +770,7 @@ wssl_add_default_ciphers(bool tls13, struct curl_dynbuf *buf)
   int i;
   char *str;
 
-  for(i = 0; (str = wolfSSL_get_cipher_list(i)); i++) {
+  for(i = 0; (str = wolfSSL_get_cipher_list(i)) != NULL; i++) {
     size_t n;
     if((strncmp(str, "TLS13", 5) == 0) != tls13)
       continue;

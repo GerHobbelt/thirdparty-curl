@@ -165,11 +165,6 @@
 /* Define if you have the strdup function. */
 #define HAVE_STRDUP 1
 
-/* Define if you have the strtoll function. */
-#if (defined(_MSC_VER) && (_MSC_VER >= 1800)) || defined(__MINGW32__)
-#define HAVE_STRTOLL 1
-#endif
-
 /* Define if you have the utime function. */
 #define HAVE_UTIME 1
 
@@ -230,11 +225,6 @@
 #define HAVE_BASENAME 1
 #endif
 
-/* Define to 1 if you have the strtok_r function. */
-#if defined(__MINGW32__) && !defined(__MINGW32CE__)
-#define HAVE_STRTOK_R 1
-#endif
-
 /* Define to 1 if you have the signal function. */
 #ifndef UNDER_CE
 #define HAVE_SIGNAL 1
@@ -243,9 +233,6 @@
 /* ---------------------------------------------------------------- */
 /*                       TYPEDEF REPLACEMENTS                       */
 /* ---------------------------------------------------------------- */
-
-/* Define if in_addr_t is not an available 'typedefed' type. */
-#define in_addr_t unsigned long
 
 /* Define if ssize_t is not an available 'typedefed' type. */
 #ifndef _SSIZE_T_DEFINED

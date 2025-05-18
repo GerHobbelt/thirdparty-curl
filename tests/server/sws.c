@@ -65,15 +65,7 @@
 #define ERANGE  34 /* errno.h value */
 #endif
 
-static enum {
-  socket_domain_inet = AF_INET
-#ifdef USE_IPV6
-  , socket_domain_inet6 = AF_INET6
-#endif
-#ifdef USE_UNIX_SOCKETS
-  , socket_domain_unix = AF_UNIX
-#endif
-} socket_domain = AF_INET;
+static int socket_domain = AF_INET;
 static bool use_gopher = FALSE;
 static int serverlogslocked = 0;
 static bool is_proxy = FALSE;
@@ -525,7 +517,7 @@ static int ProcessRequest(struct httprequest *req)
             if(!ulnum || (ulnum > 65535UL))
               logmsg("Invalid CONNECT port received");
             else
-              req->connect_port = curlx_ultous(ulnum);
+              req->connect_port = util_ultous(ulnum);
 
           }
           logmsg("Port number: %d, test case number: %ld",
@@ -2156,7 +2148,7 @@ int main(int argc, const char** argv)
                   argv[arg]);
           return 0;
         }
-        port = curlx_ultous(ulnum);
+        port = util_ultous(ulnum);
         arg++;
       }
     }
@@ -2178,7 +2170,7 @@ int main(int argc, const char** argv)
                   "be number of seconds\n", argv[arg]);
           return 0;
         }
-        keepalive_secs = curlx_ultous(ulnum);
+        keepalive_secs = util_ultous(ulnum);
         arg++;
       }
     }

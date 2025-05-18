@@ -23,7 +23,6 @@
  ***************************************************************************/
 
 #include "curl_setup.h"
-#include "strtoofft.h"
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -569,12 +568,6 @@ CURLcode Curl_pretransfer(struct Curl_easy *data)
   data->state.list_only = data->set.list_only;
 #endif
   data->state.httpreq = data->set.method;
-
-#ifdef USE_SSL
-  if(!data->state.ssl_scache)
-    /* There was no ssl session cache set via a share, use the multi one */
-    data->state.ssl_scache = data->multi->ssl_scache;
-#endif
 
   data->state.requests = 0;
   data->state.followlocation = 0; /* reset the location-follow counter */

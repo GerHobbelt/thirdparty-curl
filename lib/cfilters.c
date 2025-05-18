@@ -35,15 +35,12 @@
 #include "progress.h"
 #include "select.h"
 #include "warnless.h"
+#include "strparse.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
 #include "curl_memory.h"
 #include "memdebug.h"
-
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
-#endif
 
 static void cf_cntrl_update_info(struct Curl_easy *data,
                                  struct connectdata *conn);
@@ -724,7 +721,7 @@ static CURLcode cf_cntrl_all(struct connectdata *conn,
   CURLcode result = CURLE_OK;
   size_t i;
 
-  for(i = 0; i < ARRAYSIZE(conn->cfilter); ++i) {
+  for(i = 0; i < CURL_ARRAYSIZE(conn->cfilter); ++i) {
     result = Curl_conn_cf_cntrl(conn->cfilter[i], data, ignore_result,
                                 event, arg1, arg2);
     if(!ignore_result && result)
@@ -887,11 +884,11 @@ CURLcode Curl_conn_send(struct Curl_easy *data, int sockindex,
   {
     /* Allow debug builds to override this logic to force short sends
     */
-    char *p = getenv("CURL_SMALLSENDS");
+    const char *p = getenv("CURL_SMALLSENDS");
     if(p) {
-      size_t altsize = (size_t)strtoul(p, NULL, 10);
-      if(altsize)
-        write_len = CURLMIN(write_len, altsize);
+      curl_off_t altsize;
+      if(!Curl_str_number(&p, &altsize, SIZE_T_MAX))
+        write_len = CURLMIN(write_len, (size_t)altsize);
     }
   }
 #endif

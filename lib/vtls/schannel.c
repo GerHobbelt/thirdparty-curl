@@ -55,6 +55,7 @@
 #include "multiif.h"
 #include "version_win32.h"
 #include "rand.h"
+#include "strparse.h"
 
 /* The last #include file should be: */
 #include "curl_memory.h"
@@ -77,11 +78,7 @@
    https://technet.microsoft.com/en-us/library/hh831771%28v=ws.11%29.aspx
 */
 #if defined(_MSC_VER) && (_MSC_VER >= 1800) && !defined(_USING_V110_SDK71_)
-#  define HAS_ALPN 1
-#endif
-
-#ifndef BCRYPT_CHACHA20_POLY1305_ALGORITHM
-#define BCRYPT_CHACHA20_POLY1305_ALGORITHM L"CHACHA20_POLY1305"
+#  define HAS_ALPN_SCHANNEL
 #endif
 
 #ifndef BCRYPT_CHAIN_MODE_CCM
@@ -232,8 +229,6 @@ schannel_set_ssl_version_min_max(DWORD *enabled_protocols,
   return CURLE_OK;
 }
 
-/* longest is 26, buffer is slightly bigger */
-#define LONGEST_ALG_ID 32
 #define CIPHEROPTION(x) {#x, x}
 
 struct algo {
@@ -350,9 +345,9 @@ static const struct algo algs[]= {
 };
 
 static int
-get_alg_id_by_name(char *name)
+get_alg_id_by_name(const char *name)
 {
-  char *nameEnd = strchr(name, ':');
+  const char *nameEnd = strchr(name, ':');
   size_t n = nameEnd ? (size_t)(nameEnd - name) : strlen(name);
   int i;
 
@@ -369,12 +364,13 @@ static CURLcode
 set_ssl_ciphers(SCHANNEL_CRED *schannel_cred, char *ciphers,
                 ALG_ID *algIds)
 {
-  char *startCur = ciphers;
+  const char *startCur = ciphers;
   int algCount = 0;
   while(startCur && (0 != *startCur) && (algCount < NUM_CIPHERS)) {
-    long alg = strtol(startCur, 0, 0);
-    if(!alg)
+    curl_off_t alg;
+    if(Curl_str_number(&startCur, &alg, INT_MAX) || !alg)
       alg = get_alg_id_by_name(startCur);
+
     if(alg)
       algIds[algCount++] = (ALG_ID)alg;
     else if(!strncmp(startCur, "USE_STRONG_CRYPTO",
@@ -888,7 +884,7 @@ schannel_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
   SecBufferDesc outbuf_desc;
   SecBuffer inbuf;
   SecBufferDesc inbuf_desc;
-#ifdef HAS_ALPN
+#ifdef HAS_ALPN_SCHANNEL
   unsigned char alpn_buffer[128];
 #endif
   SECURITY_STATUS sspi_status = SEC_E_OK;
@@ -908,7 +904,7 @@ schannel_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
           "connect to some servers due to lack of SNI, algorithms, etc.");
   }
 
-#ifdef HAS_ALPN
+#ifdef HAS_ALPN_SCHANNEL
   /* ALPN is only supported on Windows 8.1 / Server 2012 R2 and above.
      Also it does not seem to be supported for WINE, see curl bug #983. */
   backend->use_alpn = connssl->alpn &&
@@ -991,7 +987,7 @@ schannel_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
     infof(data, "schannel: using IP address, SNI is not supported by OS.");
   }
 
-#ifdef HAS_ALPN
+#ifdef HAS_ALPN_SCHANNEL
   if(backend->use_alpn) {
     int cur = 0;
     int list_start_index = 0;
@@ -1039,7 +1035,7 @@ schannel_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
     InitSecBuffer(&inbuf, SECBUFFER_EMPTY, NULL, 0);
     InitSecBufferDesc(&inbuf_desc, &inbuf, 1);
   }
-#else /* HAS_ALPN */
+#else /* HAS_ALPN_SCHANNEL */
   InitSecBuffer(&inbuf, SECBUFFER_EMPTY, NULL, 0);
   InitSecBufferDesc(&inbuf_desc, &inbuf, 1);
 #endif
@@ -1538,7 +1534,7 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
   CURLcode result = CURLE_OK;
   SECURITY_STATUS sspi_status = SEC_E_OK;
   CERT_CONTEXT *ccert_context = NULL;
-#ifdef HAS_ALPN
+#ifdef HAS_ALPN_SCHANNEL
   SecPkgContext_ApplicationProtocol alpn_result;
 #endif
 
@@ -1567,7 +1563,7 @@ schannel_connect_step3(struct Curl_cfilter *cf, struct Curl_easy *data)
     return CURLE_SSL_CONNECT_ERROR;
   }
 
-#ifdef HAS_ALPN
+#ifdef HAS_ALPN_SCHANNEL
   if(backend->use_alpn) {
     sspi_status =
       Curl_pSecFn->QueryContextAttributes(&backend->ctxt->ctxt_handle,
@@ -2377,7 +2373,6 @@ static CURLcode schannel_shutdown(struct Curl_cfilter *cf,
       Curl_pSecFn->FreeContextBuffer(outbuf.pvBuffer);
       if(!result) {
         if(written < (ssize_t)outbuf.cbBuffer) {
-          /* TODO: handle partial sends */
           failf(data, "schannel: failed to send close msg: %s"
                 " (bytes written: %zd)", curl_easy_strerror(result), written);
           result = CURLE_SEND_ERROR;
