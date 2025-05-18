@@ -38,7 +38,7 @@
  */
 void Curl_http2_ver(char *p, size_t len);
 
-CURLcode Curl_http2_request_upgrade(struct dynbuf *req,
+CURLcode Curl_http2_request_upgrade(struct curl_dynbuf *req,
                                     struct Curl_easy *data);
 
 /* returns true if the HTTP/2 stream error was HTTP_1_1_REQUIRED */

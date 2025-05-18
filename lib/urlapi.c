@@ -146,7 +146,7 @@ static const char hexdigits[] = "0123456789abcdef";
  * URL encoding should be skipped for hostnames, otherwise IDN resolution
  * will fail.
  */
-static CURLUcode urlencode_str(struct dynbuf *o, const char *url,
+static CURLUcode urlencode_str(struct curl_dynbuf *o, const char *url,
                                size_t len, bool relative,
                                bool query)
 {
@@ -253,7 +253,7 @@ size_t Curl_is_absolute_url(const char *url, char *buf, size_t buflen,
 static CURLUcode redirect_url(char *base, const char *relurl,
                               CURLU *u, unsigned int flags)
 {
-  struct dynbuf urlbuf;
+  struct curl_dynbuf urlbuf;
   bool host_changed = FALSE;
   const char *useurl = relurl;
   CURLcode result = CURLE_OK;
@@ -454,7 +454,7 @@ out:
 #define UNITTEST
 #endif
 
-UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, struct dynbuf *host,
+UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, struct curl_dynbuf *host,
                                    bool has_scheme)
 {
   char *portptr;
@@ -609,7 +609,7 @@ static CURLUcode hostname_check(struct Curl_URL *u, char *hostname,
 #define HOST_IPV4    2
 #define HOST_IPV6    3
 
-static int ipv4_normalize(struct dynbuf *host)
+static int ipv4_normalize(struct curl_dynbuf *host)
 {
   bool done = FALSE;
   int n = 0;
@@ -704,7 +704,7 @@ static int ipv4_normalize(struct dynbuf *host)
 }
 
 /* if necessary, replace the host content with a URL decoded version */
-static CURLUcode urldecode_host(struct dynbuf *host)
+static CURLUcode urldecode_host(struct curl_dynbuf *host)
 {
   char *per = NULL;
   const char *hostname = Curl_dyn_ptr(host);
@@ -733,7 +733,7 @@ static CURLUcode urldecode_host(struct dynbuf *host)
 static CURLUcode parse_authority(struct Curl_URL *u,
                                  const char *auth, size_t authlen,
                                  unsigned int flags,
-                                 struct dynbuf *host,
+                                 struct curl_dynbuf *host,
                                  bool has_scheme)
 {
   size_t offset;
@@ -787,7 +787,7 @@ out:
 CURLUcode Curl_url_set_authority(CURLU *u, const char *authority)
 {
   CURLUcode result;
-  struct dynbuf host;
+  struct curl_dynbuf host;
 
   DEBUGASSERT(authority);
   Curl_dyn_init(&host, CURL_MAX_INPUT_LENGTH);
@@ -945,7 +945,7 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
   size_t urllen;
   CURLUcode result = CURLUE_OK;
   size_t fraglen = 0;
-  struct dynbuf host;
+  struct curl_dynbuf host;
 
   DEBUGASSERT(url);
 
@@ -1184,7 +1184,7 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
     if(fraglen > 1) {
       /* skip the leading '#' in the copy but include the terminating null */
       if(flags & CURLU_URLENCODE) {
-        struct dynbuf enc;
+        struct curl_dynbuf enc;
         Curl_dyn_init(&enc, CURL_MAX_INPUT_LENGTH);
         result = urlencode_str(&enc, fragment + 1, fraglen - 1, TRUE, FALSE);
         if(result)
@@ -1211,7 +1211,7 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
     u->query_present = TRUE;
     if(qlen > 1) {
       if(flags & CURLU_URLENCODE) {
-        struct dynbuf enc;
+        struct curl_dynbuf enc;
         Curl_dyn_init(&enc, CURL_MAX_INPUT_LENGTH);
         /* skip the leading question mark */
         result = urlencode_str(&enc, query + 1, qlen - 1, TRUE, TRUE);
@@ -1238,7 +1238,7 @@ static CURLUcode parseurl(const char *url, CURLU *u, unsigned int flags)
   }
 
   if(pathlen && (flags & CURLU_URLENCODE)) {
-    struct dynbuf enc;
+    struct curl_dynbuf enc;
     Curl_dyn_init(&enc, CURL_MAX_INPUT_LENGTH);
     result = urlencode_str(&enc, path, pathlen, TRUE, FALSE);
     if(result)
@@ -1497,7 +1497,7 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
       if(u->host[0] == '[') {
         if(u->zoneid) {
           /* make it '[ host %25 zoneid ]' */
-          struct dynbuf enc;
+          struct curl_dynbuf enc;
           size_t hostlen = strlen(u->host);
           Curl_dyn_init(&enc, CURL_MAX_INPUT_LENGTH);
           if(Curl_dyn_addf(&enc, "%.*s%%25%s]", (int)hostlen - 1, u->host,
@@ -1598,7 +1598,7 @@ CURLUcode curl_url_get(const CURLU *u, CURLUPart what,
       partlen = dlen;
     }
     if(urlencode) {
-      struct dynbuf enc;
+      struct curl_dynbuf enc;
       CURLUcode uc;
       Curl_dyn_init(&enc, CURL_MAX_INPUT_LENGTH);
       uc = urlencode_str(&enc, *part, partlen, TRUE, what == CURLUPART_QUERY);
@@ -1827,7 +1827,7 @@ CURLUcode curl_url_set(CURLU *u, CURLUPart what,
   DEBUGASSERT(storep);
   {
     const char *newp;
-    struct dynbuf enc;
+    struct curl_dynbuf enc;
     Curl_dyn_init(&enc, nalloc * 3 + 1 + leadingslash);
 
     if(leadingslash && (part[0] != '/')) {
@@ -1892,7 +1892,7 @@ CURLUcode curl_url_set(CURLU *u, CURLUPart what,
       size_t querylen = u->query ? strlen(u->query) : 0;
       bool addamperand = querylen && (u->query[querylen -1] != '&');
       if(querylen) {
-        struct dynbuf qbuf;
+        struct curl_dynbuf qbuf;
         Curl_dyn_init(&qbuf, CURL_MAX_INPUT_LENGTH);
 
         if(Curl_dyn_addn(&qbuf, u->query, querylen)) /* add original query */

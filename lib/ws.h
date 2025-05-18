@@ -68,7 +68,7 @@ struct websocket {
   size_t sendbuf_payload; /* number of payload bytes in sendbuf */
 };
 
-CURLcode Curl_ws_request(struct Curl_easy *data, struct dynbuf *req);
+CURLcode Curl_ws_request(struct Curl_easy *data, struct curl_dynbuf *req);
 CURLcode Curl_ws_accept(struct Curl_easy *data, const char *mem, size_t len);
 
 extern const struct Curl_handler Curl_handler_ws;

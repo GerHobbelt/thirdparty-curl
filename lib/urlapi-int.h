@@ -31,7 +31,7 @@ size_t Curl_is_absolute_url(const char *url, char *buf, size_t buflen,
 CURLUcode Curl_url_set_authority(CURLU *u, const char *authority);
 
 #if defined(UNITTESTS) || defined(BUILD_MONOLITHIC)
-UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, struct dynbuf *host,
+UNITTEST CURLUcode Curl_parse_port(struct Curl_URL *u, struct curl_dynbuf *host,
                                    bool has_scheme);
 #endif
 

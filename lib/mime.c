@@ -290,7 +290,7 @@ static char *escape_string(struct Curl_easy *data,
                            const char *src, enum mimestrategy strategy)
 {
   CURLcode result;
-  struct dynbuf db;
+  struct curl_dynbuf db;
   const char * const *table;
   const char * const *p;
   /* replace first character by rest of string. */

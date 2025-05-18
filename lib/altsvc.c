@@ -228,7 +228,7 @@ static CURLcode altsvc_load(struct altsvcinfo *asi, const char *file)
 
   fp = fopen(file, FOPEN_READTEXT);
   if(fp) {
-    struct dynbuf buf;
+    struct curl_dynbuf buf;
     Curl_dyn_init(&buf, MAX_ALTSVC_LINE);
     while(Curl_get_line(&buf, fp)) {
       char *lineptr = Curl_dyn_ptr(&buf);

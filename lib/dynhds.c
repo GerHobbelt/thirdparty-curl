@@ -350,7 +350,7 @@ size_t Curl_dynhds_cremove(struct dynhds *dynhds, const char *name)
 
 #endif
 
-CURLcode Curl_dynhds_h1_dprint(struct dynhds *dynhds, struct dynbuf *dbuf)
+CURLcode Curl_dynhds_h1_dprint(struct dynhds *dynhds, struct curl_dynbuf *dbuf)
 {
   CURLcode result = CURLE_OK;
   size_t i;

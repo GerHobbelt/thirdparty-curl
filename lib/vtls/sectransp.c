@@ -1453,7 +1453,7 @@ static int read_cert(const char *file, unsigned char **out, size_t *outlen)
   int fd;
   ssize_t n;
   unsigned char buf[512];
-  struct dynbuf certs;
+  struct curl_dynbuf certs;
 
   Curl_dyn_init(&certs, MAX_CERTS_SIZE);
 

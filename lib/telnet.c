@@ -160,7 +160,7 @@ struct TELNET {
   unsigned short subopt_wsy;         /* Set with suboption NAWS */
   TelnetReceive telrcv_state;
   struct curl_slist *telnet_vars;    /* Environment variables */
-  struct dynbuf out;                 /* output buffer */
+  struct curl_dynbuf out;                 /* output buffer */
 
   /* suboptions */
   unsigned char subbuffer[SUBBUFSIZE];

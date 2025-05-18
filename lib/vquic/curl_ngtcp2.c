@@ -132,7 +132,7 @@ struct cf_ngtcp2_ctx {
   struct curltime started_at;        /* time the current attempt started */
   struct curltime handshake_at;      /* time connect handshake finished */
   struct bufc_pool stream_bufcp;     /* chunk pool for streams */
-  struct dynbuf scratch;             /* temp buffer for header construction */
+  struct curl_dynbuf scratch;             /* temp buffer for header construction */
   struct Curl_hash streams;          /* hash `data->mid` to `h3_stream_ctx` */
   size_t max_stream_window;          /* max flow window for one stream */
   uint64_t max_idle_ms;              /* max idle time for QUIC connection */

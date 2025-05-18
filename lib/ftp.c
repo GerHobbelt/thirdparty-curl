@@ -2874,7 +2874,7 @@ static CURLcode ftp_statemachine(struct Curl_easy *data,
         char *ptr = Curl_dyn_ptr(&pp->recvbuf) + 4; /* start on the first
                                                        letter */
         bool entry_extracted = FALSE;
-        struct dynbuf out;
+        struct curl_dynbuf out;
         Curl_dyn_init(&out, 1000);
 
         /* Reply format is like

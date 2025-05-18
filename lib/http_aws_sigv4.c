@@ -163,8 +163,8 @@ static CURLcode make_headers(struct Curl_easy *data,
                              size_t plen, /* length of provider1 */
                              char **date_header,
                              char *content_sha256_header,
-                             struct dynbuf *canonical_headers,
-                             struct dynbuf *signed_headers)
+                             struct curl_dynbuf *canonical_headers,
+                             struct curl_dynbuf *signed_headers)
 {
   char date_hdr_key[DATE_HDR_KEY_LEN];
   char date_full_hdr[DATE_FULL_HDR_LEN];
@@ -453,7 +453,7 @@ static int compare_func(const void *a, const void *b)
  * if found_equals is NULL.
  */
 static CURLcode canon_string(const char *q, size_t len,
-                             struct dynbuf *dq, bool *found_equals)
+                             struct curl_dynbuf *dq, bool *found_equals)
 {
   CURLcode result = CURLE_OK;
 
@@ -517,7 +517,7 @@ static CURLcode canon_string(const char *q, size_t len,
 
 
 static CURLcode canon_query(struct Curl_easy *data,
-                            const char *query, struct dynbuf *dq)
+                            const char *query, struct curl_dynbuf *dq)
 {
   CURLcode result = CURLE_OK;
   int entry = 0;
@@ -586,10 +586,10 @@ CURLcode Curl_output_aws_sigv4(struct Curl_easy *data, bool proxy)
   struct tm tm;
   char timestamp[TIMESTAMP_SIZE];
   char date[9];
-  struct dynbuf canonical_headers;
-  struct dynbuf signed_headers;
-  struct dynbuf canonical_query;
-  struct dynbuf canonical_path;
+  struct curl_dynbuf canonical_headers;
+  struct curl_dynbuf signed_headers;
+  struct curl_dynbuf canonical_query;
+  struct curl_dynbuf canonical_path;
   char *date_header = NULL;
   Curl_HttpReq httpreq;
   const char *method = NULL;

@@ -230,7 +230,7 @@ static CURLcode rtsp_do(struct Curl_easy *data, bool *done)
   CURLcode result = CURLE_OK;
   Curl_RtspReq rtspreq = data->set.rtspreq;
   struct RTSP *rtsp = data->req.p.rtsp;
-  struct dynbuf req_buffer;
+  struct curl_dynbuf req_buffer;
   unsigned char httpversion = 11; /* RTSP is close to HTTP/1.1, sort of... */
 
   const char *p_request = NULL;

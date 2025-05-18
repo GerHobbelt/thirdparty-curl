@@ -36,7 +36,7 @@
    Return 0 on success, non-zero on error.
 */
 int jsonquoted(const char *in, size_t len,
-               struct dynbuf *out, bool lowercase)
+               struct curl_dynbuf *out, bool lowercase)
 {
   const unsigned char *i = (unsigned char *)in;
   const unsigned char *in_end = &i[len];
@@ -85,7 +85,7 @@ int jsonquoted(const char *in, size_t len,
 
 void jsonWriteString(FILE *stream, const char *in, bool lowercase)
 {
-  struct dynbuf out;
+  struct curl_dynbuf out;
   Curl_dyn_init(&out, MAX_JSON_STRING);
 
   if(!jsonquoted(in, strlen(in), &out, lowercase)) {

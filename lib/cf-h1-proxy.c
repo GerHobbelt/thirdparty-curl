@@ -62,8 +62,8 @@ typedef enum {
 
 /* struct for HTTP CONNECT tunneling */
 struct h1_tunnel_state {
-  struct dynbuf rcvbuf;
-  struct dynbuf request_data;
+  struct curl_dynbuf rcvbuf;
+  struct curl_dynbuf request_data;
   size_t nsent;
   size_t headerlines;
   struct Curl_chunker ch;

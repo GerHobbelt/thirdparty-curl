@@ -103,7 +103,7 @@ const struct Curl_handler Curl_handler_dict = {
 #define DYN_DICT_WORD 10000
 static char *unescape_word(const char *input)
 {
-  struct dynbuf out;
+  struct curl_dynbuf out;
   const char *ptr;
   CURLcode result = CURLE_OK;
   Curl_dyn_init(&out, DYN_DICT_WORD);

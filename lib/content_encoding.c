@@ -73,10 +73,6 @@
 
 #if defined(HAVE_LIBZ) || defined(HAVE_LIBZ_NG)
 
-#if !defined(ZLIB_VERNUM) || (ZLIB_VERNUM < 0x1204)
-#error "requires zlib 1.2.0.4 or newer"
-#endif
-
 typedef enum {
   ZLIB_UNINIT,               /* uninitialized */
   ZLIB_INIT,                 /* initialized */

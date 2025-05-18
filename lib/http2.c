@@ -134,7 +134,7 @@ struct cf_h2_ctx {
   struct bufq inbufq;           /* network input */
   struct bufq outbufq;          /* network output */
   struct bufc_pool stream_bufcp; /* spares for stream buffers */
-  struct dynbuf scratch;        /* scratch buffer for temp use */
+  struct curl_dynbuf scratch;        /* scratch buffer for temp use */
 
   struct Curl_hash streams; /* hash of `data->mid` to `h2_stream_ctx` */
   size_t drain_total; /* sum of all stream's UrlState drain */
@@ -1722,7 +1722,7 @@ static int error_callback(nghttp2_session *session,
 /*
  * Append headers to ask for an HTTP1.1 to HTTP2 upgrade.
  */
-CURLcode Curl_http2_request_upgrade(struct dynbuf *req,
+CURLcode Curl_http2_request_upgrade(struct curl_dynbuf *req,
                                     struct Curl_easy *data)
 {
   CURLcode result;
@@ -1806,7 +1806,7 @@ static ssize_t http2_handle_stream_close(struct Curl_cfilter *cf,
 
   if(Curl_dynhds_count(&stream->resp_trailers)) {
     struct dynhds_entry *e;
-    struct dynbuf dbuf;
+    struct curl_dynbuf dbuf;
     size_t i;
 
     *err = CURLE_OK;

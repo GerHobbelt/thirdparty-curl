@@ -109,7 +109,7 @@ static CURLcode http_host(struct Curl_easy *data, struct connectdata *conn);
 static CURLcode http_range(struct Curl_easy *data,
                            Curl_HttpReq httpreq);
 static CURLcode http_req_complete(struct Curl_easy *data,
-                                  struct dynbuf *r, int httpversion,
+                                  struct curl_dynbuf *r, int httpversion,
                                   Curl_HttpReq httpreq);
 static CURLcode http_req_set_reader(struct Curl_easy *data,
                                     Curl_HttpReq httpreq, int httpversion,
@@ -118,7 +118,7 @@ static CURLcode http_size(struct Curl_easy *data);
 static CURLcode http_statusline(struct Curl_easy *data,
                                      struct connectdata *conn);
 static CURLcode http_target(struct Curl_easy *data, struct connectdata *conn,
-                            struct dynbuf *req);
+                            struct curl_dynbuf *req);
 static CURLcode http_useragent(struct Curl_easy *data);
 #ifdef HAVE_LIBZ
 static CURLcode http_transferencode(struct Curl_easy *data);
@@ -1557,7 +1557,7 @@ static const char *get_http_string(int httpversion)
 
 CURLcode Curl_add_custom_headers(struct Curl_easy *data,
                                  bool is_connect, int httpversion,
-                                 struct dynbuf *req)
+                                 struct curl_dynbuf *req)
 {
   char *ptr;
   struct curl_slist *h[2];
@@ -1699,7 +1699,7 @@ CURLcode Curl_add_custom_headers(struct Curl_easy *data,
 
 #ifndef CURL_DISABLE_PARSEDATE
 CURLcode Curl_add_timecondition(struct Curl_easy *data,
-                                struct dynbuf *req)
+                                struct curl_dynbuf *req)
 {
   const struct tm *tm;
   struct tm keeptime;
@@ -1768,7 +1768,7 @@ CURLcode Curl_add_timecondition(struct Curl_easy *data,
 #else
 /* disabled */
 CURLcode Curl_add_timecondition(struct Curl_easy *data,
-                                struct dynbuf *req)
+                                struct curl_dynbuf *req)
 {
   (void)data;
   (void)req;
@@ -1924,7 +1924,7 @@ static CURLcode http_host(struct Curl_easy *data, struct connectdata *conn)
  */
 static CURLcode http_target(struct Curl_easy *data,
                             struct connectdata *conn,
-                            struct dynbuf *r)
+                            struct curl_dynbuf *r)
 {
   CURLcode result = CURLE_OK;
   const char *path = data->state.up.path;
@@ -2257,7 +2257,7 @@ static CURLcode http_req_set_reader(struct Curl_easy *data,
   return result;
 }
 
-static CURLcode addexpect(struct Curl_easy *data, struct dynbuf *r,
+static CURLcode addexpect(struct Curl_easy *data, struct curl_dynbuf *r,
                           int httpversion, bool *announced_exp100)
 {
   CURLcode result;
@@ -2293,7 +2293,7 @@ static CURLcode addexpect(struct Curl_easy *data, struct dynbuf *r,
 }
 
 static CURLcode http_req_complete(struct Curl_easy *data,
-                                  struct dynbuf *r, int httpversion,
+                                  struct curl_dynbuf *r, int httpversion,
                                   Curl_HttpReq httpreq)
 {
   CURLcode result = CURLE_OK;
@@ -2382,7 +2382,7 @@ out:
 
 static CURLcode http_cookies(struct Curl_easy *data,
                              struct connectdata *conn,
-                             struct dynbuf *r)
+                             struct curl_dynbuf *r)
 {
   CURLcode result = CURLE_OK;
   char *addcookies = NULL;
@@ -2644,7 +2644,7 @@ CURLcode Curl_http(struct Curl_easy *data, bool *done)
   const char *te = ""; /* transfer-encoding */
   const char *request;
   const char *httpstring;
-  struct dynbuf req;
+  struct curl_dynbuf req;
   char *altused = NULL;
   const char *p_accept;      /* Accept: string */
   unsigned char httpversion;
@@ -3842,7 +3842,7 @@ static CURLcode http_rw_hd(struct Curl_easy *data,
   *pconsumed = 0;
   if((0x0a == *hd) || (0x0d == *hd)) {
     /* Empty header line means end of headers! */
-    struct dynbuf last_header;
+    struct curl_dynbuf last_header;
     size_t consumed;
 
     Curl_dyn_init(&last_header, hdlen + 1);
@@ -4271,7 +4271,7 @@ out:
 static CURLcode req_assign_url_authority(struct httpreq *req, CURLU *url)
 {
   char *user, *pass, *host, *port;
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   CURLUcode uc;
   CURLcode result = CURLE_URL_MALFORMAT;
 
@@ -4337,7 +4337,7 @@ out:
 static CURLcode req_assign_url_path(struct httpreq *req, CURLU *url)
 {
   char *path, *query;
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   CURLUcode uc;
   CURLcode result = CURLE_URL_MALFORMAT;
 

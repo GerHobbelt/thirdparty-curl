@@ -188,7 +188,7 @@ static size_t
 doh_write_cb(char *contents, size_t size, size_t nmemb, void *userp)
 {
   size_t realsize = size * nmemb;
-  struct dynbuf *mem = (struct dynbuf *)userp;
+  struct curl_dynbuf *mem = (struct curl_dynbuf *)userp;
 
   if(Curl_dyn_addn(mem, contents, realsize))
     return 0;
@@ -574,7 +574,7 @@ static DOHcode doh_store_https(const unsigned char *doh, int index,
 static DOHcode doh_store_cname(const unsigned char *doh, size_t dohlen,
                                unsigned int index, struct dohentry *d)
 {
-  struct dynbuf *c;
+  struct curl_dynbuf *c;
   unsigned int loop = 128; /* a valid DNS name can never loop this much */
   unsigned char length;
 
@@ -1028,7 +1028,7 @@ static CURLcode doh_decode_rdata_name(unsigned char **buf, size_t *remaining,
   unsigned char *cp = NULL;
   int rem = 0;
   unsigned char clen = 0; /* chunk len */
-  struct dynbuf thename;
+  struct curl_dynbuf thename;
 
   DEBUGASSERT(buf && remaining && dnsname);
   if(!buf || !remaining || !dnsname)

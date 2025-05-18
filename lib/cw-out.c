@@ -77,7 +77,7 @@ typedef enum {
 
 struct cw_out_buf {
   struct cw_out_buf *next;
-  struct dynbuf b;
+  struct curl_dynbuf b;
   cw_out_type type;
 };
 

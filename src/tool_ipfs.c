@@ -39,7 +39,7 @@ static CURLcode ensure_trailing_slash(char **input)
   if(*input && **input) {
     size_t len = strlen(*input);
     if(((*input)[len - 1] != '/')) {
-      struct dynbuf dyn;
+      struct curl_dynbuf dyn;
       Curl_dyn_init(&dyn, len + 2);
 
       if(Curl_dyn_addn(&dyn, *input, len)) {
@@ -96,7 +96,7 @@ static char *ipfs_gateway(void)
 
   if(gateway_file) {
     int c;
-    struct dynbuf dyn;
+    struct curl_dynbuf dyn;
     Curl_dyn_init(&dyn, MAX_GATEWAY_URL_LEN);
 
     /* get the first line of the gateway file, ignore the rest */

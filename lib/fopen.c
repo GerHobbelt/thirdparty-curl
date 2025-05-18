@@ -64,7 +64,7 @@
 static char *dirslash(const char *path)
 {
   size_t n;
-  struct dynbuf out;
+  struct curl_dynbuf out;
   DEBUGASSERT(path);
   Curl_dyn_init(&out, CURL_MAX_INPUT_LENGTH);
   n = strlen(path);

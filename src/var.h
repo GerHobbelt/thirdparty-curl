@@ -35,11 +35,11 @@ struct tool_var {
 };
 
 struct GlobalConfig;
-struct dynbuf;
+struct curl_dynbuf;
 
 ParameterError setvariable(struct GlobalConfig *global, const char *input);
 ParameterError varexpand(struct GlobalConfig *global,
-                         const char *line, struct dynbuf *out,
+                         const char *line, struct curl_dynbuf *out,
                          bool *replaced);
 
 /* free everything */

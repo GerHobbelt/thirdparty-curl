@@ -1147,7 +1147,7 @@ static CURLcode imap_state_select_resp(struct Curl_easy *data, int imapcode,
       while((len < 20) && p[len] && ISDIGIT(p[len]))
         len++;
       if(len && (p[len] == ']')) {
-        struct dynbuf uid;
+        struct curl_dynbuf uid;
         Curl_dyn_init(&uid, 20);
         if(Curl_dyn_addn(&uid, p, len))
           return CURLE_OUT_OF_MEMORY;
@@ -1865,7 +1865,7 @@ static CURLcode imap_sendf(struct Curl_easy *data, const char *fmt, ...)
  */
 static char *imap_atom(const char *str, bool escape_only)
 {
-  struct dynbuf line;
+  struct curl_dynbuf line;
   size_t nclean;
   size_t len;
 

@@ -287,7 +287,7 @@ static int writeString(FILE *stream, const struct writeoutvar *wovar,
   bool valid = false;
   const char *strinfo = NULL;
   const char *freestr = NULL;
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   Curl_dyn_init(&buf, 256*1024);
 
   DEBUGASSERT(wovar->writefunc == writeString);
@@ -545,7 +545,7 @@ void ourWriteOut(struct OperationConfig *config, struct per_transfer *per,
   const char *ptr = writeinfo;
   bool done = FALSE;
   bool fclose_stream = FALSE;
-  struct dynbuf name;
+  struct curl_dynbuf name;
 
   if(!writeinfo)
     return;

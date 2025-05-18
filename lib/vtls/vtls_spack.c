@@ -62,7 +62,7 @@ typedef unsigned __int64 uint64_t;
 #define CURL_SPACK_EARLYDATA     0x06
 #define CURL_SPACK_QUICTP        0x07
 
-static CURLcode spack_enc8(struct dynbuf *buf, uint8_t b)
+static CURLcode spack_enc8(struct curl_dynbuf *buf, uint8_t b)
 {
   return Curl_dyn_addn(buf, &b, 1);
 }
@@ -77,7 +77,7 @@ spack_dec8(uint8_t *val, const uint8_t **src, const uint8_t *end)
   return CURLE_OK;
 }
 
-static CURLcode spack_enc16(struct dynbuf *buf, uint16_t val)
+static CURLcode spack_enc16(struct curl_dynbuf *buf, uint16_t val)
 {
   uint8_t nval[2];
   nval[0] = (uint8_t)(val >> 8);
@@ -95,7 +95,7 @@ spack_dec16(uint16_t *val, const uint8_t **src, const uint8_t *end)
   return CURLE_OK;
 }
 
-static CURLcode spack_enc32(struct dynbuf *buf, uint32_t val)
+static CURLcode spack_enc32(struct curl_dynbuf *buf, uint32_t val)
 {
   uint8_t nval[4];
   nval[0] = (uint8_t)(val >> 24);
@@ -116,7 +116,7 @@ spack_dec32(uint32_t *val, const uint8_t **src, const uint8_t *end)
   return CURLE_OK;
 }
 
-static CURLcode spack_enc64(struct dynbuf *buf, uint64_t val)
+static CURLcode spack_enc64(struct curl_dynbuf *buf, uint64_t val)
 {
   uint8_t nval[8];
   nval[0] = (uint8_t)(val >> 56);
@@ -143,7 +143,7 @@ spack_dec64(uint64_t *val, const uint8_t **src, const uint8_t *end)
   return CURLE_OK;
 }
 
-static CURLcode spack_encstr16(struct dynbuf *buf, const char *s)
+static CURLcode spack_encstr16(struct curl_dynbuf *buf, const char *s)
 {
   size_t slen = strlen(s);
   CURLcode r;
@@ -173,7 +173,7 @@ spack_decstr16(char **val, const uint8_t **src, const uint8_t *end)
   return *val ? CURLE_OK : CURLE_OUT_OF_MEMORY;
 }
 
-static CURLcode spack_encdata16(struct dynbuf *buf,
+static CURLcode spack_encdata16(struct curl_dynbuf *buf,
                                 const uint8_t *data, size_t data_len)
 {
   CURLcode r;
@@ -207,7 +207,7 @@ spack_decdata16(uint8_t **val, size_t *val_len,
 
 CURLcode Curl_ssl_session_pack(struct Curl_easy *data,
                                struct Curl_ssl_session *s,
-                               struct dynbuf *buf)
+                               struct curl_dynbuf *buf)
 {
   CURLcode r;
   DEBUGASSERT(s->sdata);

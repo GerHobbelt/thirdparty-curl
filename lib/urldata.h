@@ -246,7 +246,7 @@ typedef ssize_t (Curl_recv)(struct Curl_easy *data,   /* transfer */
 #ifdef HAVE_GSSAPI
 /* Types needed for krb5-ftp connections */
 struct krb5buffer {
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   size_t index;
   BIT(eof_flag);
 };
@@ -429,7 +429,7 @@ struct negotiatedata {
   gss_ctx_id_t context;
   gss_name_t spn;
   gss_buffer_desc output_token;
-  struct dynbuf channel_binding_data;
+  struct curl_dynbuf channel_binding_data;
 #else
 #ifdef USE_WINDOWS_SSPI
 #ifdef SECPKG_ATTR_ENDPOINT_BINDINGS

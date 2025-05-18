@@ -68,11 +68,11 @@ enum found_state {
   (((result) == CURLE_OUT_OF_MEMORY) ?         \
    NETRC_OUT_OF_MEMORY : NETRC_SYNTAX_ERROR)
 
-static NETRCcode file2memory(const char *filename, struct dynbuf *filebuf)
+static NETRCcode file2memory(const char *filename, struct curl_dynbuf *filebuf)
 {
   NETRCcode ret = NETRC_FILE_MISSING; /* if it cannot open the file */
   FILE *file = fopen(filename, FOPEN_READTEXT);
-  struct dynbuf linebuf;
+  struct curl_dynbuf linebuf;
   Curl_dyn_init(&linebuf, MAX_NETRC_LINE);
 
   if(file) {
@@ -119,8 +119,8 @@ static NETRCcode parsenetrc(struct store_netrc *store,
   bool our_login = FALSE;  /* found our login name */
   bool done = FALSE;
   char *netrcbuffer;
-  struct dynbuf token;
-  struct dynbuf *filebuf = &store->filebuf;
+  struct curl_dynbuf token;
+  struct curl_dynbuf *filebuf = &store->filebuf;
   DEBUGASSERT(!*passwordp);
   Curl_dyn_init(&token, MAX_NETRC_TOKEN);
 

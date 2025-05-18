@@ -161,7 +161,7 @@ struct nsprintf {
 };
 
 struct asprintf {
-  struct dynbuf *b;
+  struct curl_dynbuf *b;
   char merr;
 };
 
@@ -1115,7 +1115,7 @@ static int alloc_addbyter(unsigned char outc, void *f)
 }
 
 /* appends the formatted string, returns MERR error code */
-int Curl_dyn_vprintf(struct dynbuf *dyn, const char *format, va_list ap_save)
+int Curl_dyn_vprintf(struct curl_dynbuf *dyn, const char *format, va_list ap_save)
 {
   struct asprintf info;
   info.b = dyn;
@@ -1132,7 +1132,7 @@ int Curl_dyn_vprintf(struct dynbuf *dyn, const char *format, va_list ap_save)
 char *curl_mvaprintf(const char *format, va_list ap_save)
 {
   struct asprintf info;
-  struct dynbuf dyn;
+  struct curl_dynbuf dyn;
   info.b = &dyn;
   Curl_dyn_init(info.b, DYN_APRINTF);
   info.merr = MERR_OK;

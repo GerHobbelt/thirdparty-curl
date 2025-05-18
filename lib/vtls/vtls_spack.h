@@ -27,12 +27,12 @@
 
 #ifdef USE_SSLS_EXPORT
 
-struct dynbuf;
+struct curl_dynbuf;
 struct Curl_ssl_session;
 
 CURLcode Curl_ssl_session_pack(struct Curl_easy *data,
                                struct Curl_ssl_session *s,
-                               struct dynbuf *buf);
+                               struct curl_dynbuf *buf);
 
 CURLcode Curl_ssl_session_unpack(struct Curl_easy *data,
                                  const unsigned char *buf, size_t buflen,

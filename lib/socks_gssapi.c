@@ -63,7 +63,7 @@ static int check_gss_err(struct Curl_easy *data,
     OM_uint32 maj_stat, min_stat;
     OM_uint32 msg_ctx = 0;
     gss_buffer_desc status_string = GSS_C_EMPTY_BUFFER;
-    struct dynbuf dbuf;
+    struct curl_dynbuf dbuf;
 
     Curl_dyn_init(&dbuf, MAX_GSS_LEN);
     msg_ctx = 0;

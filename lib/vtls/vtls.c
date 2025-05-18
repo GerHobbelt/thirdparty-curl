@@ -517,7 +517,7 @@ ssl_connect_nonblocking(struct Curl_cfilter *cf, struct Curl_easy *data,
 }
 
 CURLcode Curl_ssl_get_channel_binding(struct Curl_easy *data, int sockindex,
-                                       struct dynbuf *binding)
+                                       struct curl_dynbuf *binding)
 {
   if(Curl_ssl->get_channel_binding)
     return Curl_ssl->get_channel_binding(data, sockindex, binding);
@@ -638,7 +638,7 @@ CURLcode Curl_ssl_push_certinfo_len(struct Curl_easy *data,
   struct curl_certinfo *ci = &data->info.certs;
   struct curl_slist *nl;
   CURLcode result = CURLE_OK;
-  struct dynbuf build;
+  struct curl_dynbuf build;
 
   DEBUGASSERT(certnum < ci->num_of_certs);
 
@@ -683,7 +683,7 @@ static CURLcode pubkey_pem_to_der(const char *pem,
   char *begin_pos, *end_pos;
   size_t pem_count, pem_len;
   CURLcode result;
-  struct dynbuf pbuf;
+  struct curl_dynbuf pbuf;
 
   /* if no pem, exit. */
   if(!pem)
@@ -820,7 +820,7 @@ CURLcode Curl_pin_peer_pubkey(struct Curl_easy *data,
     long filesize;
     size_t size, pem_len;
     CURLcode pem_read;
-    struct dynbuf buf;
+    struct curl_dynbuf buf;
     char unsigned *pem_ptr = NULL;
     size_t left;
     FILE *fp = fopen(pinnedpubkey, "rb");

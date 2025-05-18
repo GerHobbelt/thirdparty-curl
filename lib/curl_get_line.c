@@ -38,7 +38,7 @@
  * Curl_get_line() makes sure to only return complete whole lines that end
  * newlines.
  */
-int Curl_get_line(struct dynbuf *buf, FILE *input)
+int Curl_get_line(struct curl_dynbuf *buf, FILE *input)
 {
   CURLcode result;
   char buffer[128];

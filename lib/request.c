@@ -374,7 +374,7 @@ static CURLcode req_send_buffer_add(struct Curl_easy *data,
   return CURLE_OK;
 }
 
-CURLcode Curl_req_send(struct Curl_easy *data, struct dynbuf *req,
+CURLcode Curl_req_send(struct Curl_easy *data, struct curl_dynbuf *req,
                        unsigned char httpversion)
 {
   CURLcode result;

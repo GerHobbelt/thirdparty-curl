@@ -92,7 +92,7 @@ static size_t memcrlf(char *orig,
 
 ParameterError file2string(char **bufp, FILE *file)
 {
-  struct dynbuf dyn;
+  struct curl_dynbuf dyn;
   Curl_dyn_init(&dyn, MAX_FILE2STRING);
   if(file) {
     do {
@@ -142,7 +142,7 @@ ParameterError file2memory_range(char **bufp, size_t *size, FILE *file,
 {
   if(file) {
     size_t nread;
-    struct dynbuf dyn;
+    struct curl_dynbuf dyn;
     curl_off_t offset = 0;
     curl_off_t throwaway = 0;
 
@@ -428,7 +428,7 @@ ParameterError proto2num(struct OperationConfig *config,
   const char *sep = ",";
   char *token;
   const char **protoset;
-  struct dynbuf obuf;
+  struct curl_dynbuf obuf;
   size_t proto;
   CURLcode result;
 
@@ -610,7 +610,7 @@ static CURLcode checkpasswd(const char *kind, /* for what purpose */
     /* no password present, prompt for one */
     char passwd[2048] = "";
     char prompt[256];
-    struct dynbuf dyn;
+    struct curl_dynbuf dyn;
 
 	Curl_dyn_init(&dyn, MAX_USERPWDLENGTH);
     if(osep)

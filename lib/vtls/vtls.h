@@ -30,7 +30,7 @@ struct ssl_config_data;
 struct ssl_primary_config;
 struct Curl_cfilter;
 struct Curl_easy;
-struct dynbuf;
+struct curl_dynbuf;
 
 #define SSLSUPP_CA_PATH      (1<<0) /* supports CAPATH */
 #define SSLSUPP_CERTINFO     (1<<1) /* supports CURLOPT_CERTINFO */
@@ -208,7 +208,7 @@ bool Curl_ssl_false_start(void);
  * returned.
  */
 CURLcode Curl_ssl_get_channel_binding(struct Curl_easy *data, int sockindex,
-                                       struct dynbuf *binding);
+                                       struct curl_dynbuf *binding);
 
 #define SSL_SHUTDOWN_TIMEOUT 10000 /* ms */
 

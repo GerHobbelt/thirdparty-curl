@@ -42,7 +42,7 @@ CURLcode Curl_getworkingpath(struct Curl_easy *data,
 {
   char *working_path;
   size_t working_path_len;
-  struct dynbuf npath;
+  struct curl_dynbuf npath;
   CURLcode result =
     Curl_urldecode(data->state.up.path, 0, &working_path,
                    &working_path_len, REJECT_ZERO);
@@ -124,7 +124,7 @@ CURLcode Curl_get_pathname(const char **cpp, char **path, const char *homedir)
   char quot;
   unsigned int i;
   static const char WHITESPACE[] = " \t\r\n";
-  struct dynbuf out;
+  struct curl_dynbuf out;
   CURLcode result;
 
   DEBUGASSERT(homedir);

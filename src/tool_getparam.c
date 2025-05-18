@@ -650,7 +650,7 @@ static ParameterError data_urlencode(struct GlobalConfig *global,
       char *n;
       replace_url_encoded_space_by_plus(enc);
       if(nlen > 0) { /* only append '=' if we have a name */
-        struct dynbuf dyn;
+        struct curl_dynbuf dyn;
         Curl_dyn_init(&dyn, MAX_DATAURLENCODE);
         if(Curl_dyn_addn(&dyn, nextarg, nlen) ||
 					Curl_dyn_addn(&dyn, "=", 1) ||
@@ -826,7 +826,7 @@ static ParameterError url_query(const char *nextarg,
   size_t size = 0;
   ParameterError err = PARAM_OK;
   char *query;
-  struct dynbuf dyn;
+  struct curl_dynbuf dyn;
   Curl_dyn_init(&dyn, MAX_QUERY_LEN);
 
   if(*nextarg == '+') {
@@ -1726,7 +1726,7 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
       goto error;
     }
     else if(expand && nextarg) {
-      struct dynbuf nbuf;
+      struct curl_dynbuf nbuf;
       bool replaced;
 
       if((ARGTYPE(a->desc) != ARG_STRG) &&

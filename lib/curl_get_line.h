@@ -33,6 +33,6 @@
 #endif
 
 /* Curl_get_line() returns complete lines that end with a newline. */
-int Curl_get_line(struct dynbuf *buf, FILE *input);
+int Curl_get_line(struct curl_dynbuf *buf, FILE *input);
 
 #endif /* HEADER_CURL_GET_LINE_H */

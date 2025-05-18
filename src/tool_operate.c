@@ -1367,7 +1367,7 @@ static CURLcode config2setopts(struct GlobalConfig *global,
   my_setopt_slist(curl, CURLOPT_PREQUOTE, config->prequote);
 
   if(config->cookies) {
-          struct dynbuf cookies;
+          struct curl_dynbuf cookies;
     struct curl_slist *cl;
 
     /* The maximum size needs to match MAX_NAME in cookie.h */

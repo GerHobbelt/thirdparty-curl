@@ -90,7 +90,7 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
     char *param;
     int lineno = 0;
     bool dashed_option;
-    struct dynbuf buf;
+    struct curl_dynbuf buf;
     bool fileerror = FALSE;
     Curl_dyn_init(&buf, MAX_CONFIG_LINE_LENGTH);
     DEBUGASSERT(filename);
@@ -298,7 +298,7 @@ static const char *unslashquote(const char *line, char *param)
  * Reads a line from the given file, ensuring it is NUL terminated.
  */
 
-bool my_get_line(FILE *input, struct dynbuf *buf, bool *error)
+bool my_get_line(FILE *input, struct curl_dynbuf *buf, bool *error)
 {
   CURLcode result;
   char buffer[128];

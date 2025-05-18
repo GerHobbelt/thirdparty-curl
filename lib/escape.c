@@ -59,7 +59,7 @@ char *curl_easy_escape(CURL *data, const char *string,
                        int inlength)
 {
   size_t length;
-  struct dynbuf d;
+  struct curl_dynbuf d;
   (void)data;
 
   if(!string || (inlength < 0))

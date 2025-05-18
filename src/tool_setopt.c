@@ -216,7 +216,7 @@ static char *c_escape(const char *str, curl_off_t len)
   const char *s;
   unsigned int cutoff = 0;
   CURLcode result;
-  struct dynbuf escaped;
+  struct curl_dynbuf escaped;
 
   Curl_dyn_init(&escaped, 4 * MAX_STRING_LENGTH_OUTPUT + 3);
 

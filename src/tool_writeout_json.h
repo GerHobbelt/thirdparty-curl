@@ -28,7 +28,7 @@
 #include "dynbuf.h"
 
 int jsonquoted(const char *in, size_t len,
-               struct dynbuf *out, bool lowercase);
+               struct curl_dynbuf *out, bool lowercase);
 
 void ourWriteOutJSON(FILE *stream, const struct writeoutvar mappings[],
                      size_t nentries,

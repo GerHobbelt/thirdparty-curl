@@ -47,7 +47,7 @@ typedef enum {
 
 struct cf_haproxy_ctx {
   int state;
-  struct dynbuf data_out;
+  struct curl_dynbuf data_out;
 };
 
 static void cf_haproxy_ctx_reset(struct cf_haproxy_ctx *ctx)

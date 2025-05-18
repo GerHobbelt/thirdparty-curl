@@ -695,7 +695,7 @@ struct wsfield {
   const char *val;
 };
 
-CURLcode Curl_ws_request(struct Curl_easy *data, struct dynbuf *req)
+CURLcode Curl_ws_request(struct Curl_easy *data, struct curl_dynbuf *req)
 {
   unsigned int i;
   CURLcode result = CURLE_OK;

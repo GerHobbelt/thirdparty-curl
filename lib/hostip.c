@@ -1329,9 +1329,9 @@ static void show_resolve_info(struct Curl_easy *data,
   struct Curl_addrinfo *a;
   CURLcode result = CURLE_OK;
 #ifdef CURLRES_IPV6
-  struct dynbuf out[2];
+  struct curl_dynbuf out[2];
 #else
-  struct dynbuf out[1];
+  struct curl_dynbuf out[1];
 #endif
   DEBUGASSERT(data);
   DEBUGASSERT(dns);
@@ -1358,7 +1358,7 @@ static void show_resolve_info(struct Curl_easy *data,
 #endif
        a->ai_family == PF_INET) {
       char buf[MAX_IPADR_LEN];
-      struct dynbuf *d = &out[(a->ai_family != PF_INET)];
+      struct curl_dynbuf *d = &out[(a->ai_family != PF_INET)];
       Curl_printable_address(a, buf, sizeof(buf));
       if(Curl_dyn_len(d))
         result = Curl_dyn_addn(d, ", ", 2);

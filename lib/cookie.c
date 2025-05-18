@@ -945,7 +945,7 @@ parse_netscape(struct Cookie *co,
         return CERR_OUT_OF_MEMORY;
       break;
     case 7: { /* extensions */
-        char *p = ptr;
+        const char *p = ptr;
         do {
           if(strncasecompare("enc", p, 3)) {
             /* the name/value have TABs encoded as '=' */
@@ -1312,7 +1312,7 @@ struct CookieInfo *Curl_cookie_init(struct Curl_easy *data,
 
     ci->running = FALSE; /* this is not running, this is init */
     if(fp) {
-      struct dynbuf buf;
+      struct curl_dynbuf buf;
       Curl_dyn_init(&buf, MAX_COOKIE_LINE);
       while(Curl_get_line(&buf, fp)) {
         char *lineptr = Curl_dyn_ptr(&buf);
@@ -1580,7 +1580,7 @@ void Curl_cookie_cleanup(struct CookieInfo *ci)
  */
 static char *get_netscape_format(const struct Cookie *co)
 {
-  struct dynbuf str;
+  struct curl_dynbuf str;
   Curl_dyn_init(&str, MAX_COOKIE_LINE);
 
   if(Curl_dyn_addf(&str,

@@ -631,7 +631,7 @@ CURLcode glob_match_url(char **result, char *filename, struct URLGlob *glob)
   char numbuf[18];
   char *appendthis = (char *)"";
   size_t appendlen = 0;
-  struct dynbuf dyn;
+  struct curl_dynbuf dyn;
 
   *result = NULL;
 

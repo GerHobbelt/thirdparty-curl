@@ -1833,7 +1833,7 @@ fail:
 }
 
 /* returns non-zero on failure */
-static CURLcode x509_name_oneline(X509_NAME *a, struct dynbuf *d)
+static CURLcode x509_name_oneline(X509_NAME *a, struct curl_dynbuf *d)
 {
   BIO *bio_out = BIO_new(BIO_s_mem());
   BUF_MEM *biomem;
@@ -4707,7 +4707,7 @@ CURLcode Curl_oss_check_peer_cert(struct Curl_cfilter *cf,
   const char *ptr;
   BIO *mem = BIO_new(BIO_s_mem());
   bool strict = (conn_config->verifypeer || conn_config->verifyhost);
-  struct dynbuf dname;
+  struct curl_dynbuf dname;
 
   DEBUGASSERT(octx);
 
@@ -5264,7 +5264,7 @@ out:
 }
 
 static CURLcode ossl_get_channel_binding(struct Curl_easy *data, int sockindex,
-                                         struct dynbuf *binding)
+                                         struct curl_dynbuf *binding)
 {
   /* required for X509_get_signature_nid support */
 #if OPENSSL_VERSION_NUMBER > 0x10100000L

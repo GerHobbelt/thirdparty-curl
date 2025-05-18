@@ -37,7 +37,7 @@
 
 struct h1_req_parser {
   struct httpreq *req;
-  struct dynbuf scratch;
+  struct curl_dynbuf scratch;
   size_t scratch_skip;
   const char *line;
   size_t max_line_len;
@@ -54,10 +54,10 @@ ssize_t Curl_h1_req_parse_read(struct h1_req_parser *parser,
                                CURLcode *err);
 
 CURLcode Curl_h1_req_dprint(const struct httpreq *req,
-                            struct dynbuf *dbuf);
+                            struct curl_dynbuf *dbuf);
 
 CURLcode Curl_h1_req_write_head(struct httpreq *req, int http_minor,
-                                struct dynbuf *dbuf);
+                                struct curl_dynbuf *dbuf);
 
 #endif /* !CURL_DISABLE_HTTP */
 #endif /* HEADER_CURL_HTTP1_H */

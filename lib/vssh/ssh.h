@@ -130,8 +130,8 @@ struct SSHPROTO {
   char *path;                  /* the path we operate on */
   int size;
 #ifdef USE_LIBSSH2
-  struct dynbuf readdir_link;
-  struct dynbuf readdir;
+  struct curl_dynbuf readdir_link;
+  struct curl_dynbuf readdir;
   char readdir_filename[CURL_PATH_MAX + 1];
   char readdir_longentry[CURL_PATH_MAX + 1];
 
@@ -174,7 +174,7 @@ struct ssh_conn {
 #if defined(USE_LIBSSH)
   char *readdir_linkPath;
   size_t readdir_len;
-  struct dynbuf readdir_buf;
+  struct curl_dynbuf readdir_buf;
 /* our variables */
   unsigned kbd_state; /* 0 or 1 */
   ssh_key privkey;

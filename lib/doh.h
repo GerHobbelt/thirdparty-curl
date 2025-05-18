@@ -65,7 +65,7 @@ struct doh_probe {
   DNStype dnstype;
   unsigned char req_body[512];
   size_t req_body_len;
-  struct dynbuf resp_body;
+  struct curl_dynbuf resp_body;
 };
 
 enum doh_slot_num {
@@ -138,7 +138,7 @@ struct dohhttps_rr {
 #endif
 
 struct dohentry {
-  struct dynbuf cname[DOH_MAX_CNAME];
+  struct curl_dynbuf cname[DOH_MAX_CNAME];
   struct dohaddr addr[DOH_MAX_ADDR];
   int numaddr;
   unsigned int ttl;

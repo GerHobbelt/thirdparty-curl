@@ -97,7 +97,7 @@ static ParameterError varfunc(struct GlobalConfig *global,
                               size_t clen, /* content length */
                               char *f, /* functions */
                               size_t flen, /* function string length */
-                              struct dynbuf *out)
+                              struct curl_dynbuf *out)
 {
   bool alloc = FALSE;
   ParameterError err = PARAM_OK;
@@ -205,7 +205,7 @@ static ParameterError varfunc(struct GlobalConfig *global,
 }
 
 ParameterError varexpand(struct GlobalConfig *global,
-                         const char *line, struct dynbuf *out,
+                         const char *line, struct curl_dynbuf *out,
                          bool *replaced)
 {
   CURLcode result;
@@ -284,7 +284,7 @@ ParameterError varexpand(struct GlobalConfig *global,
         else {
           char *value;
           size_t vlen = 0;
-          struct dynbuf buf;
+          struct curl_dynbuf buf;
           const struct tool_var *v = varcontent(global, name, nlen);
           if(v) {
             value = (char *)v->content;
@@ -451,7 +451,7 @@ ParameterError setvariable(struct GlobalConfig *global,
     /* read from file or stdin */
     FILE *file;
     bool use_stdin;
-    struct dynbuf fname;
+    struct curl_dynbuf fname;
     line++;
 
     Curl_dyn_init(&fname, MAX_FILENAME);

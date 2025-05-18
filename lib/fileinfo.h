@@ -31,7 +31,7 @@
 struct fileinfo {
   struct curl_fileinfo info;
   struct Curl_llist_node list;
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
 };
 
 struct fileinfo *Curl_fileinfo_alloc(void);

@@ -765,7 +765,7 @@ CURLcode Curl_wssl_setup_x509_store(struct Curl_cfilter *cf,
 
 #ifdef WOLFSSL_TLS13
 static CURLcode
-wssl_add_default_ciphers(bool tls13, struct dynbuf *buf)
+wssl_add_default_ciphers(bool tls13, struct curl_dynbuf *buf)
 {
   int i;
   char *str;
@@ -945,7 +945,7 @@ wolfssl_connect_step1(struct Curl_cfilter *cf, struct Curl_easy *data)
   if(conn_config->cipher_list || conn_config->cipher_list13) {
     const char *ciphers12 = conn_config->cipher_list;
     const char *ciphers13 = conn_config->cipher_list13;
-    struct dynbuf c;
+    struct curl_dynbuf c;
     CURLcode result;
     Curl_dyn_init(&c, MAX_CIPHER_LEN);
 

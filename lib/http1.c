@@ -319,7 +319,7 @@ out:
 }
 
 CURLcode Curl_h1_req_write_head(struct httpreq *req, int http_minor,
-                                struct dynbuf *dbuf)
+                                struct curl_dynbuf *dbuf)
 {
   CURLcode result;
 

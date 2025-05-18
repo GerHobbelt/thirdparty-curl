@@ -28,7 +28,7 @@
 #include <curl/curl.h>
 #include "dynbuf.h"
 
-struct dynbuf;
+struct curl_dynbuf;
 
 /**
  * A single header entry.
@@ -173,7 +173,7 @@ CURLcode Curl_dynhds_h1_add_line(struct dynhds *dynhds,
  * Add the headers to the given `dynbuf` in HTTP/1.1 format with
  * cr+lf line endings. Will NOT output a last empty line.
  */
-CURLcode Curl_dynhds_h1_dprint(struct dynhds *dynhds, struct dynbuf *dbuf);
+CURLcode Curl_dynhds_h1_dprint(struct dynhds *dynhds, struct curl_dynbuf *dbuf);
 
 #ifdef USE_NGHTTP2
 

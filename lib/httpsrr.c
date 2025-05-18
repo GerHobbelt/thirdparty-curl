@@ -51,7 +51,7 @@ CURLcode Curl_httpsrr_decode_alpn(const unsigned char *cp, size_t len,
    * backslash - same goes for a backslash character, and of course
    * we need to use two backslashes in strings when we mean one;-)
    */
-  struct dynbuf dval;
+  struct curl_dynbuf dval;
   int idnum = 0;
 
   Curl_dyn_init(&dval, DYN_DOH_RESPONSE);

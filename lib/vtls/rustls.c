@@ -409,7 +409,7 @@ cr_verify_none(void *userdata UNUSED_PARAM,
 
 static int
 read_file_into(const char *filename,
-               struct dynbuf *out)
+               struct curl_dynbuf *out)
 {
   FILE *f = fopen(filename, FOPEN_READTEXT);
   if(!f) {
@@ -706,7 +706,7 @@ cr_init_backend(struct Curl_cfilter *cf, struct Curl_easy *data,
     rustls_root_cert_store_free(roots);
 
     if(conn_config->CRLfile) {
-      struct dynbuf crl_contents;
+      struct curl_dynbuf crl_contents;
       Curl_dyn_init(&crl_contents, SIZE_MAX);
       if(!read_file_into(conn_config->CRLfile, &crl_contents)) {
         failf(data, "rustls: failed to read revocation list file");

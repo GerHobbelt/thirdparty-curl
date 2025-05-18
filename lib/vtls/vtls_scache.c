@@ -346,7 +346,7 @@ void Curl_ssl_scache_unlock(struct Curl_easy *data)
     Curl_share_unlock(data, CURL_LOCK_DATA_SSL_SESSION);
 }
 
-static CURLcode cf_ssl_peer_key_add_path(struct dynbuf *buf,
+static CURLcode cf_ssl_peer_key_add_path(struct curl_dynbuf *buf,
                                           const char *name,
                                           char *path)
 {
@@ -374,7 +374,7 @@ static CURLcode cf_ssl_peer_key_add_path(struct dynbuf *buf,
   return CURLE_OK;
 }
 
-static CURLcode cf_ssl_peer_key_add_hash(struct dynbuf *buf,
+static CURLcode cf_ssl_peer_key_add_hash(struct curl_dynbuf *buf,
                                           const char *name,
                                           struct curl_blob *blob)
 {
@@ -405,7 +405,7 @@ CURLcode Curl_ssl_peer_key_make(struct Curl_cfilter *cf,
                                 char **ppeer_key)
 {
   struct ssl_primary_config *ssl = Curl_ssl_cf_get_primary_config(cf);
-  struct dynbuf buf;
+  struct curl_dynbuf buf;
   size_t key_len;
   CURLcode r;
 
@@ -1094,7 +1094,7 @@ CURLcode Curl_ssl_session_export(struct Curl_easy *data,
 {
   struct Curl_ssl_scache *scache = data->state.ssl_scache;
   struct Curl_ssl_scache_peer *peer;
-  struct dynbuf sbuf, hbuf;
+  struct curl_dynbuf sbuf, hbuf;
   struct Curl_llist_node *n;
   size_t i, npeers = 0, ntickets = 0;
   curl_off_t now = time(NULL);
