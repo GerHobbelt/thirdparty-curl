@@ -53,8 +53,6 @@
 #  include <fcntl.h>       /* _use_lfn(f) prototype */
 #endif
 
-#ifdef MSDOS
-
 #ifndef S_ISCHR
 #  ifdef S_IFCHR
 #    define S_ISCHR(m) (((m) & S_IFMT) == S_IFCHR)
