@@ -42,10 +42,10 @@
 #include <unistd.h>
 #endif
 
-#ifdef _WIN32
-#undef stat
-#define stat _stat
-#endif
+//#ifdef _WIN32     -- taken care of by curl_setup.h and conflicting with what's done there!
+//#undef stat
+//#define stat _stat
+//#endif
 
 /* curl stuff */
 #include <curl/mprintf.h>
