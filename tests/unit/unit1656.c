@@ -73,7 +73,7 @@ static struct test_spec test_specs[] = {
   { "19032113434017.01-01:10", "1903-21-13 43:40:17.01 UTC-01:10", CURLE_OK },
 };
 
-static bool do_test(struct test_spec *spec, size_t i, struct dynbuf *dbuf)
+static bool do_test(struct test_spec *spec, size_t i, struct curl_dynbuf *dbuf)
 {
   CURLcode result;
   const char *in = spec->input;
@@ -97,7 +97,7 @@ static bool do_test(struct test_spec *spec, size_t i, struct dynbuf *dbuf)
 UNITTEST_START
 {
   size_t i;
-  struct dynbuf dbuf;
+  struct curl_dynbuf dbuf;
   bool all_ok = TRUE;
 
   Curl_dyn_init(&dbuf, 32*1024);

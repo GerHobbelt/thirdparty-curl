@@ -23,7 +23,9 @@
  ***************************************************************************/
 #include "curlcheck.h"
 /* disable the curlx_get_line redefinitions for this unit test */
+#ifndef BUILDING_LIBCURL
 #define BUILDING_LIBCURL
+#endif
 #include "curl_get_line.h"
 #include "memdebug.h"
 
@@ -90,7 +92,7 @@ UNITTEST_START
   int rc = 0;
   for(i = 0; i < NUMTESTS; i++) {
     FILE *fp;
-    struct dynbuf buf;
+    struct curl_dynbuf buf;
     size_t len = 4096;
     char *line;
     Curl_dyn_init(&buf, len);

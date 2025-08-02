@@ -47,7 +47,7 @@ unit_stop(void)
 static CURLUcode parse_port(CURLU *url,
                            char *h, bool has_scheme)
 {
-  struct dynbuf host;
+  struct curl_dynbuf host;
   CURLUcode ret;
   Curl_dyn_init(&host, 10000);
   if(Curl_dyn_add(&host, h))

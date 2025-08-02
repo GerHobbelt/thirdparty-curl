@@ -395,8 +395,6 @@ static struct test_case TEST_CASES[] = {
 #endif
 };
 
-#endif /* DEBUGBUILD */
-
 UNITTEST_START
 
   size_t i;
@@ -406,3 +404,6 @@ UNITTEST_START
   }
 
 UNITTEST_STOP
+
+#endif /* DEBUGBUILD */
+

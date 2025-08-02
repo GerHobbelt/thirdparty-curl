@@ -25,6 +25,8 @@
 
 #include "vtls/x509asn1.h"
 
+#include "dynbuf.h"
+
 static CURLcode unit_setup(void)
 {
   return CURLE_OK;
@@ -43,12 +45,12 @@ static void unit_stop(void)
 #endif
 
 struct test1657_spec {
-  CURLcode (*setbuf)(struct test1657_spec *spec, struct dynbuf *buf);
+  CURLcode (*setbuf)(struct test1657_spec *spec, struct curl_dynbuf *buf);
   size_t n;
   CURLcode exp_result;
 };
 
-static CURLcode make1657_nested(struct test1657_spec *spec, struct dynbuf *buf)
+static CURLcode make1657_nested(struct test1657_spec *spec, struct curl_dynbuf *buf)
 {
   CURLcode r;
   size_t i;
@@ -76,7 +78,7 @@ static struct test1657_spec test1657_specs[] = {
 };
 
 static bool do_test1657(struct test1657_spec *spec, size_t i,
-                        struct dynbuf *buf)
+                        struct curl_dynbuf *buf)
 {
   CURLcode result;
   struct Curl_asn1Element elem;
@@ -103,7 +105,7 @@ UNITTEST_START
 {
   size_t i;
   bool all_ok = TRUE;
-  struct dynbuf dbuf;
+  struct curl_dynbuf dbuf;
 
   Curl_dyn_init(&dbuf, 32*1024);
 

@@ -23,6 +23,7 @@
  ***************************************************************************/
 #include "curlcheck.h"
 
+#define UNITTESTS
 #include "noproxy.h"
 
 static CURLcode unit_setup(void)

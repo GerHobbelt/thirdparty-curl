@@ -22,7 +22,7 @@
  *
  ***************************************************************************/
 #include "curlcheck.h"
-
+#define UNITTESTS
 #include "urldata.h"
 #include "dynbuf.h"
 #include "dynhds.h"
@@ -41,7 +41,7 @@ static void unit_stop(void)
 UNITTEST_START
 
   struct dynhds hds;
-  struct dynbuf dbuf;
+  struct curl_dynbuf dbuf;
   CURLcode result;
   size_t i;
 
