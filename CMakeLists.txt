@@ -46,7 +46,7 @@ include(CMakeDependentOption)
 include(CheckCCompilerFlag)
 
 project(CURL C)
-include(flags OPTIONAL)
+include(xpflags)
 if(DEFINED XP_NAMESPACE)
   set(XP_OPT_INSTALL EXCLUDE_FROM_ALL)
   set(nameSpace ${XP_NAMESPACE}::)
