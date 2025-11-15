@@ -47,11 +47,23 @@ include(CheckCCompilerFlag)
 
 set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
 project(CURL C)
+include(GNUInstallDirs)
 include(xpflags)
+function(callPackageDevel)
+  set(CMAKE_PROJECT_NAME curl)
+  xpPackageDevel(TARGETS_FILE ${targetsFile} DEPS libssh2 c-ares
+    EXE ${XP_NAMESPACE}::curl LIBRARIES ${XP_NAMESPACE}::libcurl
+    )
+endfunction()
+set(targetsFile "${PROJECT_NAME}Targets")
 if(DEFINED XP_NAMESPACE)
-  set(XP_OPT_INSTALL EXCLUDE_FROM_ALL)
+  set(XP_OPT_INSTALL FALSE)
   set(nameSpace ${XP_NAMESPACE}::)
+  set(XP_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake)
+  callPackageDevel()
+  set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME devel)
 else()
+  set(XP_OPT_INSTALL TRUE)
   set(nameSpace ${PROJECT_NAME}::)
 endif()
 
@@ -1379,14 +1391,12 @@ function(transform_makefile_inc INPUT_FILE OUTPUT_FILE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${INPUT_FILE}")
 endfunction()
 
-include(GNUInstallDirs)
-
 if(DEFINED XP_INSTALL_CMAKEDIR)
   set(CURL_INSTALL_CMAKE_DIR ${XP_INSTALL_CMAKEDIR})
 else()
   set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
 endif()
-set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+set(TARGETS_EXPORT_NAME "${targetsFile}")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
 set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
@@ -1576,20 +1586,22 @@ set(VERSIONNUM              "${CURL_VERSION_NUM}")
 # * ENABLE_STATIC
 configure_file("${CURL_SOURCE_DIR}/curl-config.in"
                "${CURL_BINARY_DIR}/curl-config" @ONLY)
+if(XP_OPT_INSTALL)
 install(FILES "${CURL_BINARY_DIR}/curl-config"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
-        ${XP_OPT_INSTALL}
         PERMISSIONS
           OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE
           WORLD_READ WORLD_EXECUTE)
+endif()
 
 # Finally generate a pkg-config file matching this config
 configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
                "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
+if(XP_OPT_INSTALL)
 install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
-        ${XP_OPT_INSTALL}
         DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
+endif()
 
 # install headers
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/curl"
@@ -1619,11 +1631,12 @@ if(CURL_ENABLE_EXPORT_TARGET)
   )
 endif()
 
+if(XP_OPT_INSTALL)
 install(
         FILES ${version_config} ${project_config}
-        ${XP_OPT_INSTALL}
         DESTINATION ${CURL_INSTALL_CMAKE_DIR}
 )
+endif()
 
 # Workaround for MSVS10 to avoid the Dialog Hell
 # FIXME: This could be removed with future version of CMake.
