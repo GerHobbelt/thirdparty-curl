@@ -1,0 +1,26 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "config-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/_bld-${presetName}",
+      "cacheVariables": {
+        "BUILD_CURL_EXE": "ON",
+        "BUILD_SHARED_LIBS": "OFF",
+        "BUILD_TESTING": "ON",
+        "ENABLE_ARES": "ON",
+        "CMAKE_USE_OPENSSL": "ON",
+        "CURL_DISABLE_LDAP": "ON",
+        "USE_LIBIDN2": "OFF",
+        "XP_NAMESPACE": "xpro"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-base",
+      "hidden": true
+    }
+  ]
+}
