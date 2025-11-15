@@ -58,3 +58,7 @@ scripts/curl.fish
 curl_fuzzer
 curl_fuzzer_seed_corpus.zip
 libstandaloneengine.a
+# externpro
+.env
+_bld*/
+docker-compose.override.yml
