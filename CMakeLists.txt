@@ -47,25 +47,6 @@ include(CheckCCompilerFlag)
 
 set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
 project(CURL C)
-include(GNUInstallDirs)
-include(xpflags)
-function(callPackageDevel)
-  set(CMAKE_PROJECT_NAME curl)
-  xpPackageDevel(TARGETS_FILE ${targetsFile} DEPS libssh2 c-ares
-    EXE ${XP_NAMESPACE}::curl LIBRARIES ${XP_NAMESPACE}::libcurl
-    )
-endfunction()
-set(targetsFile "${PROJECT_NAME}Targets")
-if(DEFINED XP_NAMESPACE)
-  set(XP_OPT_INSTALL FALSE)
-  set(nameSpace ${XP_NAMESPACE}::)
-  set(XP_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake)
-  callPackageDevel()
-  set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME devel)
-else()
-  set(XP_OPT_INSTALL TRUE)
-  set(nameSpace ${PROJECT_NAME}::)
-endif()
 
 file(STRINGS ${CURL_SOURCE_DIR}/include/curl/curlver.h CURL_VERSION_H_CONTENTS REGEX "#define LIBCURL_VERSION( |_NUM )")
 string(REGEX MATCH "#define LIBCURL_VERSION \"[^\"]*"
@@ -75,6 +56,25 @@ string(REGEX MATCH "#define LIBCURL_VERSION_NUM 0x[0-9a-fA-F]+"
   CURL_VERSION_NUM ${CURL_VERSION_H_CONTENTS})
 string(REGEX REPLACE "[^0]+0x" "" CURL_VERSION_NUM ${CURL_VERSION_NUM})
 
+set(targetsFile "${PROJECT_NAME}Targets")
+if(DEFINED XP_NAMESPACE)
+  string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" CURL_VERSION_SEMVER "${CURL_VERSION}")
+  set(CURL_BASE_TAG "curl-${CMAKE_MATCH_1}_${CMAKE_MATCH_2}_${CMAKE_MATCH_3}")
+  xpExternPackage(REPO_NAME curl NAMESPACE ${XP_NAMESPACE} ALIAS_NAMESPACE ${PROJECT_NAME}
+    TARGETS_FILE ${targetsFile} EXE curl LIBRARIES libcurl
+    BASE ${CURL_BASE_TAG} XPDIFF "patch" DEPS c-ares libssh2
+    WEB "http://curl.haxx.se/libcurl/" UPSTREAM "github.com/curl/curl"
+    DESC "the multiprotocol file transfer library"
+    LICENSE "[curl](http://curl.haxx.se/docs/copyright.html 'curl license inspired by MIT/X, but not identical')"
+    )
+  set(CMAKE_OPT_INSTALL FALSE)
+  set(CMAKE_NAMESPACE ${XP_NAMESPACE})
+  set(CMAKE_INSTALL_CMAKEDIR ${XP_INSTALL_CMAKEDIR})
+else()
+  set(CMAKE_OPT_INSTALL TRUE)
+  set(CMAKE_NAMESPACE ${PROJECT_NAME})
+  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+endif()
 
 # Setup package meta-data
 # SET(PACKAGE "curl")
@@ -462,13 +462,10 @@ if(CMAKE_USE_OPENSSL)
   # version of CMake.  This allows our dependents to get our dependencies
   # transitively.
   if(NOT CMAKE_VERSION VERSION_LESS 3.4)
-    if(TARGET xpro::ssl AND TARGET xpro::crypto)
-      list(APPEND CURL_LIBS xpro::ssl xpro::crypto)
-    elseif(TARGET OpenSSL::SSL AND TARGET OpenSSL::Crypto)
-      list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
-    else()
-      message(AUTHOR_WARNING "TARGET OpenSSL not found")
+    if(NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto)
+      message(FATAL_ERROR "TARGET OpenSSL not found")
     endif()
+    list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
   else()
     list(APPEND CURL_LIBS ${OPENSSL_LIBRARIES})
     include_directories(${OPENSSL_INCLUDE_DIR})
@@ -727,13 +724,10 @@ if(ZLIB_FOUND)
   # version of CMake.  This allows our dependents to get our dependencies
   # transitively.
   if(NOT CMAKE_VERSION VERSION_LESS 3.4)
-    if(TARGET xpro::zlibstatic)
-      list(APPEND CURL_LIBS xpro::zlibstatic)
-    elseif(TARGET ZLIB::ZLIB)
-      list(APPEND CURL_LIBS ZLIB::ZLIB)
-    else()
-      message(AUTHOR_WARNING "TARGET ZLIB not found")
+    if(NOT TARGET ZLIB::ZLIB)
+      message(FATAL_ERROR "TARGET ZLIB not found")
     endif()
+    list(APPEND CURL_LIBS ZLIB::ZLIB)
   else()
     list(APPEND CURL_LIBS ${ZLIB_LIBRARIES})
     include_directories(${ZLIB_INCLUDE_DIRS})
@@ -1391,11 +1385,7 @@ function(transform_makefile_inc INPUT_FILE OUTPUT_FILE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${INPUT_FILE}")
 endfunction()
 
-if(DEFINED XP_INSTALL_CMAKEDIR)
-  set(CURL_INSTALL_CMAKE_DIR ${XP_INSTALL_CMAKEDIR})
-else()
-  set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
-endif()
+set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_CMAKEDIR})
 set(TARGETS_EXPORT_NAME "${targetsFile}")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
@@ -1586,7 +1576,7 @@ set(VERSIONNUM              "${CURL_VERSION_NUM}")
 # * ENABLE_STATIC
 configure_file("${CURL_SOURCE_DIR}/curl-config.in"
                "${CURL_BINARY_DIR}/curl-config" @ONLY)
-if(XP_OPT_INSTALL)
+if(CMAKE_OPT_INSTALL)
 install(FILES "${CURL_BINARY_DIR}/curl-config"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS
@@ -1598,9 +1588,9 @@ endif()
 # Finally generate a pkg-config file matching this config
 configure_file("${CURL_SOURCE_DIR}/libcurl.pc.in"
                "${CURL_BINARY_DIR}/libcurl.pc" @ONLY)
-if(XP_OPT_INSTALL)
+if(CMAKE_OPT_INSTALL)
 install(FILES "${CURL_BINARY_DIR}/libcurl.pc"
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
 # install headers
@@ -1626,12 +1616,12 @@ configure_package_config_file(CMake/curl-config.cmake.in
 if(CURL_ENABLE_EXPORT_TARGET)
   install(
           EXPORT "${TARGETS_EXPORT_NAME}"
-          NAMESPACE "${nameSpace}"
+          NAMESPACE "${CMAKE_NAMESPACE}::"
           DESTINATION ${CURL_INSTALL_CMAKE_DIR}
   )
 endif()
 
-if(XP_OPT_INSTALL)
+if(CMAKE_OPT_INSTALL)
 install(
         FILES ${version_config} ${project_config}
         DESTINATION ${CURL_INSTALL_CMAKE_DIR}
