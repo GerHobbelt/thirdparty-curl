@@ -1385,6 +1385,8 @@ function(transform_makefile_inc INPUT_FILE OUTPUT_FILE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${INPUT_FILE}")
 endfunction()
 
+include(GNUInstallDirs)
+
 set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_CMAKEDIR})
 set(TARGETS_EXPORT_NAME "${targetsFile}")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
