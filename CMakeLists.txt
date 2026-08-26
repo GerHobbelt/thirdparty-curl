@@ -37,7 +37,7 @@
 # To check:
 # (From Daniel Stenberg) The cmake build selected to run gcc with -fPIC on my box while the plain configure script did not.
 # (From Daniel Stenberg) The gcc command line use neither -g nor any -O options. As a developer, I also treasure our configure scripts's --enable-debug option that sets a long range of "picky" compiler options.
-cmake_minimum_required(VERSION 3.2...3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.2...4.3 FATAL_ERROR)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake;${CMAKE_MODULE_PATH}")
 include(Utilities)
@@ -45,7 +45,6 @@ include(Macros)
 include(CMakeDependentOption)
 include(CheckCCompilerFlag)
 
-set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
 project(CURL C)
 
 file(STRINGS ${CURL_SOURCE_DIR}/include/curl/curlver.h CURL_VERSION_H_CONTENTS REGEX "#define LIBCURL_VERSION( |_NUM )")
@@ -55,25 +54,6 @@ string(REGEX REPLACE "[^\"]+\"" "" CURL_VERSION ${CURL_VERSION})
 string(REGEX MATCH "#define LIBCURL_VERSION_NUM 0x[0-9a-fA-F]+"
   CURL_VERSION_NUM ${CURL_VERSION_H_CONTENTS})
 string(REGEX REPLACE "[^0]+0x" "" CURL_VERSION_NUM ${CURL_VERSION_NUM})
-
-set(targetsFile "${PROJECT_NAME}Targets")
-if(DEFINED XP_NAMESPACE)
-  string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" CURL_VERSION_SEMVER "${CURL_VERSION}")
-  set(CURL_BASE_TAG "curl-${CMAKE_MATCH_1}_${CMAKE_MATCH_2}_${CMAKE_MATCH_3}")
-  xpExternPackage(REPO_NAME curl NAMESPACE ${XP_NAMESPACE} ALIAS_NAMESPACE ${PROJECT_NAME}
-    TARGETS_FILE ${targetsFile} EXE curl LIBRARIES libcurl
-    BASE ${CURL_BASE_TAG} XPDIFF "patch" DEPS c-ares libssh2
-    WEB "http://curl.haxx.se/libcurl/" UPSTREAM "github.com/curl/curl"
-    DESC "the multiprotocol file transfer library"
-    LICENSE "[curl](http://curl.haxx.se/docs/copyright.html 'curl license inspired by MIT/X, but not identical')"
-    )
-  set(CMAKE_OPT_INSTALL FALSE)
-  set(CMAKE_NAMESPACE ${XP_NAMESPACE})
-else()
-  set(CMAKE_OPT_INSTALL TRUE)
-  set(CMAKE_NAMESPACE ${PROJECT_NAME})
-  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
-endif()
 
 # Setup package meta-data
 # SET(PACKAGE "curl")
@@ -173,7 +153,7 @@ if(ENABLE_ARES)
     find_package(c-ares REQUIRED)
     set(CARES_LIBRARY ${C-ARES_LIBRARIES})
   else()
-    find_package(CARES REQUIRED)
+  find_package(CARES REQUIRED)
   endif()
   list(APPEND CURL_LIBS ${CARES_LIBRARY})
 endif()
@@ -712,7 +692,7 @@ set(USE_ZLIB OFF)
 if(COMMAND xpFindPkg) # externpro dependency provider
   find_package(zlib)
 else()
-  optional_dependency(ZLIB)
+optional_dependency(ZLIB)
 endif()
 if(ZLIB_FOUND)
   set(HAVE_ZLIB_H ON)
@@ -1386,8 +1366,19 @@ endfunction()
 
 include(GNUInstallDirs)
 
+set(CMAKE_NAMESPACE curl)
+if(COMMAND xpExternPackage)
+  set(CMAKE_OPT_INSTALL FALSE)
+  if(NOT DEFINED CMAKE_INSTALL_CMAKEDIR)
+    set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake)
+  endif()
+else()
+  set(CMAKE_OPT_INSTALL TRUE)
+  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+endif()
+
 set(CURL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_CMAKEDIR})
-set(TARGETS_EXPORT_NAME "${targetsFile}")
+set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
 set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
@@ -1636,6 +1627,18 @@ if(MSVC_VERSION EQUAL 1600)
   if(EXISTS "${CURL_SLN_FILENAME}")
     file(APPEND "${CURL_SLN_FILENAME}" "\n# This should be regenerated!\n")
   endif()
+endif()
+
+if(COMMAND xpExternPackage)
+  string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" CURL_VERSION_SEMVER "${CURL_VERSION}")
+  set(CURL_BASE_TAG "curl-${CMAKE_MATCH_1}_${CMAKE_MATCH_2}_${CMAKE_MATCH_3}")
+  xpExternPackage(REPO_NAME curl ALIAS_NAMESPACE ${CMAKE_PROJECT_NAME}
+    TARGETS_FILE ${TARGETS_EXPORT_NAME} EXE curl LIBRARIES libcurl DEFAULT_TARGETS libcurl
+    BASE ${CURL_BASE_TAG} XPDIFF "patch"
+    WEB "http://curl.haxx.se/libcurl/" UPSTREAM "github.com/curl/curl"
+    DESC "the multiprotocol file transfer library"
+    LICENSE "[curl](http://curl.haxx.se/docs/copyright.html 'curl license inspired by MIT/X, but not identical')"
+    )
 endif()
 
 if(NOT TARGET uninstall)
